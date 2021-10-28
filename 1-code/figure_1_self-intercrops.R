@@ -14,6 +14,8 @@ library(SticsRPacks)
 library(tidyverse)
 source("1-code/functions.R")
 
+Sys.setlocale("LC_TIME", "C") # To get the dates in english
+
 # Define javaStics installation -------------------------------------------
 
 # STICS version -----------------------------------------------------------
@@ -22,7 +24,7 @@ javastics = normalizePath("0-javastics", winslash = "/")
 
 # Define the workspaces ---------------------------------------------------
 
-workspaces = list.dirs("0-data/usms", full.names = TRUE, recursive = FALSE)
+workspaces = list.dirs("0-data/usms-optimized", full.names = TRUE, recursive = FALSE)
 
 workspace = "0-data/usms/Auzeville-Wheat-SC"
 

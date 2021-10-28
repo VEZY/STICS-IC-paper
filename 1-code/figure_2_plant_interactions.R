@@ -11,6 +11,7 @@
 library(SticsRPacks)
 library(tidyverse)
 source("1-code/functions.R")
+Sys.setlocale("LC_TIME", "C") # To get the dates in english
 
 # Define javaStics installation -------------------------------------------
 
@@ -114,7 +115,10 @@ bind_rows(IC_sum,SC_sum)%>%
                            "masec_n" = "Agb~(t~ha^{-1})",
                            "mafruit" = "Gr.~yield~(t~ha^{-1})",
                            "Qfix" = "N~Fix.~(kg~ha^{-1})",
-                           "QNplante"= "N~cont.~(kg~ha^{-1})"))%>%
+                           "QNplante"= "N~cont.~(kg~ha^{-1})",
+                           "NDFA" = "NDFA~('%')"
+                           )
+         )%>%
   ggplot(aes(x = Date, color = System, fill=System))+
   geom_line(aes(y = Simulated), lwd = 1.3)+
   geom_point(aes(y = Observed), show.legend = FALSE, size = 1.5, shape = 21, stroke = 1.5)+
