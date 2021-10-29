@@ -21,9 +21,9 @@ javastics = normalizePath("0-javastics", winslash = "/")
 
 # Define the workspaces ---------------------------------------------------
 
-workspace_wheat = "0-data/usms/Auzeville-Wheat-SC"
-workspace_pea = "0-data/usms/Auzeville-Pea-SC"
-workspace_wheat_pea = "0-data/usms/Auzeville-IC"
+workspace_wheat = "0-data/usms-optimized/Auzeville-Wheat-SC"
+workspace_pea = "0-data/usms-optimized/Auzeville-Pea-SC"
+workspace_wheat_pea = "0-data/usms-optimized/Auzeville-IC"
 workspaces = list(wheat = workspace_wheat, pea = workspace_pea, wheat_pea = workspace_wheat_pea)
 
 # Define the variables to simulate ----------------------------------------
@@ -85,7 +85,7 @@ obs = lapply(obs, function(x){
 })
 
 # Make the plots:
-plots = plot(sim,obs=obs)
+plots = plot(sim, obs = obs)
 
 # Computing per ha for both sole crops and intercrops:
 
@@ -113,6 +113,7 @@ SC_sum =
 bind_rows(IC_sum,SC_sum)%>%
   mutate(variable = recode(variable,"lai_n" = "LAI~(m2~m^{-2})",
                            "masec_n" = "Agb~(t~ha^{-1})",
+                           "fapar" = "FaPAR~('%')", 
                            "mafruit" = "Gr.~yield~(t~ha^{-1})",
                            "Qfix" = "N~Fix.~(kg~ha^{-1})",
                            "QNplante"= "N~cont.~(kg~ha^{-1})",
