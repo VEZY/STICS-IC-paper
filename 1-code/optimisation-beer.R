@@ -3,6 +3,7 @@
 library(SticsRPacks)
 library(foreach)
 library(doParallel)
+library(dplyr)
 # First step: copy all usms into a new folder were we will change the parameter values (and keep the original files).
 # The original folder is 0-data/usms, the destination folder is 0-data/usms-optim-beer 
 
@@ -21,18 +22,36 @@ workspace_usms =
   )
 # workspace_usms is a list of workspace-name -> usm names
 
+plant_files = list.files(file.path("0-data/usms-optim-beer",names(workspace_usms), "plant"), full.names = TRUE)
+
+# Activate Beer's law:
+lapply(plant_files, function(x){
+  set_param_xml(
+    xml_file = x,
+    param_name = "codetransrad",
+    param_value = 1,
+    overwrite = TRUE
+  )
+})
+
 parameters_vars = list()
 for(i in 1:nrow(df_optim)){
   parameters_vars[[i]] = list(
     params = trimws(unlist(strsplit(df_optim$Parameter[i], ","))),
     params_lb = as.numeric(trimws(unlist(strsplit(df_optim$low_boundary[i], ",")))),
     params_ub = as.numeric(trimws(unlist(strsplit(df_optim$high_boundary[i], ",")))),
-    vars = trimws(unlist(strsplit(df_optim$Variable[i], ",")))
+    vars = trimws(unlist(strsplit(df_optim$Variable[i], ","))),
+    process = df_optim$Process[i]
   )
 }
 
 param_values = list()
 
+# setup parallel backend to use many processors
+# cl = makeCluster(length(workspace_usms)+1) #not to overload your computer
+# registerDoParallel(cl)
+# 
+# param_values = foreach(i = 1:length(workspace_usms), .packages = c("SticsRPacks")) %dopar% {
 for(i in 1:length(workspace_usms)){
   param_workspace_vals = c()
   
@@ -40,9 +59,20 @@ for(i in 1:length(workspace_usms)){
     
     javastics_workspace_path = normalizePath(file.path("0-data/usms-optim-beer",names(workspace_usms)[i]), winslash = "/")
     stics_inputs_path = file.path(javastics_workspace_path,paste(parameters_vars[[j]]$params, collapse = "_"))
-    dir.create(stics_inputs_path, showWarnings = FALSE)
     usms = workspace_usms[[i]]
     
+    var_name = parameters_vars[[j]]$vars
+    obs_list = get_obs(javastics_workspace_path, usm_name = usms)
+    obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
+    if(ncol(obs_list[[1]]) < length(var_name) + 2 ){
+      warning("Skipping optimisation of [", paste(parameters_vars[[j]]$params, collapse = ", "),
+              "] for workspace ", usms, ". No obs found for [",
+              paste(var_name, collapse = ", "), "].")
+      next
+    }
+
+    dir.create(stics_inputs_path, showWarnings = FALSE)
+
     gen_usms_xml2txt(
       javastics_path = javastics_path,
       workspace_path = javastics_workspace_path,
@@ -60,15 +90,6 @@ for(i in 1:length(workspace_usms)){
         stics_exe = "Stics_IC_v18-10-2021.exe"
       )
     
-    var_name = parameters_vars[[j]]$vars
-    obs_list = get_obs(javastics_workspace_path, usm_name = usms)
-    obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
-    if(ncol(obs_list[[1]]) < length(var_name) + 2 ){
-      warning("Skipping optimisation of [", paste(parameters_vars[[j]]$params, collapse = ", "),
-              "] for workspace ", workspace_usms[[i]], ". No obs found for [",
-              paste(var_name, collapse = ", "), "].")
-      next
-    }
     lb = parameters_vars[[j]]$params_lb
     ub = parameters_vars[[j]]$params_ub
     names(ub) = names(lb) = parameters_vars[[j]]$params
@@ -92,8 +113,51 @@ for(i in 1:length(workspace_usms)){
         model_function = stics_wrapper,
         model_options = model_options,
         optim_options = optim_options,
-        param_info = param_info
+        param_info = param_info,
+        transform_sim = if(parameters_vars[[j]]$process == "Phenology"){
+          function(model_results,obs_list,param_values,model_options){
+            res =
+              lapply(model_results$sim_list, function(x){
+                mutate(x,across(where(is.numeric), ~ tail(unique(.x),1)))
+              })
+            list(error = model_results$error, sim_list = res)
+          }
+        }else if(parameters_vars[[j]]$process == "Yield"){
+          function(model_results,obs_list,param_values,model_options){
+            res =
+              mapply(function(x,y){
+                # dates_obs = filter(x, !is.na(mafruit))$Date
+                # filter(y, Date %in% dates_obs)
+                sim_yield = filter(y, .data$mafruit == max(.data$mafruit))
+                sim_yield = tail(sim_yield,1)
+                sim_yield$Date = tail(filter(x, !is.na(.data$mafruit))$Date, 1)
+                sim_yield
+              }, obs_list, model_results$sim_list, SIMPLIFY = FALSE)
+            
+            list(error = model_results$error, sim_list = res)
+          }
+        }else{
+          NULL
+        },
+        transform_obs = if(parameters_vars[[j]]$process == "Phenology"){
+          function(model_results,obs_list,param_values,model_options){
+            lapply(obs_list, function(x){
+              dplyr::mutate(x,across(where(is.numeric), ~ tail(sort(.x, na.last = FALSE),1)))
+            })
+          }
+        }else if(parameters_vars[[j]]$process == "Yield"){
+          function(model_results,obs_list,param_values,model_options){
+            lapply(obs_list, function(x){
+              tail(filter(x, !is.na(mafruit)), 1)
+            })
+          }
+        }else{
+          NULL
+        }
       )
+    # NB: the functions given to transform_sim and transform_obs helps us use
+    # one value only for the phenology stages. This is applied to be independent
+    # of the day it arrives, and only consider the day as the value
     
     param_workspace_vals = c(param_workspace_vals, res$final_values)
     
@@ -119,7 +183,10 @@ for(i in 1:length(workspace_usms)){
     }
   }
   param_values[[i]] = param_workspace_vals
+  # param_workspace_vals # Make it parallel (comment line above too)
 }
+# stopCluster(cl)
+
 
 names(param_values) = names(workspace_usms)
 
@@ -162,6 +229,40 @@ for(i in seq_along(param_orig)){
 
 write.csv(df, "2-outputs/optimization/optim_results_beer.csv", row.names = FALSE)
 
+
+# Update the xml files for intercrops -------------------------------------
+
+# Activate Beer's law:
+lapply(plant_file_optim, function(x){
+  set_param_xml(
+    xml_file = x,
+    param_name = "codetransrad",
+    param_value = 1,
+    overwrite = TRUE
+  )
+})
+
+workspace_usms_IC = 
+  list(
+    "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
+    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC")
+  )
+
+
+mapply(
+  function(x,y){
+    mapply(function(z, dominance){
+      plant_optimized = list.files(file.path("0-data/usms-optim-beer/", z, "plant"), full.names = TRUE)
+      ic_plant = file.path("0-data/usms-optim-beer", x, "plant", basename(plant_optimized))
+      file.copy(from = plant_optimized,
+                to = ic_plant,
+                overwrite = TRUE)
+    }, y, names(y))
+  },
+  names(workspace_usms_IC),
+  workspace_usms_IC
+)
+
 # Comparison before and after ---------------------------------------------
 
 source("1-code/functions.R")
@@ -171,15 +272,21 @@ sim_variables = unique(unlist(lapply(parameters_vars, function(x) x$vars)))
 
 # Run the simulations -----------------------------------------------------
 
-res_orig = run_simulation(workspaces = workspaces_orig,
+workspace_usms_IC = 
+  c(workspace_usms,
+    "Auzeville-IC" = "IC_Wheat_Pea_2005-2006_N0",
+    "1Tprecoce2Stardif2012" = "1Tprecoce2Stardif2012"
+  )
+
+res_orig = run_simulation(workspaces = normalizePath(file.path("0-data/usms",names(workspace_usms_IC)), winslash = "/"),
                           variables = sim_variables,
                           javastics = javastics_path,
-                          usms = workspace_usms
+                          usms = workspace_usms_IC
 )
-res_opti = run_simulation(workspaces = workspaces_opti,
+res_opti = run_simulation(workspaces = normalizePath(file.path("0-data/usms-optim-beer",names(workspace_usms_IC)), winslash = "/"),
                           variables = sim_variables,
                           javastics = javastics_path,
-                          usms = workspace_usms
+                          usms = workspace_usms_IC
 )
 # res_orig = import_simulations(workspaces = workspaces_orig, variables = sim_variables)
 # res_opti = import_simulations(workspaces = workspaces_opti, variables = sim_variables)
@@ -201,45 +308,7 @@ dynamic_plots =
 dynamic_plots
 
 
-# Update the xml files for intercrops -------------------------------------
 
-workspace_usms_IC = 
-  list(
-    "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
-    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC")
-  )
-
-
-mapply(
-  function(x,y){
-    mapply(function(z, dominance){
-      plant_optimized = list.files(file.path("0-data/usms-optim-beer/", z, "plant"), full.names = TRUE)
-      ic_plant = file.path("0-data/usms-optim-beer", x, "plant", basename(plant_optimized))
-      file.copy(from = plant_optimized,
-                to = ic_plant,
-                overwrite = TRUE)
-      
-      # Update haut_dev_x01 and haut_dev_x02 in param_newform:
-      param_newform_optim = file.path("0-data/usms-optim-beer", z, "param_newform.xml")
-      param_newform_ic = file.path("0-data/usms-optim-beer", x, "param_newform.xml")
-      
-      set_param_xml(
-        param_newform_ic, 
-        param_name = ifelse(dominance == "p", "haut_dev_x01", "haut_dev_x02"),
-        param_value = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_x01")),
-        overwrite = TRUE
-      )
-      set_param_xml(
-        param_newform_ic, 
-        param_name = ifelse(dominance == "p", "haut_dev_k1", "haut_dev_k2"),
-        param_value = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_k1")),
-        overwrite = TRUE
-      )
-    }, y, names(y))
-  },
-  names(workspace_usms_IC),
-  workspace_usms_IC
-)
 
 
 
