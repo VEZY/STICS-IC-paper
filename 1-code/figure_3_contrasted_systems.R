@@ -124,7 +124,7 @@ plots$all_situations$data%>%
     Plant = recode(Plant,
                    "poi" = "Pea", 
                    "ble" = "Wheat",
-                   "soj" = "Soja",
+                   "soj" = "Soybean",
                    "faba" = "Fababean",
                    "tou" = "Sunflower",
                    "esc" = "Barley"
@@ -134,7 +134,7 @@ plots$all_situations$data%>%
                     "masec_n" = "Agb~(t~ha^{-1})",
                     "mafruit" = "Gr.~yield~(t~ha^{-1})",
                     "Qfix" = "N~Fix.~(kg~ha^{-1})",
-                    "QNplante" = "N~cont.~(kg~ha^{-1})",
+                    "QNplante" = "N~acc.~(kg~ha^{-1})",
                     "imats" = "Matur.~(julian~day)",
                     "iflos" = "Flowe.~(julian~day)",
                     "iamfs" = "Juven.~(julian~day)",

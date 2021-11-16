@@ -69,10 +69,6 @@ usms = c("SC_Wheat_2005-2006_N0", "IC_Wheat_Wheat_2005-2006_N0")
 
 SticsRFiles::gen_varmod(workspace, sim_variables)
 
-# SticsOnR::run_javastics(javastics_path = javastics, workspace_path = workspace,
-#                         stics_exe = "Stics_IC_v29-03-2021.exe",
-#                         usms_list = usms)
-
 SticsOnR::run_javastics(javastics_path = javastics, workspace_path = workspace,
                         stics_exe = "Stics_IC_v18-10-2021.exe",
                         usms_list = usms)

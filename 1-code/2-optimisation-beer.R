@@ -5,32 +5,33 @@ library(foreach)
 library(doParallel)
 library(dplyr)
 # First step: copy all usms into a new folder were we will change the parameter values (and keep the original files).
-# The original folder is 0-data/usms, the destination folder is 0-data/usms-optimized 
+# The original folder is 0-data/usms, the destination folder is 0-data/usms-optim-beer 
 
 # Set-up the optimization process:
 df_optim = read.csv("0-data/calibration.csv", sep = ";")
+# /!\ Important step: change ktrou for extin for beer-lambert law
+df_optim$Parameter[grep("ktrou", df_optim$Parameter)] = "extin"
+df_optim$low_boundary[grep("extin", df_optim$Parameter)] = 0.6
+df_optim$high_boundary[grep("extin", df_optim$Parameter)] = 1.9
+
 javastics_path = normalizePath("0-javastics", winslash = "/")
 workspace_usms = 
   list(
-    "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0", # replace by N1?
-    "Angers-SC-Pea" = "SC_Pea_Angers_2003_N0",
     "Auzeville-Pea-SC" = "SC_Pea_2005-2006_N0",
     "Auzeville-Wheat-SC" = "SC_Wheat_2005-2006_N0",
     "sojaTardif2012-SC" = "SojaTardif-SC2012",
-    "tourPrecoce2012-SC" = "TournPrecoce-SC2012",
-    "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2010",
-    "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2010"
+    "tourPrecoce2012-SC" = "TournPrecoce-SC2012"
   )
 # workspace_usms is a list of workspace-name -> usm names
 
-plant_files = normalizePath(list.files(file.path("0-data/usms-optimized",names(workspace_usms), "plant"), full.names = TRUE))
+plant_files = list.files(file.path("0-data/usms-optim-beer",names(workspace_usms), "plant"), full.names = TRUE)
 
-# Activate Radiative transfer:
+# Activate Beer's law:
 lapply(plant_files, function(x){
   set_param_xml(
     xml_file = x,
     param_name = "codetransrad",
-    param_value = 2,
+    param_value = 1,
     overwrite = TRUE
   )
 })
@@ -55,13 +56,13 @@ param_values = list()
 # param_values = foreach(i = 1:length(workspace_usms), .packages = c("SticsRPacks")) %dopar% {
 for(i in 1:length(workspace_usms)){
   param_workspace_vals = c()
-
+  
   for (j in 1:length(parameters_vars)){
-
-    javastics_workspace_path = normalizePath(file.path("0-data/usms-optimized",names(workspace_usms)[i]), winslash = "/")
+    
+    javastics_workspace_path = normalizePath(file.path("0-data/usms-optim-beer",names(workspace_usms)[i]), winslash = "/")
     stics_inputs_path = file.path(javastics_workspace_path,paste(parameters_vars[[j]]$params, collapse = "_"))
     usms = workspace_usms[[i]]
-
+    
     var_name = parameters_vars[[j]]$vars
     obs_list = get_obs(javastics_workspace_path, usm_name = usms)
     obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
@@ -81,7 +82,7 @@ for(i in 1:length(workspace_usms)){
       usms_list = usms,
       verbose = TRUE
     )
-
+    
     # Set the model options (see '? stics_wrapper_options' for details)
     model_options =
       stics_wrapper_options(
@@ -90,13 +91,13 @@ for(i in 1:length(workspace_usms)){
         parallel = FALSE, # Because we have only one usm per workspace so no need
         stics_exe = "Stics_IC_v18-10-2021.exe"
       )
-
+    
     lb = parameters_vars[[j]]$params_lb
     ub = parameters_vars[[j]]$params_ub
     names(ub) = names(lb) = parameters_vars[[j]]$params
-
+    
     param_info = list(lb = lb, ub = ub)
-
+    
     optim_options = list()
     optim_options$nb_rep = 7
     optim_options$maxeval = 500 # Maximum number of evaluations of the minimized criteria
@@ -107,7 +108,7 @@ for(i in 1:length(workspace_usms)){
     optim_options$path_results = dir_estim_results # path where to store the results (graph and Rdata)
     optim_options$ranseed = 1 # set random seed so that each execution give the same results
     # If you want randomization, don't set it.
-
+    
     res =
       estim_param(
         obs_list = obs_list,
@@ -159,16 +160,16 @@ for(i in 1:length(workspace_usms)){
     # NB: the functions given to transform_sim and transform_obs helps us use
     # one value only for the phenology stages. This is applied to be independent
     # of the day it arrives, and only consider the day as the value
-
+    
     param_workspace_vals = c(param_workspace_vals, res$final_values)
-
+    
     plant_file = list.files(file.path(javastics_workspace_path,"plant"), full.names = TRUE)
-
+    
     if(length(plant_file) > 1){
       stop("There must be only one file in the plant folder: ",
            file.path(javastics_workspace_path,"plant"))
     }
-
+    
     for(params in parameters_vars[[j]]$params){
       if(params == "haut_dev_x01" | params == "haut_dev_k1"){
         xml_file = file.path(javastics_workspace_path,"param_newform.xml")
@@ -194,7 +195,7 @@ names(param_values) = names(workspace_usms)
 # Summarizing the optimization results ------------------------------------
 
 workspaces_orig = normalizePath(file.path("0-data/usms",names(workspace_usms)), winslash = "/")
-workspaces_opti = normalizePath(file.path("0-data/usms-optimized",names(workspace_usms)), winslash = "/")
+workspaces_opti = normalizePath(file.path("0-data/usms-optim-beer",names(workspace_usms)), winslash = "/")
 
 params = unique(unlist(lapply(parameters_vars, function(x) x$params)))
 plant_file_orig = list.files(file.path(workspaces_orig,"plant"), full.names = TRUE)
@@ -228,19 +229,41 @@ for(i in seq_along(param_orig)){
   }
 }
 
-df$is_optimized = df$original_value != df$optimized_value
+write.csv(df, "2-outputs/optimization/optim_results_beer.csv", row.names = FALSE)
 
-write.csv(df, "2-outputs/optimization/optim_results.csv", row.names = FALSE)
 
-# Activate Radiative transfer:
+# Update the xml files for intercrops -------------------------------------
+
+# Activate Beer's law:
 lapply(plant_file_optim, function(x){
   set_param_xml(
     xml_file = x,
     param_name = "codetransrad",
-    param_value = 2,
+    param_value = 1,
     overwrite = TRUE
   )
 })
+
+workspace_usms_IC = 
+  list(
+    "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
+    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC")
+  )
+
+
+mapply(
+  function(x,y){
+    mapply(function(z, dominance){
+      plant_optimized = list.files(file.path("0-data/usms-optim-beer/", z, "plant"), full.names = TRUE)
+      ic_plant = file.path("0-data/usms-optim-beer", x, "plant", basename(plant_optimized))
+      file.copy(from = plant_optimized,
+                to = ic_plant,
+                overwrite = TRUE)
+    }, y, names(y))
+  },
+  names(workspace_usms_IC),
+  workspace_usms_IC
+)
 
 # Comparison before and after ---------------------------------------------
 
@@ -248,19 +271,25 @@ source("1-code/functions.R")
 
 # sim_variables = c("lai(n)","QNplante","Qfix","masec(n)","hauteur","CNgrain","mafruit","chargefruit")
 sim_variables = unique(unlist(lapply(parameters_vars, function(x) x$vars)))
-
+sim_variables = c(sim_variables, "hauteur", "largeur")
 # Run the simulations -----------------------------------------------------
 
-res_orig = run_simulation(workspaces = workspaces_orig,
+workspace_usms_IC = 
+  c(workspace_usms,
+    "Auzeville-IC" = "IC_Wheat_Pea_2005-2006_N0",
+    "1Tprecoce2Stardif2012" = "1Tprecoce2Stardif2012"
+  )
+
+res_orig = run_simulation(workspaces = normalizePath(file.path("0-data/usms",names(workspace_usms_IC)), winslash = "/"),
                           variables = sim_variables,
                           javastics = javastics_path,
-                          usms = workspace_usms
-                          )
-res_opti = run_simulation(workspaces = workspaces_opti,
+                          usms = workspace_usms_IC
+)
+res_opti = run_simulation(workspaces = normalizePath(file.path("0-data/usms-optim-beer",names(workspace_usms_IC)), winslash = "/"),
                           variables = sim_variables,
                           javastics = javastics_path,
-                          usms = workspace_usms
-                          )
+                          usms = workspace_usms_IC
+)
 # res_orig = import_simulations(workspaces = workspaces_orig, variables = sim_variables)
 # res_opti = import_simulations(workspaces = workspaces_opti, variables = sim_variables)
 
@@ -281,44 +310,18 @@ dynamic_plots =
 dynamic_plots
 
 
-# Update the xml files for intercrops -------------------------------------
-
-workspace_usms_IC = 
-  list(
-    "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
-    "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
-    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC"),
-    "Auzeville_wfb-Fababean-Wheat-IC" = c(p = "Auzeville_wfb-Fababean-SC", a = "Auzeville_wfb-Wheat-SC")
+mapply(function(x,y){
+  ggplot2::ggsave(
+    filename = paste0(x,".png"), 
+    path =  "2-outputs/optimization/plots-beer",
+    plot = y,
+    width = 16,
+    height = 16.5,
+    units = "cm"
   )
+},names(dynamic_plots), dynamic_plots)
 
 
-mapply(
-  function(x,y){
-    mapply(function(z, dominance){
-      plant_optimized = list.files(file.path("0-data/usms-optimized", z, "plant"), full.names = TRUE)
-      ic_plant = file.path("0-data/usms-optimized", x, "plant", basename(plant_optimized))
-      file.copy(from = plant_optimized,
-                to = ic_plant,
-                overwrite = TRUE)
-      
-      # Update haut_dev_x01 and haut_dev_x02 in param_newform:
-      param_newform_optim = file.path("0-data/usms-optimized", z, "param_newform.xml")
-      param_newform_ic = file.path("0-data/usms-optimized", x, "param_newform.xml")
-      
-      set_param_xml(
-        param_newform_ic, 
-        param_name = ifelse(dominance == "p", "haut_dev_x01", "haut_dev_x02"),
-        param_value = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_x01")),
-        overwrite = TRUE
-      )
-      set_param_xml(
-        param_newform_ic, 
-        param_name = ifelse(dominance == "p", "haut_dev_k1", "haut_dev_k2"),
-        param_value = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_k1")),
-        overwrite = TRUE
-      )
-    }, y, names(y))
-  },
-  names(workspace_usms_IC),
-  workspace_usms_IC
-)
+
+
+
