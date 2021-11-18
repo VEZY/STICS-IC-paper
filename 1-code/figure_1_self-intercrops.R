@@ -28,7 +28,6 @@ workspaces = list.dirs("0-data/usms-optimized", full.names = TRUE, recursive = F
 
 workspace = "0-data/usms/Auzeville-Wheat-SC"
 
-
 # Setting the light interception to 1 so both sole and inter-crop share the same
 # computation (self-intercrop will have the same height, so the computation is always
 # the Beer's law)

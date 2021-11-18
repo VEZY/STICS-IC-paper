@@ -35,7 +35,12 @@ plant_files_beer = normalizePath(list.files(file.path("0-data/usms-optim-beer",n
 # Activate Radiative transfer, and put the optimized extin value from beer optim:
 for(i in 1:length(plant_files)){
   extin = unlist(get_param_xml(
-    xml_file = file.path("0-data/usms-optim-beer", names(workspace_usms)[i], basename(plant_files[i])),
+    xml_file = file.path(
+      "0-data/usms-optim-beer", 
+      basename(dirname(dirname(plant_files[i]))),
+      "plant",
+      basename(plant_files[i])
+    ),
     param_name = "extin"
   ))
   
