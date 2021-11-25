@@ -73,7 +73,7 @@ SticsOnR::run_javastics(javastics_path = javastics, workspace_path = workspace,
                         usms_list = usms)
 
 # Get the results
-sim = get_daily_results(workspace = workspace, usm_name = usms)
+sim = get_sim(workspace = workspace, usm_name = usms)
 
 # Get the observations
 obs = get_obs(workspace =  workspace, usm_name = usms)

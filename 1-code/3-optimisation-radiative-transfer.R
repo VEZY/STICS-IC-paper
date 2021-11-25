@@ -24,8 +24,8 @@ workspace_usms =
     "Auzeville-Wheat-SC" = "SC_Wheat_2005-2006_N0",
     "sojaTardif2012-SC" = "SojaTardif-SC2012",
     "tourPrecoce2012-SC" = "TournPrecoce-SC2012",
-    "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2010",
-    "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2010"
+    "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2011",
+    "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2011"
   )
 # workspace_usms is a list of workspace-name -> usm names
 
@@ -92,7 +92,7 @@ for(i in 1:length(workspace_usms)){
     var_name = parameters_vars[[j]]$vars
     obs_list = get_obs(javastics_workspace_path, usm_name = usms)
     obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
-    if(ncol(obs_list[[1]]) < length(var_name) + 2 ){
+    if(length(obs_list) == 0){
       warning("Skipping optimisation of [", paste(parameters_vars[[j]]$params, collapse = ", "),
               "] for workspace ", usms, ". No obs found for [",
               paste(var_name, collapse = ", "), "].")
@@ -304,8 +304,8 @@ dynamic_plots =
     res_orig,
     res_opti)
 
+dynamic_plots$`Auzeville-Pea-SC.SC_Pea_2005-2006_N0`
 dynamic_plots
-
 
 # Update the xml files for intercrops -------------------------------------
 

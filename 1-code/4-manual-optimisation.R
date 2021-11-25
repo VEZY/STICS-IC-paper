@@ -20,13 +20,13 @@ workspace_usms =
     "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2010"
   )
 
-i = 2
+i = 7
 javastics_workspace_path = normalizePath(file.path("0-data/usms-optimized",names(workspace_usms)[i]), winslash = "/")
 stics_inputs_path = file.path(javastics_workspace_path, "manual_optimization")
 usms = workspace_usms[[i]]
 
 # var_name = "masec_n"
-var_name = c("fixmaxvar", "dltags", "fixreel", "Qfix")
+var_name = c("QNplante")
 obs_list = get_obs(javastics_workspace_path, usm_name = usms)
 obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
 
@@ -48,7 +48,7 @@ model_options =
     stics_exe = "Stics_IC_v18-10-2021.exe"
   )
 
-get_param_txt(file.path(stics_inputs_path,usms), "efcroirepro")
+get_param_txt(file.path(stics_inputs_path,usms), "vitno") # 25, 0.01
 
 res_orig = stics_wrapper(
   model_options = model_options,
@@ -58,10 +58,16 @@ res_orig = stics_wrapper(
 
 res_opti = stics_wrapper(
   model_options = model_options,
-  param_values = c("fixmaxgr" = 10),
+  # param_values = c("Vmax2" = 0.3),
+  param_values = c("fixmaxveg" = 35, "Vmax2" = 0.01),
   sit_names = usms,
   var_names = var_name,
 )
 
 plot(orig = res_orig$sim_list, optim = res_opti$sim_list, obs = obs_list)
+
+# fixmaxveg, fixmaxgr
+
+# c("vitircarbT" = 0.000365), for sunflower
+# c("fixmaxveg" = 32.5) for pea Angers
 
