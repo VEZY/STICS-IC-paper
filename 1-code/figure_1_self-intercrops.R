@@ -26,7 +26,7 @@ javastics = normalizePath("0-javastics", winslash = "/")
 
 workspaces = list.dirs("0-data/usms-optimized", full.names = TRUE, recursive = FALSE)
 
-workspace = "0-data/usms/Auzeville-Wheat-SC"
+workspace = "0-data/usms-optim-beer-backup/Auzeville-Wheat-SC"
 
 # Setting the light interception to 1 so both sole and inter-crop share the same
 # computation (self-intercrop will have the same height, so the computation is always
