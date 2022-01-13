@@ -1,11 +1,16 @@
+# Purpose: automatically optimize the main parameter values of the model for
+# contrasted situations, using the beer's law of light extinction.
+# Date: 05/01/2022
+# Author: R. Vezy
 
 # devtools::install_github("SticsRPacks/SticsRPacks")
 library(SticsRPacks)
 library(foreach)
 library(doParallel)
 library(dplyr)
+source("1-code/functions.R")
 # First step: copy all usms into a new folder were we will change the parameter values (and keep the original files).
-# The original folder is 0-data/usms, the destination folder is 0-data/usms-optim-beer 
+# The original folder is 0-data/usms, the destination folder is 0-data/usms-optim-beer
 
 # Set-up the optimization process:
 df_optim = read.csv("0-data/calibration.csv", sep = ";")
@@ -15,12 +20,16 @@ df_optim$low_boundary[grep("extin", df_optim$Parameter)] = 0.6
 df_optim$high_boundary[grep("extin", df_optim$Parameter)] = 1.9
 
 javastics_path = normalizePath("0-javastics", winslash = "/")
-workspace_usms = 
+workspace_usms =
   list(
+    "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0", # replace by N1?
+    "Angers-SC-Pea" = "SC_Pea_Angers_2003_N0",
     "Auzeville-Pea-SC" = "SC_Pea_2005-2006_N0",
     "Auzeville-Wheat-SC" = "SC_Wheat_2005-2006_N0",
     "sojaTardif2012-SC" = "SojaTardif-SC2012",
-    "tourPrecoce2012-SC" = "TournPrecoce-SC2012"
+    "tourPrecoce2012-SC" = "TournPrecoce-SC2012",
+    "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2011",
+    "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2011"
   )
 # workspace_usms is a list of workspace-name -> usm names
 
@@ -52,21 +61,21 @@ param_values = list()
 # setup parallel backend to use many processors
 # cl = makeCluster(length(workspace_usms)+1) #not to overload your computer
 # registerDoParallel(cl)
-# 
+#
 # param_values = foreach(i = 1:length(workspace_usms), .packages = c("SticsRPacks")) %dopar% {
 for(i in 1:length(workspace_usms)){
   param_workspace_vals = c()
-  
+
   for (j in 1:length(parameters_vars)){
-    
+
     javastics_workspace_path = normalizePath(file.path("0-data/usms-optim-beer",names(workspace_usms)[i]), winslash = "/")
     stics_inputs_path = file.path(javastics_workspace_path,paste(parameters_vars[[j]]$params, collapse = "_"))
     usms = workspace_usms[[i]]
-    
+
     var_name = parameters_vars[[j]]$vars
     obs_list = get_obs(javastics_workspace_path, usm_name = usms)
     obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
-    if(ncol(obs_list[[1]]) < length(var_name) + 2 ){
+    if(length(obs_list) == 0){
       warning("Skipping optimisation of [", paste(parameters_vars[[j]]$params, collapse = ", "),
               "] for workspace ", usms, ". No obs found for [",
               paste(var_name, collapse = ", "), "].")
@@ -82,22 +91,22 @@ for(i in 1:length(workspace_usms)){
       usms_list = usms,
       verbose = TRUE
     )
-    
+
     # Set the model options (see '? stics_wrapper_options' for details)
     model_options =
       stics_wrapper_options(
         javastics_path = javastics_path,
         data_dir = stics_inputs_path,
         parallel = FALSE, # Because we have only one usm per workspace so no need
-        stics_exe = "Stics_IC_v18-10-2021.exe"
+        stics_exe = "Stics_IC_v13-01-2022.exe"
       )
-    
+
     lb = parameters_vars[[j]]$params_lb
     ub = parameters_vars[[j]]$params_ub
     names(ub) = names(lb) = parameters_vars[[j]]$params
-    
+
     param_info = list(lb = lb, ub = ub)
-    
+
     optim_options = list()
     optim_options$nb_rep = 7
     optim_options$maxeval = 500 # Maximum number of evaluations of the minimized criteria
@@ -108,7 +117,7 @@ for(i in 1:length(workspace_usms)){
     optim_options$path_results = dir_estim_results # path where to store the results (graph and Rdata)
     optim_options$ranseed = 1 # set random seed so that each execution give the same results
     # If you want randomization, don't set it.
-    
+
     res =
       estim_param(
         obs_list = obs_list,
@@ -135,7 +144,7 @@ for(i in 1:length(workspace_usms)){
                 sim_yield$Date = tail(filter(x, !is.na(.data$mafruit))$Date, 1)
                 sim_yield
               }, obs_list, model_results$sim_list, SIMPLIFY = FALSE)
-            
+
             list(error = model_results$error, sim_list = res)
           }
         }else{
@@ -160,16 +169,16 @@ for(i in 1:length(workspace_usms)){
     # NB: the functions given to transform_sim and transform_obs helps us use
     # one value only for the phenology stages. This is applied to be independent
     # of the day it arrives, and only consider the day as the value
-    
+
     param_workspace_vals = c(param_workspace_vals, res$final_values)
-    
+
     plant_file = list.files(file.path(javastics_workspace_path,"plant"), full.names = TRUE)
-    
+
     if(length(plant_file) > 1){
       stop("There must be only one file in the plant folder: ",
            file.path(javastics_workspace_path,"plant"))
     }
-    
+
     for(params in parameters_vars[[j]]$params){
       if(params == "haut_dev_x01" | params == "haut_dev_k1"){
         xml_file = file.path(javastics_workspace_path,"param_newform.xml")
@@ -203,9 +212,9 @@ plant_file_optim = list.files(file.path(workspaces_opti,"plant"), full.names = T
 param_orig = get_param_xml(xml_file = plant_file_orig, param_name = params)
 param_optim = get_param_xml(xml_file = plant_file_optim, param_name = params)
 
-param_orig2 = get_param_xml(xml_file = file.path(workspaces_orig,"param_newform.xml"), 
+param_orig2 = get_param_xml(xml_file = file.path(workspaces_orig,"param_newform.xml"),
                             param_name = params)
-param_optim2 = get_param_xml(xml_file = file.path(workspaces_opti,"param_newform.xml"), 
+param_optim2 = get_param_xml(xml_file = file.path(workspaces_opti,"param_newform.xml"),
                              param_name = params)
 names(param_orig2) = names(param_optim2) = names(param_orig)
 
@@ -215,16 +224,16 @@ df$plant = rep(names(param_orig), each = length(params))
 for(i in seq_along(param_orig)){
   plant_i = names(param_orig)[i]
   for(j in seq_along(param_orig[[i]])){
-    df[df$parameter == names(param_orig[[i]][j]) & df$plant == plant_i,3] = 
+    df[df$parameter == names(param_orig[[i]][j]) & df$plant == plant_i,3] =
       paste(param_orig[[i]][j], collapse = ", ")
-    df[df$parameter == names(param_optim[[i]][j])  & df$plant == plant_i,4] = 
+    df[df$parameter == names(param_optim[[i]][j])  & df$plant == plant_i,4] =
       paste(param_optim[[i]][j], collapse = ", ")
   }
-  
+
   for(j in seq_along(param_orig2[[i]])){
-    df[df$parameter == names(param_orig2[[i]][j]) & df$plant == plant_i,3] = 
+    df[df$parameter == names(param_orig2[[i]][j]) & df$plant == plant_i,3] =
       paste(param_orig2[[i]][j], collapse = ", ")
-    df[df$parameter == names(param_optim2[[i]][j])  & df$plant == plant_i,4] = 
+    df[df$parameter == names(param_optim2[[i]][j])  & df$plant == plant_i,4] =
       paste(param_optim2[[i]][j], collapse = ", ")
   }
 }
@@ -244,10 +253,13 @@ lapply(plant_file_optim, function(x){
   )
 })
 
-workspace_usms_IC = 
+
+workspace_usms_IC =
   list(
+    "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
     "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
-    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC")
+    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC"),
+    "Auzeville_wfb-Fababean-Wheat-IC" = c(p = "Auzeville_wfb-Fababean-SC", a = "Auzeville_wfb-Wheat-SC")
   )
 
 
@@ -272,47 +284,51 @@ source("1-code/functions.R")
 # sim_variables = c("lai(n)","QNplante","Qfix","masec(n)","hauteur","CNgrain","mafruit","chargefruit")
 sim_variables = unique(unlist(lapply(parameters_vars, function(x) x$vars)))
 sim_variables = c(sim_variables, "hauteur", "largeur")
+
 # Run the simulations -----------------------------------------------------
 
-workspace_usms_IC = 
-  c(workspace_usms,
+workspace_usms_IC =
+  list(
+    "Angers-IC-Pea_Barley" = "IC_PeaBarley_Angers_2003_N0_D50-50", # replace by N1?
     "Auzeville-IC" = "IC_Wheat_Pea_2005-2006_N0",
-    "1Tprecoce2Stardif2012" = "1Tprecoce2Stardif2012"
+    "1Tprecoce2Stardif2012" = "1Tprecoce2Stardif2012",
+    "Auzeville_wfb-Fababean-Wheat-IC" = "Fababean_Wheat_IC_2011"
   )
 
-res_orig = run_simulation(workspaces = normalizePath(file.path("0-data/usms",names(workspace_usms_IC)), winslash = "/"),
+res_orig_beer = run_simulation(workspaces = normalizePath(file.path("0-data/usms",names(workspace_usms_IC)), winslash = "/"),
                           variables = sim_variables,
                           javastics = javastics_path,
                           usms = workspace_usms_IC
 )
-res_opti = run_simulation(workspaces = normalizePath(file.path("0-data/usms-optim-beer",names(workspace_usms_IC)), winslash = "/"),
+res_opti_beer = run_simulation(workspaces = normalizePath(file.path("0-data/usms-optim-beer",names(workspace_usms_IC)), winslash = "/"),
                           variables = sim_variables,
                           javastics = javastics_path,
                           usms = workspace_usms_IC
 )
-# res_orig = import_simulations(workspaces = workspaces_orig, variables = sim_variables)
-# res_opti = import_simulations(workspaces = workspaces_opti, variables = sim_variables)
+# res_orig_beer = import_simulations(workspaces = workspaces_orig, variables = sim_variables)
+# res_opti_beer = import_simulations(workspaces = workspaces_opti, variables = sim_variables)
 
 # Make the plots ----------------------------------------------------------
 
 plotting_var = sim_variables
+# plotting_var = c("fapar","lai_n", "hauteur", "QNplante")
+# plotting_var = c("hauteur", "QNplante", "lai_n")
 
 # Plots per workspace:
-dynamic_plots = 
+dynamic_plots =
   mapply(
     function(x,y){
-      plot(orig = x$sim, optim = y$sim, obs = x$obs, type = "dynamic", verbose = FALSE, 
+      plot(orig = x$sim, optim = y$sim, obs = x$obs, type = "dynamic", verbose = FALSE,
            var = SticsRFiles:::var_to_col_names(plotting_var))
     },
-    res_orig,
-    res_opti)
+    res_orig_beer,
+    res_opti_beer)
 
-dynamic_plots
-
+dynamic_plots$`1Tprecoce2Stardif2012.1Tprecoce2Stardif2012`
 
 mapply(function(x,y){
   ggplot2::ggsave(
-    filename = paste0(x,".png"), 
+    filename = paste0(x,".png"),
     path =  "2-outputs/optimization/plots-beer",
     plot = y,
     width = 16,
@@ -320,8 +336,3 @@ mapply(function(x,y){
     units = "cm"
   )
 },names(dynamic_plots), dynamic_plots)
-
-
-
-
-

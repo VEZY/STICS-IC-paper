@@ -1,6 +1,6 @@
-# Purpose: manually optimize the main parameter values for which the automatic 
-# optimization did not work properly. This is done only on parameters of the last 
-# steps of the optimization, meaning the ones not correlated to others. This is 
+# Purpose: manually optimize the main parameter values for which the automatic
+# optimization did not work properly. This is done only on parameters of the last
+# steps of the optimization, meaning the ones not correlated to others. This is
 # just some tweaking because I am a little bit perfectionist.
 # Date: 12/11/2021
 # Author: R. Vezy
@@ -8,7 +8,7 @@
 library(SticsRPacks)
 
 javastics_path = normalizePath("0-javastics", winslash = "/")
-workspace_usms = 
+workspace_usms =
   list(
     "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0", # replace by N1?
     "Angers-SC-Pea" = "SC_Pea_Angers_2003_N0",
@@ -20,13 +20,14 @@ workspace_usms =
     "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2010"
   )
 
-i = 7
+i = 5
 javastics_workspace_path = normalizePath(file.path("0-data/usms-optimized",names(workspace_usms)[i]), winslash = "/")
 stics_inputs_path = file.path(javastics_workspace_path, "manual_optimization")
 usms = workspace_usms[[i]]
 
-# var_name = "masec_n"
-var_name = c("QNplante")
+# var_name = "lai_n"
+var_name = c("ilaxs", "lai_n")
+# var_name = c("QNplante")
 obs_list = get_obs(javastics_workspace_path, usm_name = usms)
 obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
 
@@ -45,10 +46,10 @@ model_options =
     javastics_path = javastics_path,
     data_dir = stics_inputs_path,
     parallel = FALSE, # Because we have only one usm per workspace so no need
-    stics_exe = "Stics_IC_v18-10-2021.exe"
+    stics_exe = "Stics_IC_v13-01-2022.exe"
   )
 
-get_param_txt(file.path(stics_inputs_path,usms), "vitno") # 25, 0.01
+get_param_txt(file.path(stics_inputs_path,usms), "stamflax") # 755.57
 
 res_orig = stics_wrapper(
   model_options = model_options,
@@ -58,16 +59,17 @@ res_orig = stics_wrapper(
 
 res_opti = stics_wrapper(
   model_options = model_options,
-  # param_values = c("Vmax2" = 0.3),
-  param_values = c("fixmaxveg" = 35, "Vmax2" = 0.01),
+  param_values = c("stamflax" = 800),
+  # param_values = c("fixmaxveg" = 35, "Vmax2" = 0.01),
   sit_names = usms,
   var_names = var_name,
 )
 
 plot(orig = res_orig$sim_list, optim = res_opti$sim_list, obs = obs_list)
 
+dynamic_plots$`sojaTardif2012-SC.SojaTardif-SC2012`
+
 # fixmaxveg, fixmaxgr
 
 # c("vitircarbT" = 0.000365), for sunflower
 # c("fixmaxveg" = 32.5) for pea Angers
-

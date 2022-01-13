@@ -1,4 +1,4 @@
-# Purpose: automatically optimize the main parameter values of the model for 
+# Purpose: automatically optimize the main parameter values of the model for
 # contrasted situations.
 # Date: 12/11/2021
 # Author: R. Vezy
@@ -8,15 +8,18 @@ library(SticsRPacks)
 library(foreach)
 library(doParallel)
 library(dplyr)
-# First step: copy all usms into a new folder were we will change the parameter 
-# values (and keep the original files).
-# The original folder is 0-data/usms, the destination folder is 
-# 0-data/usms-optimized 
+
+
+# First step: copy all usms from 0-data/usms-optim-beer into 0-data/usms-optimized.
+# The usms are first optimized for the Beer-lambert law of extinction because
+# simulations with the radiative transfert option may fall back to the Beer
+# computation for some days if the difference in height between the crops is low
+# i.e. if it is < hauteur_threshold.
 
 # Set-up the optimization process:
 df_optim = read.csv("0-data/calibration.csv", sep = ";")
 javastics_path = normalizePath("0-javastics", winslash = "/")
-workspace_usms = 
+workspace_usms =
   list(
     "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0", # replace by N1?
     "Angers-SC-Pea" = "SC_Pea_Angers_2003_N0",
@@ -36,21 +39,21 @@ plant_files_beer = normalizePath(list.files(file.path("0-data/usms-optim-beer",n
 for(i in 1:length(plant_files)){
   extin = unlist(get_param_xml(
     xml_file = file.path(
-      "0-data/usms-optim-beer", 
+      "0-data/usms-optim-beer",
       basename(dirname(dirname(plant_files[i]))),
       "plant",
       basename(plant_files[i])
     ),
     param_name = "extin"
   ))
-  
+
   set_param_xml(
     xml_file = plant_files[i],
     param_name = "extin",
     param_value = extin,
     overwrite = TRUE
   )
-  
+
   set_param_xml(
     xml_file = plant_files[i],
     param_name = "codetransrad",
@@ -75,20 +78,20 @@ param_values = list()
 # setup parallel backend to use many processors
 # cl = makeCluster(length(workspace_usms)+1) #not to overload your computer
 # registerDoParallel(cl)
-# 
+#
 # param_values = foreach(i = 1:length(workspace_usms), .packages = c("SticsRPacks")) %dopar% {
 
-# This step is done twice to re-optimize some of the first variables based on the  
+# This step is done twice to re-optimize some of the first variables based on the
 # values of the last parameters (some have interactions)
 for(i in 1:length(workspace_usms)){
   param_workspace_vals = c()
-  
+
   for (j in 1:length(parameters_vars)){
-    
+
     javastics_workspace_path = normalizePath(file.path("0-data/usms-optimized",names(workspace_usms)[i]), winslash = "/")
     stics_inputs_path = file.path(javastics_workspace_path,paste(parameters_vars[[j]]$params, collapse = "_"))
     usms = workspace_usms[[i]]
-    
+
     var_name = parameters_vars[[j]]$vars
     obs_list = get_obs(javastics_workspace_path, usm_name = usms)
     obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
@@ -98,9 +101,9 @@ for(i in 1:length(workspace_usms)){
               paste(var_name, collapse = ", "), "].")
       next
     }
-    
+
     dir.create(stics_inputs_path, showWarnings = FALSE)
-    
+
     gen_usms_xml2txt(
       javastics_path = javastics_path,
       workspace_path = javastics_workspace_path,
@@ -108,22 +111,22 @@ for(i in 1:length(workspace_usms)){
       usms_list = usms,
       verbose = TRUE
     )
-    
+
     # Set the model options (see '? stics_wrapper_options' for details)
     model_options =
       stics_wrapper_options(
         javastics_path = javastics_path,
         data_dir = stics_inputs_path,
         parallel = FALSE, # Because we have only one usm per workspace so no need
-        stics_exe = "Stics_IC_v18-10-2021.exe"
+        stics_exe = "Stics_IC_v13-01-2022.exe"
       )
-    
+
     lb = parameters_vars[[j]]$params_lb
     ub = parameters_vars[[j]]$params_ub
     names(ub) = names(lb) = parameters_vars[[j]]$params
-    
+
     param_info = list(lb = lb, ub = ub)
-    
+
     optim_options = list()
     optim_options$nb_rep = 7
     optim_options$maxeval = 500 # Maximum number of evaluations of the minimized criteria
@@ -134,7 +137,7 @@ for(i in 1:length(workspace_usms)){
     optim_options$path_results = dir_estim_results # path where to store the results (graph and Rdata)
     optim_options$ranseed = 1 # set random seed so that each execution give the same results
     # If you want randomization, don't set it.
-    
+
     res =
       estim_param(
         obs_list = obs_list,
@@ -161,7 +164,7 @@ for(i in 1:length(workspace_usms)){
                 sim_yield$Date = tail(filter(x, !is.na(.data$mafruit))$Date, 1)
                 sim_yield
               }, obs_list, model_results$sim_list, SIMPLIFY = FALSE)
-            
+
             list(error = model_results$error, sim_list = res)
           }
         }else{
@@ -186,16 +189,16 @@ for(i in 1:length(workspace_usms)){
     # NB: the functions given to transform_sim and transform_obs helps us use
     # one value only for the phenology stages. This is applied to be independent
     # of the day it arrives, and only consider the day as the value
-    
+
     param_workspace_vals = c(param_workspace_vals, res$final_values)
-    
+
     plant_file = list.files(file.path(javastics_workspace_path,"plant"), full.names = TRUE)
-    
+
     if(length(plant_file) > 1){
       stop("There must be only one file in the plant folder: ",
            file.path(javastics_workspace_path,"plant"))
     }
-    
+
     for(params in parameters_vars[[j]]$params){
       if(params == "haut_dev_x01" | params == "haut_dev_k1"){
         xml_file = file.path(javastics_workspace_path,"param_newform.xml")
@@ -228,9 +231,9 @@ plant_file_optim = list.files(file.path(workspaces_opti,"plant"), full.names = T
 param_orig = get_param_xml(xml_file = plant_file_orig, param_name = params)
 param_optim = get_param_xml(xml_file = plant_file_optim, param_name = params)
 
-param_orig2 = get_param_xml(xml_file = file.path(workspaces_orig,"param_newform.xml"), 
+param_orig2 = get_param_xml(xml_file = file.path(workspaces_orig,"param_newform.xml"),
                             param_name = params)
-param_optim2 = get_param_xml(xml_file = file.path(workspaces_opti,"param_newform.xml"), 
+param_optim2 = get_param_xml(xml_file = file.path(workspaces_opti,"param_newform.xml"),
                              param_name = params)
 names(param_orig2) = names(param_optim2) = names(param_orig)
 
@@ -240,16 +243,16 @@ df$plant = rep(names(param_orig), each = length(params))
 for(i in seq_along(param_orig)){
   plant_i = names(param_orig)[i]
   for(j in seq_along(param_orig[[i]])){
-    df[df$parameter == names(param_orig[[i]][j]) & df$plant == plant_i,3] = 
+    df[df$parameter == names(param_orig[[i]][j]) & df$plant == plant_i,3] =
       paste(param_orig[[i]][j], collapse = ", ")
-    df[df$parameter == names(param_optim[[i]][j])  & df$plant == plant_i,4] = 
+    df[df$parameter == names(param_optim[[i]][j])  & df$plant == plant_i,4] =
       paste(param_optim[[i]][j], collapse = ", ")
   }
-  
+
   for(j in seq_along(param_orig2[[i]])){
-    df[df$parameter == names(param_orig2[[i]][j]) & df$plant == plant_i,3] = 
+    df[df$parameter == names(param_orig2[[i]][j]) & df$plant == plant_i,3] =
       paste(param_orig2[[i]][j], collapse = ", ")
-    df[df$parameter == names(param_optim2[[i]][j])  & df$plant == plant_i,4] = 
+    df[df$parameter == names(param_optim2[[i]][j])  & df$plant == plant_i,4] =
       paste(param_optim2[[i]][j], collapse = ", ")
   }
 }
@@ -274,7 +277,7 @@ source("1-code/functions.R")
 
 # sim_variables = c("lai(n)","QNplante","Qfix","masec(n)","hauteur","CNgrain","mafruit","chargefruit")
 sim_variables = unique(unlist(lapply(parameters_vars, function(x) x$vars)))
-
+sim_variables = c(sim_variables,"hauteur")
 # Run the simulations -----------------------------------------------------
 
 res_orig = run_simulation(workspaces = workspaces_orig,
@@ -295,21 +298,22 @@ res_opti = run_simulation(workspaces = workspaces_opti,
 plotting_var = sim_variables
 
 # Plots per workspace:
-dynamic_plots = 
+dynamic_plots =
   mapply(
     function(x,y){
-      plot(orig = x$sim, optim = y$sim, obs = x$obs, type = "dynamic", verbose = FALSE, 
+      plot(orig = x$sim, optim = y$sim, obs = x$obs, type = "dynamic", verbose = FALSE,
            var = SticsRFiles:::var_to_col_names(plotting_var))
     },
     res_orig,
     res_opti)
 
-dynamic_plots$`Auzeville-Pea-SC.SC_Pea_2005-2006_N0`
+dynamic_plots$`Angers-SC-Pea.SC_Pea_Angers_2003_N0`
+# dynamic_plots$`Angers-SC-Barley.SC_Barley_Angers_2003_N0`
 dynamic_plots
 
 # Update the xml files for intercrops -------------------------------------
 
-workspace_usms_IC = 
+workspace_usms_IC =
   list(
     "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
     "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
@@ -326,19 +330,19 @@ mapply(
       file.copy(from = plant_optimized,
                 to = ic_plant,
                 overwrite = TRUE)
-      
+
       # Update haut_dev_x01 and haut_dev_x02 in param_newform:
       param_newform_optim = file.path("0-data/usms-optimized", z, "param_newform.xml")
       param_newform_ic = file.path("0-data/usms-optimized", x, "param_newform.xml")
-      
+
       set_param_xml(
-        param_newform_ic, 
+        param_newform_ic,
         param_name = ifelse(dominance == "p", "haut_dev_x01", "haut_dev_x02"),
         param_value = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_x01")),
         overwrite = TRUE
       )
       set_param_xml(
-        param_newform_ic, 
+        param_newform_ic,
         param_name = ifelse(dominance == "p", "haut_dev_k1", "haut_dev_k2"),
         param_value = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_k1")),
         overwrite = TRUE
@@ -348,5 +352,3 @@ mapply(
   names(workspace_usms_IC),
   workspace_usms_IC
 )
-
-

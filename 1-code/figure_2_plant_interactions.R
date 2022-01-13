@@ -1,4 +1,4 @@
-# Purpose: simulate two crops in sole and intercrop to show we grasp the main 
+# Purpose: simulate two crops in sole and intercrop to show we grasp the main
 # interactions at play in the system.
 # Date: 12/04/2021
 
@@ -48,7 +48,7 @@ lapply(workspaces, function(x) SticsRFiles::gen_varmod(x, sim_variables))
 
 mapply(function(x,y){
   SticsOnR::run_javastics(javastics_path = javastics, workspace_path = x,
-                          stics_exe = "Stics_IC_v18-10-2021.exe",
+                          stics_exe = "Stics_IC_v13-01-2022.exe",
                           usms_list = y)
 },workspaces,usms)
 
@@ -61,7 +61,7 @@ sim = lapply(sim, function(x){
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
-    x  
+    x
   }
 })
 
@@ -80,7 +80,7 @@ obs = lapply(obs, function(x){
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
-    x  
+    x
   }
 })
 
@@ -93,14 +93,14 @@ plots = plot(sim, obs = obs)
 to_sum = c("lai_n","masec_n","abso_n","mafruit","QNplante","demande","dltams_n",
            "msrac_n","cumraint","raint","dltamsen","deltai_n","laisen_n","rlj","Qfix")
 
-IC_sum = 
+IC_sum =
   plots$`IC_Wheat_Pea_2005-2006_N0`$data%>%
   group_by(Date,variable,Plant)%>%
   summarise(Simulated = ifelse(variable %in% to_sum,
                                Simulated * 2, # To give a full 1ha surface of production
                                Simulated),
             Observed = ifelse(variable %in% to_sum,
-                              Observed * 2, 
+                              Observed * 2,
                               Observed)
             )%>%
   mutate(System = "Intercrop", Plant = ifelse(Plant == "poi", "Pea", "Wheat"))
@@ -113,7 +113,7 @@ SC_sum =
 bind_rows(IC_sum,SC_sum)%>%
   mutate(variable = recode(variable,"lai_n" = "LAI~(m2~m^{-2})",
                            "masec_n" = "Agb~(t~ha^{-1})",
-                           "fapar" = "FaPAR~('%')", 
+                           "fapar" = "FaPAR~('%')",
                            "mafruit" = "Gr.~yield~(t~ha^{-1})",
                            "Qfix" = "N~Fix.~(kg~ha^{-1})",
                            "QNplante"= "N~cont.~(kg~ha^{-1})",
@@ -138,4 +138,3 @@ bind_rows(IC_sum,SC_sum)%>%
 
 ggsave(filename = "sole_vs_intercrop.png", path = "2-outputs/plots",
        width = 16, height = 16.5, units = "cm")
-
