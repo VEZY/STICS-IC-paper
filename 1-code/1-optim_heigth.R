@@ -8,7 +8,8 @@ source("1-code/functions.R")
 
 #Filepath for JavaSTICS version 8.5
 javastics= normalizePath("0-javastics", winslash = "/")
-
+workspaces = "0-data/usms"
+  
 workspace_usms = 
   list(
     "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0", # replace by N1?
@@ -17,14 +18,14 @@ workspace_usms =
     "Auzeville-Wheat-SC" = "SC_Wheat_2005-2006_N0",
     "sojaTardif2012-SC" = "SojaTardif-SC2012",
     "tourPrecoce2012-SC" = "TournPrecoce-SC2012",
-    "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2010",
-    "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2010"
+    "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2007",
+    "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2007"
   )
 
 # Run the optimization ------------------------------------------------------
 
 mapply(function(x,y){
-  optim_height(workspace = normalizePath(file.path("0-data/usms",x), winslash =  "/"),
+  optim_height(workspace = normalizePath(file.path(workspaces,x), winslash =  "/"),
                usms = y)
 }, names(workspace_usms), workspace_usms)
 
@@ -43,15 +44,15 @@ workspace_usms_IC =
 mapply(
   function(x,y){
     mapply(function(z, dominance){
-      plant_optimized = list.files(file.path("0-data/usms", z, "plant"), full.names = TRUE)
-      ic_plant = file.path("0-data/usms", x, "plant", basename(plant_optimized))
+      plant_optimized = list.files(file.path(workspaces, z, "plant"), full.names = TRUE)
+      ic_plant = file.path(workspaces, x, "plant", basename(plant_optimized))
       file.copy(from = plant_optimized,
                 to = ic_plant,
                 overwrite = TRUE)
       
       # Update haut_dev_x01 and haut_dev_x02 in param_newform:
-      param_newform_optim = file.path("0-data/usms", z, "param_newform.xml")
-      param_newform_ic = file.path("0-data/usms", x, "param_newform.xml")
+      param_newform_optim = file.path(workspaces, z, "param_newform.xml")
+      param_newform_ic = file.path(workspaces, x, "param_newform.xml")
       
       set_param_xml(
         param_newform_ic, 
