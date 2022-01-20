@@ -139,12 +139,12 @@ plotting_var = sim_variables
 dynamic_plots =
   mapply(
     function(x,y){
-      plot(orig = x$sim, optim = y$sim, obs = x$obs, type = "dynamic", verbose = FALSE,
+      plot(orig_radiative = x$sim, beer_optim = y$sim, obs = x$obs, type = "dynamic", verbose = FALSE,
            var = SticsRFiles:::var_to_col_names(plotting_var))
     },
     res_orig_beer,
     res_opti_beer)
-
+dynamic_plots
 
 mapply(function(x,y){
   ggplot2::ggsave(
