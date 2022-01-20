@@ -1,0 +1,44 @@
+    HAUS59 - ESTIMATION NON-LINEAIRE - PROBLEME No.     1
+    -----------------------------------------------------
+
+  (  5 observations,     4 parametres,     82 memoires de travail auxiliaires.)
+
+
+ VALEURS INITIALES DES PARAMETRES :
+        1           2           3           4
+   0.3800E+01  0.1600E-01  0.5230E+03  0.4000E-02
+
+ proportions utilisees en calculant la diff. des quotients :
+        1           2           3           4
+   0.1000E-03  0.1000E-03  0.1000E-03  0.1000E-03
+
+ somme des carres initiaux :   0.5615E+01
+
+ ARRET DES ITERATIONS - variation relative de la somme des carres < a  0.100E-04
+
+ matrice de correlation :
+        1           2           3           4
+   1  1.0000
+   2 -0.9425      1.0000
+   3  0.8130     -0.8100      1.0000
+   4 -0.9914      0.9192     -0.7543      1.0000
+
+ elements normalisants :
+        1           2           3           4
+   0.1464E+02  0.7860E-02  0.1883E+03  0.6701E-02
+
+ variance des residus :   0.2828E-01,   1 degres de liberte.
+
+ limites de confiance individuelles pour chaque parametre (sous hypothese lineaire) :
+        1           2           3           4
+   0.1294E+02  0.8374E-02  0.8429E+03  0.4440E-02
+   0.3098E+01  0.3086E-02  0.7163E+03 -0.6837E-04
+
+ valeurs des parametres par regression :
+   0.8020E+01  0.5730E-02  0.7796E+03  0.2186E-02
+
+ somme finale des carres :   0.2828E-01
+
+
+    FIN DU PROBLEME No.    1      12 iterations.
+    --------------------------------------------

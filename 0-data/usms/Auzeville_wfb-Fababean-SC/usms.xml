@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<usms>
+    <usm nom="Fababean_SC_2007">
+        <datedebut>268</datedebut>
+        <datefin>600</datefin>
+        <finit>Initialisation_2007_ini.xml</finit>
+        <nomsol>Sol_Auzevillle.2007</nomsol>
+        <fstation>Station_Auzeville_sta.xml</fstation>
+        <fclim1>Climat_Auzeville.2006</fclim1>
+        <fclim2>Climat_Auzeville.2007</fclim2>
+        <culturean>0</culturean>
+        <nbplantes>1</nbplantes>
+        <codesimul>0</codesimul>
+        <plante dominance="1">
+            <fplt>Plant_FabaBean_plt.xml</fplt>
+            <ftec>ITK_2007_SC_mix_Fb_tec.xml</ftec>
+            <flai>defaut.lai</flai>
+        </plante>
+    </usm>
+    <usm nom="Fababean_SC_2010">
+        <datedebut>286</datedebut>
+        <datefin>600</datefin>
+        <finit>Initialisation_2010_ini.xml</finit>
+        <nomsol>Sol_Auzevillle.2010</nomsol>
+        <fstation>Station_Auzeville_sta.xml</fstation>
+        <fclim1>Climat_Auzeville.2009</fclim1>
+        <fclim2>Climat_Auzeville.2010</fclim2>
+        <culturean>0</culturean>
+        <nbplantes>1</nbplantes>
+        <codesimul>0</codesimul>
+        <plante dominance="1">
+            <fplt>Plant_FabaBean_plt.xml</fplt>
+            <ftec>ITK_2010_SC_mix_Fb_tec.xml</ftec>
+            <flai>defaut.lai</flai>
+        </plante>
+    </usm>
+    <usm nom="Fababean_SC_2011">
+        <datedebut>292</datedebut>
+        <datefin>600</datefin>
+        <finit>Initialisation_2011_ini.xml</finit>
+        <nomsol>Sol_Auzevillle.2011</nomsol>
+        <fstation>Station_Auzeville_sta.xml</fstation>
+        <fclim1>Climat_Auzeville.2010</fclim1>
+        <fclim2>Climat_Auzeville.2011</fclim2>
+        <culturean>0</culturean>
+        <nbplantes>1</nbplantes>
+        <codesimul>0</codesimul>
+        <plante dominance="1">
+            <fplt>Plant_FabaBean_plt.xml</fplt>
+            <ftec>ITK_2011_SC_mix_Fb_tec.xml</ftec>
+            <flai>defaut.lai</flai>
+        </plante>
+    </usm>
+</usms>

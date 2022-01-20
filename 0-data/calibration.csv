@@ -1,0 +1,16 @@
+Step;Process;Parameter;low_boundary;high_boundary;Variable;usm;comment
+1;Phenology;stlevamf;100;400;iamfs;all;
+2;Phenology;stlevdrp;450;1300;idrps;all;idrps=iflos
+3;Phenology;stamflax;100;900;ilaxs;all;
+4;Phenology;stdrpmat;300;850;imats;all;
+5;Harvest date;stdrpdes;100;750;irecs;all;
+6;LAI potential for high N;dlaimaxbrut, vlaimax, pentlaimax;0.0001,1.5,1;0.002,2.5,3;lai_n;At potential;
+7;Leaf senescence;durvieF;100;400;lai_n;At potential;
+8;Light interception;ktrou,rapforme;0.6,2;1.9,5;fapar;all;Check forme, rapforme and dfolhaut/bas
+9;N Fixation;fixmaxveg, fixmaxgr;5,5;50,50;Qfix;all;
+10;Root growth & N uptake;Vmax2, inngrain2;0.004,0.8;0.15,1.6;QNplante;all;
+11;LAI (stresses & frost effect on LAI);innturgmin, innsen, rsmin;-0.75,0.1,50;1,0.8,300;lai_n;all;
+12;Shoot biomass;efcroijuv, efcroiveg, efcroirepro;1,1,1;4.5,4.5,4.5;masec_n;all;
+13;Yield formation;cgrain, nbgrmin;0.01,100;0.3,3000;chargefruit;all;
+14;Yield;vitircarbT;0.0005;0.003;mafruit;all;
+15;Protein concentration;vitirazo;0.001;0.05;CNgrain;all;
