@@ -49,3 +49,7 @@ vignettes/*.pdf
 height_equation/
 .Rproj.user
 .Rdata
+*.sti
+var.mod
+*.tmp
+*.txt
