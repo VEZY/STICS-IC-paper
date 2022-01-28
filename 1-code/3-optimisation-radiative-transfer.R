@@ -113,9 +113,10 @@ dynamic_plots =
     res_orig,
     res_opti)
 
-dynamic_plots$`Angers-SC-Pea.SC_Pea_Angers_2003_N1`
+dynamic_plots$`Angers-SC-Pea.SC_Pea_Angers_2003_N0`
 dynamic_plots$`Angers-SC-Barley.SC_Barley_Angers_2003_N1`
-dynamic_plots
+dynamic_plots$`Auzeville_wfb-Fababean-SC.Fababean_SC_2007`
+dynamic_plots$`Angers-SC-Barley.SC_Barley_Angers_2003_N0`
 
 # Update the xml files for intercrops -------------------------------------
 

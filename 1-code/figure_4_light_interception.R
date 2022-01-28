@@ -23,7 +23,7 @@ workspace_usms =
 # workspace_usms is a list of workspace-name -> usm names
 
 worskpaces_beer = file.path("0-data/usms-optim-beer", names(workspace_usms))
-worskpaces_rad = file.path("0-data/usms-optimized", names(workspace_usms))
+worskpaces_rad = file.path("0-data/usms-optim-radiative", names(workspace_usms))
 
 
 sim_variables = c("cumraint","lai(n)","masec(n)","QNplante","mafruit","Qfix")
@@ -73,3 +73,5 @@ plots = plot(
   obs = obs,
   type = "scatter"
 )
+
+plots

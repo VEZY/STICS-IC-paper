@@ -20,14 +20,14 @@ workspace_usms =
     "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2010"
   )
 
-i = 5
-javastics_workspace_path = normalizePath(file.path("0-data/usms-optimized",names(workspace_usms)[i]), winslash = "/")
+i = 2
+javastics_workspace_path = normalizePath(file.path("0-data/usms-optim-radiative",names(workspace_usms)[i]), winslash = "/")
 stics_inputs_path = file.path(javastics_workspace_path, "manual_optimization")
 usms = workspace_usms[[i]]
 
 # var_name = "lai_n"
-var_name = c("ilaxs", "lai_n")
-# var_name = c("QNplante")
+# var_name = c("vitircarbT", "lai_n")
+var_name = c("mafruit")
 obs_list = get_obs(javastics_workspace_path, usm_name = usms)
 obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
 
@@ -49,7 +49,7 @@ model_options =
     stics_exe = "Stics_IC_v13-01-2022.exe"
   )
 
-get_param_txt(file.path(stics_inputs_path,usms), "stamflax") # 755.57
+get_param_txt(file.path(stics_inputs_path,usms), "stdrpmat") # 5e-04
 
 res_orig = stics_wrapper(
   model_options = model_options,
@@ -59,15 +59,14 @@ res_orig = stics_wrapper(
 
 res_opti = stics_wrapper(
   model_options = model_options,
-  param_values = c("stamflax" = 800),
+  param_values = c("stdrpmat" = 731.3547137,
+                   "vitircarbT" = 0.001),
   # param_values = c("fixmaxveg" = 35, "Vmax2" = 0.01),
   sit_names = usms,
   var_names = var_name,
 )
 
 plot(orig = res_orig$sim_list, optim = res_opti$sim_list, obs = obs_list)
-
-dynamic_plots$`sojaTardif2012-SC.SojaTardif-SC2012`
 
 # fixmaxveg, fixmaxgr
 

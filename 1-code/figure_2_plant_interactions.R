@@ -21,9 +21,9 @@ javastics = normalizePath("0-javastics", winslash = "/")
 
 # Define the workspaces ---------------------------------------------------
 
-workspace_wheat = "0-data/usms-optimized/Auzeville-Wheat-SC"
-workspace_pea = "0-data/usms-optimized/Auzeville-Pea-SC"
-workspace_wheat_pea = "0-data/usms-optimized/Auzeville-IC"
+workspace_wheat = "0-data/usms-optim-radiative/Auzeville-Wheat-SC"
+workspace_pea = "0-data/usms-optim-radiative/Auzeville-Pea-SC"
+workspace_wheat_pea = "0-data/usms-optim-radiative/Auzeville-IC"
 workspaces = list(wheat = workspace_wheat, pea = workspace_pea, wheat_pea = workspace_wheat_pea)
 
 # Define the variables to simulate ----------------------------------------
