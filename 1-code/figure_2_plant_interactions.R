@@ -29,15 +29,12 @@ workspaces = list(wheat = workspace_wheat, pea = workspace_pea, wheat_pea = work
 # Define the variables to simulate ----------------------------------------
 
 # sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix","profexteau","profextN","hauteur")
-sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix")
-
-# SticsRFiles::get_var_info("Qfix")
+sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix", "inns", "fapar")
+# SticsRFiles::get_var_info("inn")
 
 # Run the simulations -----------------------------------------------------
 
 # usms = SticsRFiles::get_usms_list(usm_path = file.path(workspace_wheat,"usms.xml"))
-
-
 usms_wheat = "SC_Wheat_2005-2006_N0"
 usms_pea = "SC_Pea_2005-2006_N0"
 usms_wheat_pea = "IC_Wheat_Pea_2005-2006_N0"
@@ -77,11 +74,15 @@ names(obs) = usms
 
 # Add NDFA to obs:
 obs = lapply(obs, function(x){
+  
   if(!is.null(x$Qfix)){
-    return(x%>%mutate(NDFA = Qfix / QNplante))
-  }else{
-    x
+    x = x%>%mutate(NDFA = Qfix / QNplante)
   }
+  
+  if(!is.null(x$inns)){
+    x = x%>%select(-inns)
+  }
+  return(x)
 })
 
 # Make the plots:
@@ -90,16 +91,17 @@ plots = plot(sim, obs = obs)
 # Computing per ha for both sole crops and intercrops:
 
 # Which variables need to be summed for plot scale results (instead of averaged)
-to_sum = c("lai_n","masec_n","abso_n","mafruit","QNplante","demande","dltams_n",
-           "msrac_n","cumraint","raint","dltamsen","deltai_n","laisen_n","rlj","Qfix")
+to_sum_obs = c("lai_n","masec_n","mafruit","QNplante", "Qfix")
+to_sum_sim = c(to_sum_obs, "fapar")
+
 
 IC_sum =
   plots$`IC_Wheat_Pea_2005-2006_N0`$data%>%
   group_by(Date,variable,Plant)%>%
-  summarise(Simulated = ifelse(variable %in% to_sum,
+  summarise(Simulated = ifelse(variable %in% to_sum_sim,
                                Simulated * 2, # To give a full 1ha surface of production
                                Simulated),
-            Observed = ifelse(variable %in% to_sum,
+            Observed = ifelse(variable %in% to_sum_obs,
                               Observed * 2,
                               Observed)
   )%>%
@@ -110,8 +112,10 @@ SC_sum =
                    plots$`SC_Pea_2005-2006_N0`$data%>%mutate(Plant = "bold(Pea)"))%>%
   mutate(System = "Sole crop")
 
+df = bind_rows(IC_sum,SC_sum)%>%filter(variable != "Qfix" && variable != "fapar")
+
 stats = 
-  bind_rows(IC_sum,SC_sum)%>%
+  df%>%
   group_by(variable)%>%
   summarize(Plant = unique(Plant), y = max(Simulated))%>%
   group_by(Plant)%>%
@@ -123,20 +127,22 @@ stats =
              "fapar" = "bold(FaPAR~('%'))",
              "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
              "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
-             "QNplante"= "bold(N~cont.~(kg~ha^{-1}))",
-             "NDFA" = "bold(NDFA~('%'))"
-           ),
-         plot_index = order(variable),
-         plot_nb = ifelse(
-           Plant == "bold(Pea)", 
-           paste(plot_index, "a", sep = "."),
-           paste(plot_index, "b", sep = ".")
-         )
+             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
+             "NDFA" = "bold(NDFA~('%'))",
+             "inns" = "bold(N~stress~eff.)"
+           )
+  )%>%
+  arrange(variable)%>%
+  mutate(
+    plot_index = order(variable),
+    plot_nb = ifelse(
+      Plant == "bold(Pea)", 
+      paste(plot_index, "a", sep = "."),
+      paste(plot_index, "b", sep = ".")
+    )
   )
 
-stats
-
-bind_rows(IC_sum,SC_sum)%>%
+df%>%
   mutate(variable = 
            recode(
              variable,
@@ -145,8 +151,9 @@ bind_rows(IC_sum,SC_sum)%>%
              "fapar" = "bold(FaPAR~('%'))",
              "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
              "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
-             "QNplante"= "bold(N~cont.~(kg~ha^{-1}))",
-             "NDFA" = "bold(NDFA~('%'))"
+             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
+             "NDFA" = "bold(NDFA~('%'))",
+             "inns" = "bold(N~stress~eff.)"
            )
   )%>%
   ggplot(aes(x = Date, color = System, fill=System))+
@@ -169,12 +176,15 @@ bind_rows(IC_sum,SC_sum)%>%
   labs(y = NULL)+
   scale_colour_manual(values= c("Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
   scale_fill_manual(values= c("Intercrop" = "#6EC0C04C", "Sole crop" = "#746EC24C")) +
+  scale_y_continuous(expand = expansion(mult = c(0.1, 0.1)))+ # expand the limits of the plots
   theme(
-    strip.text.x = element_text(size = 14, face = "bold.italic"),
+    strip.text.x = element_text(size = 12, face = "bold.italic"),
+    strip.text.y = element_text(size = 8),
     legend.direction = "horizontal",
     legend.position = 'bottom',
     strip.placement.y = "outside"
   )
 
 ggsave(filename = "sole_vs_intercrop.png", path = "2-outputs/plots",
-       width = 16, height = 20, units = "cm")
+       width = 16, height = 18, units = "cm")
+
