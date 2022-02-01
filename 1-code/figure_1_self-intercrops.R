@@ -24,15 +24,7 @@ javastics = normalizePath("0-javastics", winslash = "/")
 
 # Define the workspaces ---------------------------------------------------
 
-workspaces = list.dirs("0-data/usms-optim-radiative", full.names = TRUE, recursive = FALSE)
-
-workspace = "0-data/usms-optim-radiative/Auzeville-Wheat-SC"
-
-# Setting the light interception to 1 so both sole and inter-crop share the same
-# computation (self-intercrop will have the same height, so the computation is always
-# the Beer's law)
-set_param_xml(file.path(workspace,"plant/Wheat_Eric_plt.xml"),
-              "codetransrad", 1, overwrite = TRUE)
+workspace = "0-data/usms-optim-beer/Auzeville-Pea-SC"
 
 # Define the variables to simulate ----------------------------------------
 
@@ -46,7 +38,7 @@ to_sum = c("lai_n","masec_n","abso_n","mafruit","QNplante","demande","dltams_n",
 # Run the simulations -----------------------------------------------------
 
 usms = SticsRFiles::get_usms_list(usm_path = file.path(workspace,"usms.xml"))
-usms = c("SC_Wheat_2005-2006_N0", "IC_Wheat_Wheat_2005-2006_N0")
+usms = c("SC_Pea_2005-2006_N0", "IC_Pea_Pea_2005-2006_N0")
 
 SticsRFiles::gen_varmod(workspace, sim_variables)
 
@@ -55,69 +47,116 @@ SticsOnR::run_javastics(javastics_path = javastics, workspace_path = workspace,
                         usms_list = usms)
 
 # Get the results
-sim = get_sim(workspace = workspace, usm_name = usms)
+sim = get_sim(workspace = workspace, usm = usms)
 
 # Get the observations
-obs = get_obs(workspace =  workspace, usm_name = usms)
+obs = get_obs(workspace =  workspace, usm = usms)
 
-# Setting codetransrad back to radiative transfer:
-set_param_xml(file.path(workspace,"plant/Wheat_Eric_plt.xml"),
-              "codetransrad", 2, overwrite = TRUE)
-
+# Pre-make the plot with {CroPlotR}
 plots = plot(sim,obs=obs)
 
+# Compute the sum (or average) of variables for both intercrops to match the sole crop  
 IC_sum =
-  plots$`IC_Wheat_Wheat_2005-2006_N0`$data%>%
-  group_by(Date,variable)%>%
-  summarise(Simulated = ifelse(variable %in% to_sum,
-                               sum(Simulated),
-                               mean(Simulated)))%>%
-  mutate(System = "Self Intercrop")
+  plots$`IC_Pea_Pea_2005-2006_N0`$data%>%
+  group_by(.data$Date,.data$variable)%>%
+  summarise(Simulated_sum = sum(.data$Simulated),
+            Simulated_mean = mean(.data$Simulated))%>%
+  mutate(
+    Simulated = ifelse(.data$variable %in% to_sum, Simulated_sum, Simulated_mean),
+    System = "Self Intercrop"
+  )
 
-# plots$`SC_Wheat_2005-2006_N0` +
-#   geom_point(aes(y = Observed), show.legend = FALSE, size = 1.5, shape = 21, stroke = 1.5)+
-#   geom_line(aes(color = "Sole crop"), lwd = 1.3) +
-#   geom_line(data = IC_sum, lty = 2, aes(color = "Self intercrop"), lwd = 1.3) +
-#   ggtitle(NULL) +
-#   labs(y = NULL) +
-#   theme_minimal()+
-#   scale_colour_manual(values= c("Self intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
-#   theme(legend.direction = "horizontal", legend.position = 'bottom')
+# Statistics --------------------------------------------------------------
 
+stats = 
+  left_join(
+    plots$`SC_Pea_2005-2006_N0`$data, 
+    IC_sum, 
+    by = c("Date","variable"), 
+    suffix = c("_sc", "_ic")
+  )%>%
+  group_by(variable)%>%
+  filter(Simulated_sc == max(Simulated_sc))%>%
+  mutate(
+    error = Simulated_ic - Simulated_sc
+  )%>%
+  filter(error == max(error))%>%
+  summarise(
+    y = max(Simulated_ic, Simulated_sc),
+    Simulated_ic = head(Simulated_ic, 1),
+    Simulated_sc = head(Simulated_sc, 1),
+    Date = mean(Date),
+    bias = Bias(sim = Simulated_ic, obs = Simulated_sc),
+    rel_max_error = unique(error / Simulated_sc * 100))%>%
+  mutate(variable = recode(.data$variable,
+                           "lai_n" = "LAI~(m^{2}~m^{-2})",
+                           "masec_n" = "Agb~(t~ha^{-1})",
+                           "mafruit" = "Gr.~yield~(t~ha^{-1})",
+                           "QNplante"= "N~acc.~(kg~ha^{-1})"),
+         plot_index = order(variable))
+stats
 
 # Plot for the paper: -----------------------------------------------------
 
-plots$`SC_Wheat_2005-2006_N0`$data%>%
+plots$`SC_Pea_2005-2006_N0`$data%>%
   mutate(System = "Sole crop")%>%
   bind_rows(.,IC_sum)%>%
   mutate(variable = recode(.data$variable,
-                           "lai_n" = "LAI~(m2~m^{-2})",
-                           "masec_n" = "Biomass~(t~ha^{-1})",
-                           "mafruit" = "Fruits~(t~ha^{-1})",
-                           "QNplante"= "Plant~N~(t~ha^{-1})"))%>%
-  ggplot(aes(x = Date, color = System, fill=System))+
-  facet_wrap(variable~., scales = "free_y", labeller = label_parsed)+
-  geom_point(aes(y = Observed), show.legend = FALSE, size = 1.5,
-             shape = 21, stroke = 1.5, colour = "#F49690", fill = "#F496904C")+
-  geom_line(aes(y = Simulated, lty = System), lwd = 1.3) +
+                           "lai_n" = "LAI~(m^{2}~m^{-2})",
+                           "masec_n" = "Agb~(t~ha^{-1})",
+                           "mafruit" = "Gr.~yield~(t~ha^{-1})",
+                           "QNplante"= "N~acc.~(kg~ha^{-1})"))%>%
+  ggplot(aes(x = Date))+
+  facet_wrap(variable~., scales = "free_y", labeller = label_parsed, strip.position = "left")+
+  geom_point(
+    aes(y = Observed, color = System, fill = System), show.legend = FALSE, size = 1.5,
+    shape = 21, stroke = 1.5, colour = "#F49690", fill = "#F496904C"
+  )+
+  geom_line(aes(y = Simulated, lty = System, color = System, fill = System), lwd = 1.3) +
+  geom_label(
+    x = as.POSIXct("2005-09-26 UTC", tz = "UTC"),
+    aes(y = y, label = paste0(plot_index,".")),
+    data = stats, hjust=0,
+    label.size = NA, fontface = "bold",
+    parse = FALSE
+  )+
+  # geom_text(
+  #   x = as.POSIXct("2005-09-26 UTC", tz = "UTC"),
+  #   aes(y = y, label = paste("Bias: ",format(bias, scientific = TRUE, digits = 2))),
+  #   data = stats, hjust=0,
+  #   parse = FALSE)+
+  geom_label(
+    x = as.POSIXct("2005-10-20 UTC", tz = "UTC"),
+    aes(y = y, label = paste("Max. diff. (%):",format(rel_max_error, scientific = FALSE, digits = 2))),
+    data = stats, hjust=0,
+    label.size = NA, size = 3.5,
+    parse = FALSE
+  )+
+  geom_linerange(
+    aes(x = Date, ymin = Simulated_ic, ymax = Simulated_sc), 
+    data = stats, lwd = 1.3, color = 2, inherit.aes = FALSE
+  ) +
   ggtitle(NULL) +
   labs(y = NULL) +
   theme_minimal() +
+  labs(colour = "Simulation design:",
+       lty = "Simulation design:")+
   scale_colour_manual(values= c("Self Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
-  theme(legend.direction = "horizontal", legend.position = 'bottom')
+  theme(legend.direction = "horizontal", legend.position = 'bottom', strip.placement.y = "outside")
 
 ggsave(filename = "self-intercrop.png", path = "2-outputs/plots",
-       width = 16, height = 15, units = "cm")
+       width = 16, height = 10, units = "cm")
 
-# Same plot but each intercrop is separated and some outputs are x2 to compare
+
+  # Same plot but each intercrop is separated and some outputs are x2 to compare
 # with sole crop:
 IC_2 =
-  plots$`IC_Wheat_Wheat_2005-2006_N0`$data%>%
+  plots$`IC_Pea_Pea_2005-2006_N0`$data%>%
   group_by(Dominance,Date,variable)%>%
   summarise(Simulated = ifelse(variable %in% to_sum,
                                Simulated*2,Simulated))
 
-plots$`SC_Wheat_2005-2006_N0` +
+plots$`SC_Pea_2005-2006_N0` +
   geom_line(aes(color = "Sole crop")) +
   geom_line(data = IC_2, lty = 2, aes(color = Dominance)) +
   ggtitle(NULL) +
