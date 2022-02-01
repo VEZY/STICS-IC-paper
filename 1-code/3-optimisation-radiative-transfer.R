@@ -129,7 +129,6 @@ workspace_usms_IC =
   )
 
 # Activate Radiative transfer:
-list.files(file.path(workspaces_opti,"plant"), full.names = TRUE)
 
 mapply(
   function(x,y){
