@@ -102,39 +102,79 @@ IC_sum =
             Observed = ifelse(variable %in% to_sum,
                               Observed * 2,
                               Observed)
-            )%>%
-  mutate(System = "Intercrop", Plant = ifelse(Plant == "poi", "Pea", "Wheat"))
+  )%>%
+  mutate(System = "Intercrop", Plant = ifelse(Plant == "poi", "bold(Pea)", "bold(Wheat)"))
 
 SC_sum =
-  dplyr::bind_rows(plots$`SC_Wheat_2005-2006_N0`$data%>%mutate(Plant = "Wheat"),
-                   plots$`SC_Pea_2005-2006_N0`$data%>%mutate(Plant = "Pea"))%>%
+  dplyr::bind_rows(plots$`SC_Wheat_2005-2006_N0`$data%>%mutate(Plant = "bold(Wheat)"),
+                   plots$`SC_Pea_2005-2006_N0`$data%>%mutate(Plant = "bold(Pea)"))%>%
   mutate(System = "Sole crop")
 
+stats = 
+  bind_rows(IC_sum,SC_sum)%>%
+  group_by(variable)%>%
+  summarize(Plant = unique(Plant), y = max(Simulated))%>%
+  group_by(Plant)%>%
+  mutate(variable = 
+           recode(
+             .data$variable,
+             "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
+             "masec_n" = "bold(Agb~(t~ha^{-1}))",
+             "fapar" = "bold(FaPAR~('%'))",
+             "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
+             "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
+             "QNplante"= "bold(N~cont.~(kg~ha^{-1}))",
+             "NDFA" = "bold(NDFA~('%'))"
+           ),
+         plot_index = order(variable),
+         plot_nb = ifelse(
+           Plant == "bold(Pea)", 
+           paste(plot_index, "a", sep = "."),
+           paste(plot_index, "b", sep = ".")
+         )
+  )
+
+stats
+
 bind_rows(IC_sum,SC_sum)%>%
-  mutate(variable = recode(variable,"lai_n" = "LAI~(m2~m^{-2})",
-                           "masec_n" = "Agb~(t~ha^{-1})",
-                           "fapar" = "FaPAR~('%')",
-                           "mafruit" = "Gr.~yield~(t~ha^{-1})",
-                           "Qfix" = "N~Fix.~(kg~ha^{-1})",
-                           "QNplante"= "N~cont.~(kg~ha^{-1})",
-                           "NDFA" = "NDFA~('%')"
-                           )
-         )%>%
+  mutate(variable = 
+           recode(
+             variable,
+             "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
+             "masec_n" = "bold(Agb~(t~ha^{-1}))",
+             "fapar" = "bold(FaPAR~('%'))",
+             "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
+             "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
+             "QNplante"= "bold(N~cont.~(kg~ha^{-1}))",
+             "NDFA" = "bold(NDFA~('%'))"
+           )
+  )%>%
   ggplot(aes(x = Date, color = System, fill=System))+
   geom_line(aes(y = Simulated), lwd = 1.3)+
   geom_point(aes(y = Observed), show.legend = FALSE, size = 1.5, shape = 21, stroke = 1.5)+
-  # geom_point(aes(y = Observed), show.legend = FALSE, size = 2, shape = 21)+
-  facet_grid(scales = "free_y", cols = vars(Plant), rows = vars(variable), labeller = label_parsed)+
+  facet_grid(
+    scales = "free_y", cols = vars(Plant), rows = vars(variable),
+    labeller = label_parsed,
+    switch = "y"
+  )+
+  geom_label(
+    x = as.POSIXct("2005-09-26 UTC", tz = "UTC"),
+    aes(y = y, label = plot_nb),inherit.aes = FALSE,
+    data = stats, hjust=0, size = 3.1,
+    label.size = NA, fontface = "bold",
+    parse = FALSE
+  )+
   labs(colour = "Cropping system:")+
   theme_minimal()+
   labs(y = NULL)+
   scale_colour_manual(values= c("Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
   scale_fill_manual(values= c("Intercrop" = "#6EC0C04C", "Sole crop" = "#746EC24C")) +
-  theme(legend.direction = "horizontal",
-        legend.position = 'bottom',
-        strip.text.y = element_text(size = 8))
-  # scale_colour_manual(values= c("Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
-  # scale_fill_manual(values= c("Intercrop" = "#6EC0C080", "Sole crop" = "#746EC280"))
+  theme(
+    strip.text.x = element_text(size = 14, face = "bold.italic"),
+    legend.direction = "horizontal",
+    legend.position = 'bottom',
+    strip.placement.y = "outside"
+  )
 
 ggsave(filename = "sole_vs_intercrop.png", path = "2-outputs/plots",
-       width = 16, height = 16.5, units = "cm")
+       width = 16, height = 20, units = "cm")
