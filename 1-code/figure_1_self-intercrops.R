@@ -88,11 +88,14 @@ stats =
     Date = mean(Date),
     bias = Bias(sim = Simulated_ic, obs = Simulated_sc),
     rel_max_error = unique(error / Simulated_sc * 100))%>%
-  mutate(variable = recode(.data$variable,
-                           "lai_n" = "LAI~(m^{2}~m^{-2})",
-                           "masec_n" = "Agb~(t~ha^{-1})",
-                           "mafruit" = "Gr.~yield~(t~ha^{-1})",
-                           "QNplante"= "N~acc.~(kg~ha^{-1})"),
+  mutate(variable = 
+           recode(
+             .data$variable,
+             "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
+             "masec_n" = "bold(Agb~(t~ha^{-1}))",
+             "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
+             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))"
+           ),
          plot_index = order(variable))
 stats
 
@@ -101,11 +104,15 @@ stats
 plots$`SC_Pea_2005-2006_N0`$data%>%
   mutate(System = "Sole crop")%>%
   bind_rows(.,IC_sum)%>%
-  mutate(variable = recode(.data$variable,
-                           "lai_n" = "LAI~(m^{2}~m^{-2})",
-                           "masec_n" = "Agb~(t~ha^{-1})",
-                           "mafruit" = "Gr.~yield~(t~ha^{-1})",
-                           "QNplante"= "N~acc.~(kg~ha^{-1})"))%>%
+  mutate(variable = 
+           recode(
+             .data$variable,
+             "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
+             "masec_n" = "bold(Agb~(t~ha^{-1}))",
+             "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
+             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))"
+           )
+  )%>%
   ggplot(aes(x = Date))+
   facet_wrap(variable~., scales = "free_y", labeller = label_parsed, strip.position = "left")+
   geom_point(
@@ -116,7 +123,7 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
   geom_label(
     x = as.POSIXct("2005-09-26 UTC", tz = "UTC"),
     aes(y = y, label = paste0(plot_index,".")),
-    data = stats, hjust=0,
+    data = stats, hjust=0, size = 3.1,
     label.size = NA, fontface = "bold",
     parse = FALSE
   )+
@@ -126,10 +133,10 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
   #   data = stats, hjust=0,
   #   parse = FALSE)+
   geom_label(
-    x = as.POSIXct("2005-10-20 UTC", tz = "UTC"),
+    x = as.POSIXct("2005-10-15 UTC", tz = "UTC"),
     aes(y = y, label = paste("Max. diff. (%):",format(rel_max_error, scientific = FALSE, digits = 2))),
     data = stats, hjust=0,
-    label.size = NA, size = 3.5,
+    label.size = NA, size = 3.1,
     parse = FALSE
   )+
   geom_linerange(
@@ -148,7 +155,7 @@ ggsave(filename = "self-intercrop.png", path = "2-outputs/plots",
        width = 16, height = 10, units = "cm")
 
 
-  # Same plot but each intercrop is separated and some outputs are x2 to compare
+# Same plot but each intercrop is separated and some outputs are x2 to compare
 # with sole crop:
 IC_2 =
   plots$`IC_Pea_Pea_2005-2006_N0`$data%>%
