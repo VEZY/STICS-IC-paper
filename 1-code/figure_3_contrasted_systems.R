@@ -172,20 +172,46 @@ obs = mapply(function(x,usms_sc){
 
 # Make the plots:
 plots = plot(sim, obs = obs, type = "scatter", shape_sit = "txt")
-# plots = plot(sim,obs=obs)
-
-write.csv(
-  summary(sim, obs = obs, stat = c("R2", "EF", "RMSE", "nRMSE", "Bias")),
-  "2-outputs/stats/constrasted_systems.csv"
-)
+# plots = plot(sim,obs=obs) # dynamic plots just in case
 
 
+# Statistics --------------------------------------------------------------
 
-# df_ic =
-plots$all_situations$data%>%
+stats = 
+  summary(sim, obs = obs, stat = c("R2", "EF", "RMSE", "nRMSE", "Bias"))%>%
+  select(-group, -situation)%>%
+  filter(variable != "Qfix")%>%
+  mutate(across(is.numeric, ~round(.x, 2)))%>%
+  mutate(
+    variable = 
+      recode(
+        variable,
+        "lai_n" = "LAI~(m2~m^{-2})",
+        "masec_n" = "Agb~(t~ha^{-1})",
+        "mafruit" = "Gr.~yield~(t~ha^{-1})",
+        # "Qfix" = "N~Fix.~(kg~ha^{-1})",
+        "QNplante" = "N~acc.~(kg~ha^{-1})",
+        "imats" = "Matur.~(julian~day)",
+        "iflos" = "Flowe.~(julian~day)",
+        "iamfs" = "Juven.~(julian~day)",
+        "ilaxs" = "Max.L.~(julian~day)",
+        "ilevs" = "Emerg.~(julian~day)",
+        "hauteur" = "Height~(m)",
+        "NDFA" = "NDFA~('%')",
+        "LER" = "Partial~LER"
+      )
+  )%>%
+  arrange(variable)
+stats
+
+write.csv(stats, "2-outputs/stats/stats_constrasted_systems.csv")
+
+# Plot --------------------------------------------------------------------
+
+df_ic =
+  plots$all_situations$data%>%
   filter(variable != "Qfix")%>%
   mutate(
-    # Dominance = ifelse(Dominance == "Principal", "Prin.", "Asso."),
     Plant = recode(Plant,
                    "poi" = "Pea",
                    "ble" = "Wheat",
@@ -216,11 +242,37 @@ plots$all_situations$data%>%
                       "LER" = "Partial~LER"
     )
   )%>%
-  ggplot(aes(x = Observed, color = Plant, fill = Plant, shape = Association))+
-  # geom_point(aes(y = Simulated), size = 1.5, shape = 21, stroke = 1.5)+
+  arrange(variable)
+
+fig_num = 
+  df_ic%>%
+  group_by(variable)%>%
+  summarise(
+    y = max(Simulated,Observed),
+    ymin = min(Simulated,Observed),
+  )%>%
+  mutate(plot_index = paste0(order(variable),"."))%>%
+  arrange(variable)
+fig_num
+
+ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association))+
   geom_point(aes(y = Simulated), size = 1.5, fill = "transparent", stroke = 1.5)+
   geom_point(aes(y = Simulated, fill = Plant), size = 1.5, alpha = 0.5, stroke = 1)+
   geom_point(aes(y = Observed), color = "transparent", fill = "transparent")+ # Just to get y=x scales
+  geom_label(
+    x = -Inf,
+    aes(y = y, label = plot_index), inherit.aes = FALSE,
+    data = fig_num, hjust = 0, size = 3.1,
+    label.size = NA, fontface = "bold",
+    parse = FALSE
+  )+
+  geom_label(
+    x = -Inf,
+    aes(y = y - (y - ymin) * 0.25, label = paste0("EF:",EF,"\nnRMSE:",nRMSE,"\nBias:",Bias)),
+    data = stats%>%mutate(y = fig_num$y, ymin = fig_num$ymin), hjust=0, size = 2.6,
+    label.size = NA, inherit.aes = FALSE,
+    parse = FALSE, fill = "transparent",
+  )+
   facet_wrap(variable~.,
              scales = "free",
              labeller = label_parsed,
@@ -229,21 +281,18 @@ plots$all_situations$data%>%
        shape = "Association:",
        fill = "Plant species:")+
   theme_minimal()+
-  # labs(y = NULL)+
   geom_abline()+
-  # scale_colour_manual(values= c("Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
-  # scale_fill_manual(values= c("Intercrop" = "#6EC0C04C", "Sole crop" = "#746EC24C")) +
   scale_color_brewer(palette = "Set2")+
   scale_fill_brewer(palette = "Set2")+
-  scale_shape_manual(values = c("Pea-Barley" = 21,
-                                "Wheat-Pea" = 22,
-                                "Sunflower-Soybean" = 23,
-                                "Fababean-Wheat" = 24
-  ))+
-  # scale_color_brewer(palette = "RdBu")+
-  # scale_fill_brewer(palette = "RdBu")+
+  scale_shape_manual(
+    values = c(
+      "Pea-Barley" = 21,
+      "Wheat-Pea" = 22,
+      "Sunflower-Soybean" = 23,
+      "Fababean-Wheat" = 24
+    )
+  )+
   theme(
-    # legend.direction = "horizontal",
     legend.position = 'bottom',
     legend.box = 'vertical',
     strip.text.y = element_text(size = 8)
