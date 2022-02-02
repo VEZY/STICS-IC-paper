@@ -17,7 +17,7 @@ source("1-code/functions.R")
 # STICS version -----------------------------------------------------------
 
 javastics = normalizePath("0-javastics", winslash = "/")
-main_dir = normalizePath("0-data/usms-optim-beer", winslash = "/")
+main_dir = normalizePath("0-data/usms-optim-radiative", winslash = "/")
 
 # Define the workspaces ---------------------------------------------------
 
@@ -250,5 +250,5 @@ plots$all_situations$data%>%
   )+
   guides(color = guide_legend(nrow = 1, byrow = TRUE))
 
-ggsave(filename = "contrasted_systems_beer.png", path = "2-outputs/plots",
+ggsave(filename = "contrasted_systems.png", path = "2-outputs/plots",
        width = 16, height = 18, units = "cm")

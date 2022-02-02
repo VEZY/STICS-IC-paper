@@ -114,7 +114,7 @@ SC_sum =
 
 df = bind_rows(IC_sum,SC_sum)%>%filter(variable != "Qfix" && variable != "fapar")
 
-stats = 
+numbering = 
   df%>%
   group_by(variable)%>%
   summarize(Plant = unique(Plant), y = max(Simulated))%>%
@@ -167,7 +167,7 @@ df%>%
   geom_label(
     x = as.POSIXct("2005-09-26 UTC", tz = "UTC"),
     aes(y = y, label = plot_nb),inherit.aes = FALSE,
-    data = stats, hjust=0, size = 3.1,
+    data = numbering, hjust=0, size = 3.1,
     label.size = NA, fontface = "bold",
     parse = FALSE
   )+
@@ -188,3 +188,47 @@ df%>%
 ggsave(filename = "sole_vs_intercrop.png", path = "2-outputs/plots",
        width = 16, height = 18, units = "cm")
 
+
+
+# Statistics --------------------------------------------------------------
+
+stats = 
+  df%>%
+  group_by(Plant,System,variable)%>%
+  # mutate(diff = Simulated - )%>%
+  summarize(
+    sim_max = ifelse(all(variable != "inns"), max(Simulated), min(Simulated)),
+    obs_max = max(Observed, na.rm = TRUE)
+  )%>%
+  ungroup()
+
+stats$diff_sim[stats$System == "Intercrop"] = (stats$sim_max[stats$System == "Intercrop"] - stats$sim_max[stats$System == "Sole crop"]) / stats$sim_max[stats$System == "Sole crop"] * 100
+stats$diff_obs[stats$System == "Intercrop"] = (stats$obs_max[stats$System == "Intercrop"] - stats$obs_max[stats$System == "Sole crop"]) / stats$obs_max[stats$System == "Sole crop"] * 100
+
+stats =
+  stats%>%
+  filter(System == "Intercrop")%>%
+  select(-System,-sim_max,-obs_max)%>%
+  mutate(Plant = ifelse(Plant == "bold(Pea)", "Pea", "Wheat"))
+
+stat_diff =
+  pivot_wider(stats, names_from = Plant, values_from = c(diff_sim,diff_obs))%>%
+  select(variable, diff_obs_Pea, diff_sim_Pea, diff_obs_Wheat, diff_sim_Wheat)%>%
+  mutate(across(is.numeric, ~round(.x, 2)))%>%
+  mutate(variable = 
+           recode(
+             variable,
+             "lai_n" = "LAI (m2 m-2)",
+             "masec_n" = "Agb (t ha-1)",
+             "fapar" = "FaPAR (%)",
+             "mafruit" = "Gr. yield (t ha-1)",
+             "Qfix" = "N Fix. (kg ha-1)",
+             "QNplante"= "N acc. (kg ha-1)",
+             "NDFA" = "NDFA (%)",
+             "inns" = "N stress eff."
+           )
+  )%>%
+  arrange(variable)
+
+
+write.csv(stat_diff, file = "2-outputs/stats/plant_interactions.csv", row.names = FALSE)
