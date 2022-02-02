@@ -24,16 +24,15 @@ javastics = normalizePath("0-javastics", winslash = "/")
 
 # Define the workspaces ---------------------------------------------------
 
-workspace = "0-data/usms-optim-beer/Auzeville-Pea-SC"
+workspace = "0-data/usms-optim-radiative/Auzeville-Pea-SC"
 
 # Define the variables to simulate ----------------------------------------
 
-sim_variables = c("lai(n)","masec(n)","QNplante","mafruit")
+sim_variables = c("lai(n)","masec(n)","QNplante","mafruit", "resmes", "fapar")
 
 # Which variables need to be summed for plot scale results (instead of averaged)
-to_sum = c("lai_n","masec_n","abso_n","mafruit","QNplante","demande","dltams_n",
-           "msrac_n","cumraint","raint","dltamsen","deltai_n","laisen_n","rlj")
-# SticsRFiles::get_var_info(keyword = "demande")
+to_sum = c("lai_n","masec_n","abso_n","mafruit","QNplante", "fapar")
+# SticsRFiles::get_var_info(keyword = "res")
 
 # Run the simulations -----------------------------------------------------
 
@@ -42,9 +41,11 @@ usms = c("SC_Pea_2005-2006_N0", "IC_Pea_Pea_2005-2006_N0")
 
 SticsRFiles::gen_varmod(workspace, sim_variables)
 
-SticsOnR::run_javastics(javastics_path = javastics, workspace_path = workspace,
-                        stics_exe = "Stics_IC_v13-01-2022.exe",
-                        usms_list = usms)
+SticsOnR::run_javastics(
+  javastics_path = javastics, workspace_path = workspace,
+  stics_exe = "Stics_IC_v13-01-2022.exe",
+  usms_list = usms
+)
 
 # Get the results
 sim = get_sim(workspace = workspace, usm = usms)
@@ -94,9 +95,14 @@ stats =
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
              "masec_n" = "bold(Agb~(t~ha^{-1}))",
              "mafruit" = "bold(Grain~(t~ha^{-1}))",
-             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))"
-           ),
-         plot_index = order(variable))
+             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
+             "fapar"= "bold(faPAR)",
+             "resmes"= "bold(SWC~(mm))"
+           )
+  )%>%
+  arrange(variable)%>%
+  mutate(plot_index = order(variable))
+  
 stats
 
 # Plot for the paper: -----------------------------------------------------
@@ -110,11 +116,14 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
              "masec_n" = "bold(Agb~(t~ha^{-1}))",
              "mafruit" = "bold(Grain~(t~ha^{-1}))",
-             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))"
+             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
+             "fapar"= "bold(faPAR)",
+             "resmes"= "bold(SWC~(mm))"
            )
   )%>%
+  arrange(variable)%>%
   ggplot(aes(x = Date))+
-  facet_wrap(variable~., scales = "free_y", labeller = label_parsed, strip.position = "left")+
+  facet_wrap(variable~., scales = "free_y", labeller = label_parsed, strip.position = "left", ncol = 2)+
   geom_point(
     aes(y = Observed, color = System, fill = System), show.legend = FALSE, size = 1.5,
     shape = 21, stroke = 1.5, colour = "#F49690", fill = "#F496904C"
@@ -135,7 +144,7 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
   geom_label(
     x = as.POSIXct("2005-10-15 UTC", tz = "UTC"),
     aes(y = y, label = paste("Max. diff. (%):",format(rel_max_error, scientific = FALSE, digits = 2))),
-    data = stats, hjust=0,
+    data = stats, hjust=0, fill = "transparent",
     label.size = NA, size = 3.1,
     parse = FALSE
   )+
@@ -152,20 +161,20 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
   theme(legend.direction = "horizontal", legend.position = 'bottom', strip.placement.y = "outside")
 
 ggsave(filename = "Fig.1_self-intercrop.png", path = "2-outputs/plots",
-       width = 16, height = 10, units = "cm")
+       width = 16, height = 13, units = "cm")
 
 
 # Same plot but each intercrop is separated and some outputs are x2 to compare
 # with sole crop:
-IC_2 =
-  plots$`IC_Pea_Pea_2005-2006_N0`$data%>%
-  group_by(Dominance,Date,variable)%>%
-  summarise(Simulated = ifelse(variable %in% to_sum,
-                               Simulated*2,Simulated))
-
-plots$`SC_Pea_2005-2006_N0` +
-  geom_line(aes(color = "Sole crop")) +
-  geom_line(data = IC_2, lty = 2, aes(color = Dominance)) +
-  ggtitle(NULL) +
-  labs(y = NULL) +
-  theme(legend.direction = "horizontal", legend.position = 'bottom')
+# IC_2 =
+#   plots$`IC_Pea_Pea_2005-2006_N0`$data%>%
+#   group_by(Dominance,Date,variable)%>%
+#   summarise(Simulated = ifelse(variable %in% to_sum,
+#                                Simulated*2,Simulated))
+# 
+# plots$`SC_Pea_2005-2006_N0` +
+#   geom_line(aes(color = "Sole crop")) +
+#   geom_line(data = IC_2, lty = 2, aes(color = Dominance)) +
+#   ggtitle(NULL) +
+#   labs(y = NULL) +
+#   theme(legend.direction = "horizontal", legend.position = 'bottom')
