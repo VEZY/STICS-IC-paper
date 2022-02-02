@@ -231,4 +231,4 @@ stat_diff =
   arrange(variable)
 
 
-write.csv(stat_diff, file = "2-outputs/stats/plant_interactions.csv", row.names = FALSE)
+write.csv(stat_diff, file = "2-outputs/stats/Table.1_Plant_interactions.csv", row.names = FALSE)
