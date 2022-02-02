@@ -93,7 +93,7 @@ stats =
              .data$variable,
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
              "masec_n" = "bold(Agb~(t~ha^{-1}))",
-             "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
+             "mafruit" = "bold(Grain~(t~ha^{-1}))",
              "QNplante"= "bold(N~acc.~(kg~ha^{-1}))"
            ),
          plot_index = order(variable))
@@ -109,7 +109,7 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
              .data$variable,
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
              "masec_n" = "bold(Agb~(t~ha^{-1}))",
-             "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
+             "mafruit" = "bold(Grain~(t~ha^{-1}))",
              "QNplante"= "bold(N~acc.~(kg~ha^{-1}))"
            )
   )%>%
@@ -151,7 +151,7 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
   scale_colour_manual(values= c("Self Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
   theme(legend.direction = "horizontal", legend.position = 'bottom', strip.placement.y = "outside")
 
-ggsave(filename = "self-intercrop.png", path = "2-outputs/plots",
+ggsave(filename = "Fig.1_self-intercrop.png", path = "2-outputs/plots",
        width = 16, height = 10, units = "cm")
 
 

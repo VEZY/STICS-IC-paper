@@ -125,7 +125,7 @@ numbering =
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
              "masec_n" = "bold(Agb~(t~ha^{-1}))",
              "fapar" = "bold(FaPAR~('%'))",
-             "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
+             "mafruit" = "bold(Grain~(t~ha^{-1}))",
              "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
              "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
              "NDFA" = "bold(NDFA~('%'))",
@@ -149,7 +149,7 @@ df%>%
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
              "masec_n" = "bold(Agb~(t~ha^{-1}))",
              "fapar" = "bold(FaPAR~('%'))",
-             "mafruit" = "bold(Gr.~yield~(t~ha^{-1}))",
+             "mafruit" = "bold(Grain~(t~ha^{-1}))",
              "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
              "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
              "NDFA" = "bold(NDFA~('%'))",
@@ -185,7 +185,7 @@ df%>%
     strip.placement.y = "outside"
   )
 
-ggsave(filename = "sole_vs_intercrop.png", path = "2-outputs/plots",
+ggsave(filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots",
        width = 16, height = 18, units = "cm")
 
 

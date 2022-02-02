@@ -299,5 +299,5 @@ ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association
   )+
   guides(color = guide_legend(nrow = 1, byrow = TRUE))
 
-ggsave(filename = "contrasted_systems.png", path = "2-outputs/plots",
+ggsave(filename = "Fig.3_contrasted_systems.png", path = "2-outputs/plots",
        width = 16, height = 18, units = "cm")
