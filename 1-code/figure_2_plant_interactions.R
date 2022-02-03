@@ -178,7 +178,7 @@ df%>%
   scale_fill_manual(values= c("Intercrop" = "#6EC0C04C", "Sole crop" = "#746EC24C")) +
   scale_y_continuous(expand = expansion(mult = c(0.1, 0.1)))+ # expand the limits of the plots
   theme(
-    strip.text.x = element_text(size = 12, face = "bold.italic"),
+    strip.text.x = element_text(size = 12, face = "bold"),
     strip.text.y = element_text(size = 8),
     legend.direction = "horizontal",
     legend.position = 'bottom',

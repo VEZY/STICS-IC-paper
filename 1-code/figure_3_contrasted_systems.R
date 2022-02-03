@@ -174,7 +174,6 @@ obs = mapply(function(x,usms_sc){
 plots = plot(sim, obs = obs, type = "scatter", shape_sit = "txt")
 # plots = plot(sim,obs=obs) # dynamic plots just in case
 
-
 # Statistics --------------------------------------------------------------
 
 stats = 
@@ -295,7 +294,9 @@ ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association
   theme(
     legend.position = 'bottom',
     legend.box = 'vertical',
-    strip.text.y = element_text(size = 8)
+    strip.text.y = element_text(size = 8),
+    axis.title.x = element_text(face = "bold", size = 12),
+    axis.title.y = element_text(face = "bold", size = 12)
   )+
   guides(color = guide_legend(nrow = 1, byrow = TRUE))
 
