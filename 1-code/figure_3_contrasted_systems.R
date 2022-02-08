@@ -267,7 +267,10 @@ ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association
   )+
   geom_label(
     x = -Inf,
-    aes(y = y - (y - ymin) * 0.25, label = paste0("EF:",EF,"\nnRMSE:",nRMSE,"\nBias:",Bias)),
+    aes(
+      y = y - (y - ymin) * 0.31, 
+      label = paste0("EF:",EF,"\nnRMSE:",nRMSE,"\nRMSE:",RMSE,"\nBias:",Bias)
+    ),
     data = stats%>%mutate(y = fig_num$y, ymin = fig_num$ymin), hjust=0, size = 2.6,
     label.size = NA, inherit.aes = FALSE,
     parse = FALSE, fill = "transparent",
