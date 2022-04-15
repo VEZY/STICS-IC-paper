@@ -177,7 +177,7 @@ plots = plot(sim, obs = obs, type = "scatter", shape_sit = "txt")
 # Statistics --------------------------------------------------------------
 
 stats = 
-  summary(sim, obs = obs, stat = c("R2", "EF", "RMSE", "nRMSE", "Bias"))%>%
+  summary(sim, obs = obs, stat = c("MAPE", "EF", "RMSE", "nRMSE", "Bias"))%>%
   select(-group, -situation)%>%
   filter(variable != "Qfix")%>%
   mutate(across(is.numeric, ~round(.x, 2)))%>%
@@ -254,7 +254,19 @@ fig_num =
   arrange(variable)
 fig_num
 
-ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association))+
+
+# Plotting
+
+presentation = TRUE # FALSE for the paper (white background), TRUE for the presentation
+
+if(presentation){
+  text_color = "white"
+}else{
+  text_color = "black"
+}
+
+p = 
+  ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association))+
   geom_point(aes(y = Simulated), size = 1.5, fill = "transparent", stroke = 1.5)+
   geom_point(aes(y = Simulated, fill = Plant), size = 1.5, alpha = 0.5, stroke = 1)+
   geom_point(aes(y = Observed), color = "transparent", fill = "transparent")+ # Just to get y=x scales
@@ -263,7 +275,8 @@ ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association
     aes(y = y, label = plot_index), inherit.aes = FALSE,
     data = fig_num, hjust = 0, size = 3.1,
     label.size = NA, fontface = "bold",
-    parse = FALSE
+    parse = FALSE, color = text_color,
+    fill = if(presentation){"#2F2F31"}else{"white"}
   )+
   geom_label(
     x = -Inf,
@@ -273,10 +286,12 @@ ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association
     ),
     data = stats%>%mutate(y = fig_num$y, ymin = fig_num$ymin), hjust=0, size = 2.6,
     label.size = NA, inherit.aes = FALSE,
-    parse = FALSE, fill = "transparent",
+    parse = FALSE, color = text_color,
+    fill = if(presentation){"#2F2F31"}else{"transparent"}
   )+
   facet_wrap(variable~.,
              scales = "free",
+             ncol = if(presentation){5}else{NULL},
              labeller = label_parsed,
              shrink = TRUE)+
   labs(colour = "Plant species:",
@@ -303,5 +318,23 @@ ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association
   )+
   guides(color = guide_legend(nrow = 1, byrow = TRUE))
 
-ggsave(filename = "Fig.3_contrasted_systems.png", path = "2-outputs/plots",
-       width = 16, height = 18, units = "cm")
+if(presentation){
+  p = 
+    p + 
+    theme(
+      axis.title = element_text(color="white"),
+      axis.text = element_text(color="white"),
+      legend.title = element_text(color="white"),
+      legend.text = element_text(color="white"),
+      strip.text = element_text(color="white"),
+      panel.grid = element_line(color = '#696969', linetype = "dotted")
+    )
+}
+
+if(!presentation){
+  ggsave(filename = "Fig.3_contrasted_systems.png", path = "2-outputs/plots",
+         width = 16, height = 18, units = "cm")
+}else{
+  ggsave(filename = "Fig.3_contrasted_systems.png", path = "2-outputs/plots/presentation",
+         width = 24, height = 14, units = "cm")
+}

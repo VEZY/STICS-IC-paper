@@ -77,13 +77,14 @@ stats =
     suffix = c("_sc", "_ic")
   )%>%
   group_by(variable)%>%
-  filter(Simulated_sc == max(Simulated_sc))%>%
+  filter(Simulated_sc == max(Simulated_sc) | variable %in% c("resmes"))%>%
   mutate(
+    y = max(Simulated_ic, Simulated_sc),
     error = Simulated_ic - Simulated_sc
   )%>%
   filter(error == max(error))%>%
   summarise(
-    y = max(Simulated_ic, Simulated_sc),
+    y = unique(y)*1.05,
     Simulated_ic = head(Simulated_ic, 1),
     Simulated_sc = head(Simulated_sc, 1),
     Date = mean(Date),
@@ -102,12 +103,21 @@ stats =
   )%>%
   arrange(variable)%>%
   mutate(plot_index = order(variable))
-  
+
 stats
 
 # Plot for the paper: -----------------------------------------------------
 
-plots$`SC_Pea_2005-2006_N0`$data%>%
+presentation = TRUE # FALSE for the paper (white background), TRUE for the presentation
+
+if(presentation){
+  text_color = "white"
+}else{
+  text_color = "black"
+}
+
+p = 
+  plots$`SC_Pea_2005-2006_N0`$data%>%
   mutate(System = "Sole crop")%>%
   bind_rows(.,IC_sum)%>%
   mutate(variable = 
@@ -133,8 +143,9 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
     x = as.POSIXct("2005-09-26 UTC", tz = "UTC"),
     aes(y = y, label = paste0(plot_index,".")),
     data = stats, hjust=0, size = 3.1,
+    fill = if(presentation){"#2F2F31"}else{"white"},
     label.size = NA, fontface = "bold",
-    parse = FALSE
+    parse = FALSE, color = text_color
   )+
   # geom_text(
   #   x = as.POSIXct("2005-09-26 UTC", tz = "UTC"),
@@ -144,9 +155,10 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
   geom_label(
     x = as.POSIXct("2005-10-15 UTC", tz = "UTC"),
     aes(y = y, label = paste("Max. diff. (%):",format(rel_max_error, scientific = FALSE, digits = 2))),
-    data = stats, hjust=0, fill = "transparent",
+    data = stats, hjust=0, 
+    fill = if(presentation){"#2F2F31"}else{"transparent"},
     label.size = NA, size = 3.1,
-    parse = FALSE
+    parse = FALSE, color = text_color
   )+
   geom_linerange(
     aes(x = Date, ymin = Simulated_ic, ymax = Simulated_sc), 
@@ -155,14 +167,35 @@ plots$`SC_Pea_2005-2006_N0`$data%>%
   ggtitle(NULL) +
   labs(y = NULL) +
   theme_minimal() +
-  labs(colour = "Simulation design:",
-       lty = "Simulation design:")+
+  labs(colour = "Simulation design:", lty = "Simulation design:")+
+  # scale_y_continuous(expand = expansion(mult = c(0.1, 0.1)))+ # expand the limits of the plots
   scale_colour_manual(values= c("Self Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
-  theme(legend.direction = "horizontal", legend.position = 'bottom', strip.placement.y = "outside")
+  theme(
+    legend.direction = "horizontal", 
+    legend.position = 'bottom', 
+    strip.placement.y = "outside"
+  )
 
-ggsave(filename = "Fig.1_self-intercrop.png", path = "2-outputs/plots",
-       width = 16, height = 13, units = "cm")
+if(presentation){
+  p = 
+    p + 
+    theme(
+      axis.title = element_text(color="white"),
+      axis.text = element_text(color="white"),
+      legend.title = element_text(color="white"),
+      legend.text = element_text(color="white"),
+      strip.text = element_text(color="white"),
+      panel.grid = element_line(color = '#696969', linetype = "dotted")
+    )
+}
 
+if(!presentation){
+  ggsave(p, filename = "Fig.1_self-intercrop.png", path = "2-outputs/plots",
+         width = 16, height = 13, units = "cm")
+}else{
+  ggsave(filename = "Fig.1_self-intercrop.png", path = "2-outputs/plots/presentation",
+         width = 20, height = 10, units = "cm")
+}
 
 # Same plot but each intercrop is separated and some outputs are x2 to compare
 # with sole crop:

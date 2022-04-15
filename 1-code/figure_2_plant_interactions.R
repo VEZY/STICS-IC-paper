@@ -30,7 +30,7 @@ workspaces = list(wheat = workspace_wheat, pea = workspace_pea, wheat_pea = work
 
 # sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix","profexteau","profextN","hauteur")
 sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix", "inns", "fapar")
-# SticsRFiles::get_var_info("inn")
+# SticsRFiles::get_var_info(keyword = "transpi")
 
 # Run the simulations -----------------------------------------------------
 
@@ -44,22 +44,29 @@ lapply(workspaces, function(x) SticsRFiles::gen_varmod(x, sim_variables))
 
 
 mapply(function(x,y){
-  SticsOnR::run_javastics(javastics_path = javastics, workspace_path = x,
+  SticsOnR::run_javastics(javastics_path = javastics, 
+                          workspace_path = normalizePath(x, winslash = "/"),
                           stics_exe = "Stics_IC_v13-01-2022.exe",
                           usms_list = y)
 },workspaces,usms)
 
 sim = mapply(function(x,y){
-  get_sim(workspace = x, usm_name = y, usms_filepath = file.path(x, "usms.xml"))
+  get_sim(workspace = x, usm = y, usms_filepath = file.path(x, "usms.xml"))
 },workspaces,usms)
 
 # Add NDFA to sim:
 sim = lapply(sim, function(x){
   if(!is.null(x$Qfix)){
-    return(x%>%mutate(NDFA = Qfix / QNplante))
-  }else{
-    x
+    x = x%>%mutate(NDFA = Qfix / QNplante)
   }
+  
+  if(!is.null(x$ep) & !is.null(x$dltams_n)){
+    # ep in mm day-1
+    x = x%>%mutate(wue = dltams_n / ep)%>%select(-ep,-dltams_n)
+    x$wue[x$lai <= 0.01] = NA
+  }
+  
+  return(x)
 })
 
 names(sim) = usms
@@ -68,7 +75,7 @@ attr(sim, "class") = "cropr_simulation"
 # Get the observations
 
 obs = mapply(function(x,y){
-  get_obs(workspace = x, usm_name = y, usms_filepath = file.path(x, "usms.xml"))
+  get_obs(workspace = x, usm = y, usms_filepath = file.path(x, "usms.xml"))
 },workspaces,usms)
 names(obs) = usms
 
@@ -91,7 +98,7 @@ plots = plot(sim, obs = obs)
 # Computing per ha for both sole crops and intercrops:
 
 # Which variables need to be summed for plot scale results (instead of averaged)
-to_sum_obs = c("lai_n","masec_n","mafruit","QNplante", "Qfix")
+to_sum_obs = c("lai_n","masec_n","mafruit","QNplante", "Qfix", "cep")
 to_sum_sim = c(to_sum_obs, "fapar")
 
 
@@ -142,7 +149,20 @@ numbering =
     )
   )
 
-df%>%
+
+
+# Plotting
+
+presentation = TRUE # FALSE for the paper (white background), TRUE for the presentation
+
+if(presentation){
+  text_color = "white"
+}else{
+  text_color = "black"
+}
+
+p = 
+  df%>%
   mutate(variable = 
            recode(
              variable,
@@ -169,7 +189,8 @@ df%>%
     aes(y = y, label = plot_nb),inherit.aes = FALSE,
     data = numbering, hjust=0, size = 3.1,
     label.size = NA, fontface = "bold",
-    parse = FALSE
+    parse = FALSE, color = text_color,
+    fill = if(presentation){"#2F2F31"}else{"white"}
   )+
   labs(colour = "Cropping system:")+
   theme_minimal()+
@@ -185,10 +206,27 @@ df%>%
     strip.placement.y = "outside"
   )
 
-ggsave(filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots",
-       width = 16, height = 18, units = "cm")
+if(presentation){
+  p = 
+    p + 
+    theme(
+      axis.title = element_text(color="white"),
+      axis.text = element_text(color="white"),
+      legend.title = element_text(color="white"),
+      legend.text = element_text(color="white"),
+      strip.text = element_text(color="white"),
+      panel.grid = element_line(color = '#696969', linetype = "dotted")
+    )
+}
 
 
+if(!presentation){
+  ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots",
+         width = 16, height = 18, units = "cm")
+}else{
+  ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots/presentation",
+         width = 22, height = 17, units = "cm")
+}
 
 # Statistics --------------------------------------------------------------
 
