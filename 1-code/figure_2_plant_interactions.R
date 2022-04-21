@@ -224,7 +224,7 @@ if(presentation){
 
 if(!presentation){
   ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots",
-         width = 16, height = 18, units = "cm")
+         width = 16, height = 19, units = "cm")
 }else{
   ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots/presentation",
          width = 22, height = 17, units = "cm")
