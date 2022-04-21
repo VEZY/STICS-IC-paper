@@ -10,6 +10,7 @@
 
 library(SticsRPacks)
 library(tidyverse)
+library(lubridate)
 source("1-code/functions.R")
 
 # Define javaStics installation -------------------------------------------
@@ -74,8 +75,8 @@ sim_variables = c("hauteur","lai(n)","masec(n)","QNplante","mafruit","Qfix",
 mapply(
   function(x,y){
     SticsRFiles::gen_varmod(x, sim_variables)
-    SticsOnR::run_javastics(javastics_path = javastics,
-                            workspace_path = x,
+    SticsOnR::run_javastics(javastics = javastics,
+                            workspace = x,
                             stics_exe = "Stics_IC_v13-01-2022.exe",
                             usms_list = y)
   },
@@ -95,8 +96,8 @@ names(sim) = unlist(workspace_usms)
 mapply(
   function(x,y){
     SticsRFiles::gen_varmod(x, sim_variables)
-    SticsOnR::run_javastics(javastics_path = javastics,
-                            workspace_path = x,
+    SticsOnR::run_javastics(javastics = javastics,
+                            workspace = x,
                             stics_exe = "Stics_IC_v13-01-2022.exe",
                             usms_list = y)
   },
@@ -113,7 +114,8 @@ names(sim_sc) = unlist(workspace_usms_sc)
 
 # Compute new variables ---------------------------------------------------
 
-# Add NDFA to sim + put all stages at same value along the whole crop for plotting:
+# Add NDFA to sim + put all stages at same value along the whole crop for plotting + 
+# make their value relative to ilev:
 sim = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
   
@@ -121,13 +123,16 @@ sim = mapply(function(x,usms_sc){
     x%>%
     group_by(Plant)%>%
     mutate(
-      iflos = unique(as.integer(.data$iflos))[2],
-      # iamfs = unique(as.integer(iamfs))[2],
       # ilevs = unique(as.integer(ilevs))[2],
-      imats = unique(as.integer(.data$imats))[2],
+      # iflos = unique(as.integer(.data$iflos))[2] - ilevs,
+      # iamfs = unique(as.integer(iamfs))[2],
+      iflos = unique(as.integer(.data$iflos))[2] %% 365,
+      imats = unique(as.integer(.data$imats))[2]  %% 365,
       # ilaxs = unique(as.integer(ilaxs))[2]
       LER = ifelse(.data$mafruit == max(.data$mafruit), max(.data$mafruit) / max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)]),NA)
-    )
+    )#%>%
+    # select(-ilevs)
+
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
@@ -153,7 +158,7 @@ names(obs_sc) = unlist(workspace_usms_sc)
 # Add NDFA to obs:
 obs = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
-  
+
   x =
     x%>%
     group_by(Plant)%>%
@@ -163,6 +168,24 @@ obs = mapply(function(x,usms_sc){
         max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)],na.rm = TRUE)
     )
   
+  if(!is.null(x$iflos)){
+    x = 
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        iflos = .data$iflos %% 365
+      )
+  }
+  
+  if(!is.null(x$imats)){
+    x = 
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        imats = .data$imats %% 365
+      )
+  }
+
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
@@ -257,7 +280,7 @@ fig_num
 
 # Plotting
 
-presentation = TRUE # FALSE for the paper (white background), TRUE for the presentation
+presentation = FALSE # FALSE for the paper (white background), TRUE for the presentation
 
 if(presentation){
   text_color = "white"
