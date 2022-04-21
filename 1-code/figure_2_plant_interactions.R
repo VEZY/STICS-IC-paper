@@ -29,7 +29,7 @@ workspaces = list(wheat = workspace_wheat, pea = workspace_pea, wheat_pea = work
 # Define the variables to simulate ----------------------------------------
 
 # sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix","profexteau","profextN","hauteur")
-sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix", "inns", "fapar")
+sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix", "inns", "fapar","hauteur")
 # SticsRFiles::get_var_info(keyword = "transpi")
 
 # Run the simulations -----------------------------------------------------
@@ -44,14 +44,14 @@ lapply(workspaces, function(x) SticsRFiles::gen_varmod(x, sim_variables))
 
 
 mapply(function(x,y){
-  SticsOnR::run_javastics(javastics_path = javastics, 
-                          workspace_path = normalizePath(x, winslash = "/"),
+  SticsOnR::run_javastics(javastics = javastics, 
+                          workspace = normalizePath(x, winslash = "/"),
                           stics_exe = "Stics_IC_v13-01-2022.exe",
                           usms_list = y)
 },workspaces,usms)
 
 sim = mapply(function(x,y){
-  get_sim(workspace = x, usm = y, usms_filepath = file.path(x, "usms.xml"))
+  get_sim(workspace = x, usm = y, usms_file = file.path(x, "usms.xml"))
 },workspaces,usms)
 
 # Add NDFA to sim:
@@ -75,7 +75,7 @@ attr(sim, "class") = "cropr_simulation"
 # Get the observations
 
 obs = mapply(function(x,y){
-  get_obs(workspace = x, usm = y, usms_filepath = file.path(x, "usms.xml"))
+  get_obs(workspace = x, usm = y, usms_file = file.path(x, "usms.xml"))
 },workspaces,usms)
 names(obs) = usms
 
@@ -136,7 +136,8 @@ numbering =
              "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
              "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
              "NDFA" = "bold(NDFA~('%'))",
-             "inns" = "bold(N~stress~eff.)"
+             "inns" = "bold(N~stress~eff.)",
+             "hauteur" = "bold(Height~(m))"
            )
   )%>%
   arrange(variable)%>%
@@ -153,7 +154,7 @@ numbering =
 
 # Plotting
 
-presentation = TRUE # FALSE for the paper (white background), TRUE for the presentation
+presentation = FALSE # FALSE for the paper (white background), TRUE for the presentation
 
 if(presentation){
   text_color = "white"
@@ -173,7 +174,8 @@ p =
              "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
              "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
              "NDFA" = "bold(NDFA~('%'))",
-             "inns" = "bold(N~stress~eff.)"
+             "inns" = "bold(N~stress~eff.)",
+             "hauteur" = "bold(Height~(m))"
            )
   )%>%
   ggplot(aes(x = Date, color = System, fill=System))+
