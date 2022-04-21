@@ -183,10 +183,19 @@ ggsave(p, filename = "Fig.1_self-intercrop_all.png", path = "2-outputs/plots",
 
 # Statistics for each variable for all crops:
 df%>%
-  group_by(variable,Crop)%>%
+  group_by(variable)%>%
   summarise(
-    nRMSE = nRMSE(Simulated_ic, Simulated_sc),
+    RMSE = RMSE(Simulated_ic, Simulated_sc),
     EF = EF(Simulated_ic, Simulated_sc),
     Bias = Bias(Simulated_ic, Simulated_sc)
   )
 
+df%>%
+  group_by(variable, Crop)%>%
+  summarise(
+    max_ic = max(Simulated_ic),
+    max_sc = max(Simulated_sc)
+    )%>%
+  ungroup()%>%
+  group_by(variable)%>%
+  summarise(diff = mean(max_ic - max_sc))
