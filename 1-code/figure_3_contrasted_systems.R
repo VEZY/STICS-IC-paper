@@ -128,6 +128,10 @@ sim = mapply(function(x,usms_sc){
       # iamfs = unique(as.integer(iamfs))[2],
       iflos = unique(as.integer(.data$iflos))[2] %% 365,
       imats = unique(as.integer(.data$imats))[2]  %% 365,
+      # We only want the maximum value for masec_n (biomass at harvest):
+      masec_n = max(.data$masec_n, na.rm = TRUE),
+      # Same for LAI, we want the maximum LAI:
+      lai_n = max(.data$lai_n, na.rm = TRUE),
       # ilaxs = unique(as.integer(ilaxs))[2]
       LER = ifelse(.data$mafruit == max(.data$mafruit), max(.data$mafruit) / max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)]),NA)
     )#%>%
@@ -186,6 +190,36 @@ obs = mapply(function(x,usms_sc){
       )
   }
 
+  if(!is.null(x$masec_n)){
+    # We only want the maximum value for masec_n (biomass at harvest):
+    # x$masec_n[x$masec_n != max(x$masec_n, na.rm = TRUE)] = NA
+    x = 
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        masec_n = ifelse(
+          .data$masec_n == max(.data$masec_n, na.rm = TRUE), 
+          .data$masec_n,
+          NA
+        )
+      )
+  }
+  
+  if(!is.null(x$lai_n)){
+    # Same for LAI, we want the maximum LAI:
+    # x$lai_n[x$lai_n != max(x$lai_n, na.rm = TRUE)] = NA
+    x = 
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        lai_n = ifelse(
+          .data$lai_n == max(.data$lai_n, na.rm = TRUE), 
+          .data$lai_n,
+          NA
+        )
+      )
+  }
+  
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
