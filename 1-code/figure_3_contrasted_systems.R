@@ -242,8 +242,8 @@ stats =
     variable = 
       recode(
         variable,
-        "lai_n" = "LAI~(m2~m^{-2})",
-        "masec_n" = "Agb~(t~ha^{-1})",
+        "lai_n" = "Max.~LAI~(m2~m^{-2})",
+        "masec_n" = "Harvested~Agb~(t~ha^{-1})",
         "mafruit" = "Gr.~yield~(t~ha^{-1})",
         # "Qfix" = "N~Fix.~(kg~ha^{-1})",
         "QNplante" = "N~acc.~(kg~ha^{-1})",
@@ -283,8 +283,8 @@ df_ic =
                          "Fababean_Wheat_IC_2007" = "Fababean-Wheat"
     ),
     variable = recode(variable,
-                      "lai_n" = "LAI~(m2~m^{-2})",
-                      "masec_n" = "Agb~(t~ha^{-1})",
+                      "lai_n" = "Max.~LAI~(m2~m^{-2})",
+                      "masec_n" = "Harvested~Agb~(t~ha^{-1})",
                       "mafruit" = "Gr.~yield~(t~ha^{-1})",
                       # "Qfix" = "N~Fix.~(kg~ha^{-1})",
                       "QNplante" = "N~acc.~(kg~ha^{-1})",
