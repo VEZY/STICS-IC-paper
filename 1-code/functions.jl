@@ -58,13 +58,59 @@ function half_canopy_left(shape, width, height, h0=0.0, x0=0.0)
 end
 
 """
+
+Computes the transmitted radiation to the plane below the plant.
+
+# Arguments
+
+- `width`: plant crown width
+- `P_latitude`: latitude in degree
+- `j`: julian day
+- `ir`: interrow distance, *i.e.* distance between two plants at sowing
+- `shape`: the plant canopy shape: `:rectangle`, `:utriangle`, `:dtriangle`.
+- `h0=0.0`: the base canopy height (default to 0 for the ground for annual crops)
+- `alpha`: row angle relative to North in radian
+- `rdif`: diffuse fraction of the light
+- `P_ktrou`: light extinction coefficient of the crop
+- `lai`: leaf area index (m2 m-2)
+- `eai`: ears area index, or the surface of any photosynthetic organs (m2 m-2)
+- `height`: total plant height
+"""
+function transrad(rg, width, P_latitude, P_parsurrg, j, ir, shape, h0, alpha, rdif, P_ktrou, lai, eai, height)
+    rdif = r_diffuse(rg, P_latitude, j)
+    rombre, rsoleil = r_transmitted(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou, lai, eai, height)
+
+    # Computation of the relative surfaces of the shaded/sunlit parts of the plane below the plant:
+    surfAO = width / ir
+    if (rombre == 0.0)
+        surfAO = 0.0 # RV: when largeur is very low the first point is not even shaded
+    end
+    surfAO = min(surfAO, 1.0)
+    surfAS = 1.0 - surfAO
+
+    if surfAS <= 0.0
+        surfAS = 0.001
+        surfAO = 1.0 - surfAS
+    end
+
+    # Intercepted radiation
+    raint = P_parsurrg * rg * (1 - (rombre * surfAO) - (rsoleil * surfAS))
+
+    if raint < 0.0
+        raint = 0.0
+    end
+
+    return raint
+end
+
+"""
     r_diffuse(rg, P_latitude, jul)
 
 Computes the diffuse fraction of the global radiation.
 
 # Arguments
 
-- `rg`: global radiation
+- `rg`: global radiation in MJ m-2 day-1
 - `P_latitude`: latitude in degree
 - `j`: julian day
 """
@@ -89,7 +135,7 @@ end
 """
     rg_extrater(P_latitude, j)
 
-Returns the extraterrestrial radiation in MJ/m2/day following Saumane (1993).
+Returns the extraterrestrial radiation in MJ m-2 day-1 following Saumane (1993).
 
 # Arguments
 
@@ -150,7 +196,7 @@ Computes the transmitted radiation to the plane below the plant.
 - `eai`: ears area index, or the surface of any photosynthetic organs (m2 m-2)
 - `height`: total plant height
 """
-function rtrans(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou, lai, eai, height)
+function r_transmitted(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou, lai, eai, height)
 
     # Number of sample points along the plane:
     interval = 200
@@ -208,7 +254,7 @@ function rtrans(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou, lai, 
             rsoleil = 1.0
         end
     end
-    return rtransmis
+    return (rombre, rsoleil)
 end
 
 """
