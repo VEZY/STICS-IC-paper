@@ -4,27 +4,24 @@ includet("functions.jl")
 
 image_dim = (800, 400)
 interrow = 0.40
-h0 = 0.1
+h0 = 0.2
 width = 0.2
 height = 0.4
 shape = :dtriangle # Possible values: :dtriangle, :utriangle, :rectangle
 
 begin
     Drawing(image_dim[1], image_dim[2], :png)
-    # origin()
 
     t = currentdrawing()
     background("white")
     sethue("black")
     scale(1, -1) # to set the y axis up
     translate(0, -t.height)
-    # t.height
-    # t.width
-    sethue("red")
-    circle(Point(0, 0), 10, :fill)
 
-    sethue("green")
-    circle(Point(0, t.height), 10, :fill)
+    # sethue("red")
+    # circle(Point(0, 0), 10, :fill)
+    # sethue("green")
+    # circle(Point(0, t.height), 10, :fill)
 
     center = Point(t.width * 0.5, t.height * 0.5)
 
@@ -34,9 +31,9 @@ begin
     outer_box_width = outer_box_rel_width * t.width
     outer_box_height = outer_box_rel_height * t.height
 
-    sethue("grey")
-    setdash("dot")
-    outer_box = box(center, outer_box_width, outer_box_height, :stroke)
+    # sethue("grey")
+    # setdash("dot")
+    outer_box = box(center, outer_box_width, outer_box_height, :none)
 
     # Rescaling the crop dimensions to match the drawing coordinates:
     d_width = width * outer_box_width / (interrow + width)
@@ -50,7 +47,7 @@ begin
         Point(outer_box[2][1] + d_width / 2, outer_box[2][2]),
         Point(outer_box[4][1] - d_width / 2, outer_box[4][2]),
         :stroke
-    ) # 1 value for all corners = rectangle, several = rounded corners
+    )
 
     # Crop dimensions in box dimensions:
     x0 = inner_box[2][1]
@@ -69,7 +66,6 @@ begin
         sethue("grey")
         setdash("dot")
         translate(inner_box_width, 0)
-        circle(Point(0, 0), 10, :fill)
         poly(p, :stroke, close=true)
     end
 
