@@ -254,7 +254,7 @@ stats =
 stat_diff =
   pivot_wider(stats, names_from = Plant, values_from = c(diff_sim,diff_obs))%>%
   select(variable, diff_obs_Pea, diff_sim_Pea, diff_obs_Wheat, diff_sim_Wheat)%>%
-  mutate(across(is.numeric, ~round(.x, 2)))%>%
+  mutate(across(is.numeric, ~round(.x, 0)))%>%
   mutate(variable = 
            recode(
              variable,

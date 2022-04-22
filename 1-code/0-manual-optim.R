@@ -25,7 +25,7 @@ javastics = normalizePath("0-javastics", winslash = "/")
 # workspace_pea_barley = "0-data/usms-optim-radiative/Auzeville_wfb-Wheat-SC"
 # workspace_pea_barley = "0-data/usms-optim-radiative/Auzeville_wfb-Fababean-SC"
 # workspace_pea_barley = "0-data/usms-optim-radiative/Auzeville_wfb-Fababean-Wheat-IC"
-workspace_pea_barley = "0-data/usms-optim-radiative/sojaTardif2012-SC"
+workspace_pea_barley = normalizePath("0-data/usms-optim-radiative/Auzeville-IC", winslash = "/")
 # workspace_pea_barley = "0-data/usms-optim-radiative/1Tprecoce2Stardif2012"
 
 # Define the variables to simulate ----------------------------------------
@@ -38,13 +38,13 @@ sim_variables = c("lai(n)","masec(n)","QNplante","Qfix","mafruit","fapar","ilaxs
 
 # Run the simulations -----------------------------------------------------
 
-# SticsRFiles::get_usms_list(usm_path = file.path(workspace_pea_barley,"usms.xml"))
-
+SticsRFiles::get_usms_list(file = file.path(workspace_pea_barley,"usms.xml"))
+usms = "IC_Wheat_Pea_2012-2013_N1"
 # usms= "Fababean_Wheat_IC_2007"
 # usms = "Wheat_SC_2007"
 # usms = "Fababean_SC_2007"
 # usms = "TournPrecoce-SC2012"
-usms = "SojaTardif-SC2012"
+# usms = "SojaTardif-SC2012"
 # usms = "1Tprecoce2Stardif2012"
 # usms = c("SC_Barley_Angers_2003_N0","SC_Barley_Angers_2003_N1")
 # usms = c("SC_Barley_Angers_2003_N0")
@@ -67,14 +67,17 @@ SticsRFiles::gen_varmod(workspace_pea_barley, sim_variables)
 # set_param_xml(file.path(workspace_pea_barley,"plant","pea-sebastian_plt.xml"), 
 #               # param_name = "inngrain2", param_value = 1.00116558239944, overwrite = TRUE)
 #               param_name = "stdnofno", param_value = 1000, overwrite = TRUE)
-SticsOnR::run_javastics(javastics_path = javastics, workspace_path = workspace_pea_barley,
-                        # stics_exe = "Stics_IC_v07-01-2022.exe",
-                        stics_exe = "Stics_IC_v13-01-2022.exe",
-                        # stics_exe = "D:/OneDrive - cirad.fr/Travail_Postdoc/STICS/Stics_v850_r1528_branche_Intercrop/stics/Debug/Stics.exe",
-                        usms_list = usms)
+SticsOnR::run_javastics(
+  javastics = javastics, 
+  workspace = workspace_pea_barley,
+  # stics_exe = "Stics_IC_v07-01-2022.exe",
+  stics_exe = "Stics_IC_v13-01-2022.exe",
+  # stics_exe = "D:/OneDrive - cirad.fr/Travail_Postdoc/STICS/Stics_v850_r1528_branche_Intercrop/stics/Debug/Stics.exe",
+  usms_list = usms
+)
 
 sim_regular = get_sim(workspace = workspace_pea_barley, 
-                      usm_name = usms, 
+                      usm = usms, 
                       usms_filepath = file.path(workspace_pea_barley,"usms.xml"))
 
 plot(regular = sim_regular, obs = obs)
