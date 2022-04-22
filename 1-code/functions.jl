@@ -82,9 +82,11 @@ function transrad(rg, width, P_latitude, P_parsurrg, j, ir, shape, h0, alpha, rd
 
     # Computation of the relative surfaces of the shaded/sunlit parts of the plane below the plant:
     surfAO = width / ir
-    if (rombre == 0.0)
+
+    if rombre == 0.0
         surfAO = 0.0 # RV: when largeur is very low the first point is not even shaded
     end
+
     surfAO = min(surfAO, 1.0)
     surfAS = 1.0 - surfAO
 
@@ -285,14 +287,14 @@ function kdif(x, h0, width, ir, e)
     # For the right-hand side:
     G = (h0 + e) / (ir - x - width / 2.0)
     for i in 1:23
-        hcrit = atan(G * sin(aztab(i) / 180 * π)) / π * 180
+        hcrit = atan(G * sin(aztab[i] / 180 * π)) / π * 180
         if hcrit < htab[i]
             kgdiffus = kgdiffus + SOCtab[i]
         end
     end
 
     # For the left-hand side:
-    # If the points is not under the plant canopy:
+    # If the point is not under the plant canopy (else it is only transmitted light):
     if x > width / 2
         G = (h0 + e) / (x - width / 2)
         for i in 1:23
@@ -324,6 +326,20 @@ NB: This is the `kgeom` function from STICS
 function kdir(lat, j, width, x, ir, shape, h0, alpha, e)
 
     x = min(x, ir / 2)
+
+    θ1, θ2 = get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
+
+    kg = 0.5 * (cos(π / 2 + θ1) + cos(π / 2 + θ2))
+
+    return max(kg, 0.0)
+end
+"""
+    get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
+
+Compute the two angles that gives the portion of sky that is seen by a point.
+"""
+function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
+
     limite = width / 2
 
     if (e > 0.0)
@@ -335,51 +351,48 @@ function kdir(lat, j, width, x, ir, shape, h0, alpha, e)
     # Rectangle shape
     if shape == :rectangle
         tgh = (h0 + e) / (ir - x - limite)
-        teta1 = tetacrit(lat, j, tgh, alpha)
+        θ1 = tetacrit(lat, j, tgh, alpha)
         if x > limite
             tgh = (h0 + e) / (x - limite)
-            teta2 = tetacrit(lat, j, tgh, alpha)
+            θ2 = tetacrit(lat, j, tgh, alpha)
         elseif x < limite
             tgh = h0 / (-x + limite)
-            teta2 = -tetacrit(lat, j, tgh, alpha)
+            θ2 = -tetacrit(lat, j, tgh, alpha)
         elseif x == limite
-            teta2 = 0
+            θ2 = 0
         end
     elseif shape == :dtriangle
         tgh = (h0 + e) / (ir - x - limite)
-        teta1 = tetacrit(lat, j, tgh, alpha)
+        θ1 = tetacrit(lat, j, tgh, alpha)
         if x > limite
             tgh = (h0 + e) / (x - limite)
-            teta2 = tetacrit(lat, j, tgh, alpha)
+            θ2 = tetacrit(lat, j, tgh, alpha)
         elseif x < limite
             tgh = (h0 + e) / (x - limite)
-            teta2 = -tetacrit(lat, j, tgh, alpha)
+            θ2 = -tetacrit(lat, j, tgh, alpha)
         elseif x == limite
-            teta2 = 0
+            θ2 = 0
         end
     elseif shape == :utriangle
         tgh = (h0 + e) / (ir - x - limite)
-        teta1 = tetacrit(lat, j, tgh, alpha)
+        θ1 = tetacrit(lat, j, tgh, alpha)
         if x < limite2
             if (x > limite)
                 tgh = h0 / (x - limite)
-                teta2 = tetacrit(lat, j, tgh, alpha)
+                θ2 = tetacrit(lat, j, tgh, alpha)
             elseif x < limite
                 tgh = h0 / (limite - x)
-                teta2 = -tetacrit(lat, j, tgh, alpha)
+                θ2 = -tetacrit(lat, j, tgh, alpha)
             elseif x == limite
-                teta2 = 0.0
+                θ2 = 0.0
             end
             if x >= limite2
                 tgh = (h0 + e) / x
-                teta2 = tetacrit(lat, j, tgh, alpha)
+                θ2 = tetacrit(lat, j, tgh, alpha)
             end
         end
     end
-
-    kg = 0.5 * (cos(pi / 2 + teta1) + cos(pi / 2 + teta2))
-
-    return max(kg, 0.0)
+    return (θ1, θ2)
 end
 
 """
@@ -401,7 +414,7 @@ function tetacrit(lat, j, tgh, alpha)
     dec = decangle(j)
     hprec = 0.0
 
-    for i in 1:(18*n) #! RV: shouln't 18 be 180 instead?
+    for i in 1:(18*n)
         teta[i] = 10.0 / n * (i - 1)
         teta[i] = (teta[i] - 90) / 180 * π
         # Sun position (h,azim)
@@ -421,13 +434,13 @@ function tetacrit(lat, j, tgh, alpha)
         # Critical height
         hcrit = atan(tgh * abs(sin(azim + alpha + 0.00001)))
         # test for h = hcrit
-        if hcritprec >= hprec && hcrit <= h.and.i > 1
+        if hcritprec >= hprec && hcrit <= h && i > 1
             # Linear interpolation
             acrit = (hcrit - hcritprec) / (teta[i] - teta[i-1])
             bcrit = hcrit - acrit * teta[i]
             a = (h - hprec) / (teta[i] - teta[i-1])
             b = h - a * teta[i]
-            if (a /= acrit)
+            if a != acrit
                 tetacriteria = (b - bcrit) / (acrit - a)
             end
             return tetacriteria
@@ -436,6 +449,8 @@ function tetacrit(lat, j, tgh, alpha)
         hcritprec = hcrit
         hprec = h
     end
+
+    return tetacriteria
 end
 
 """
