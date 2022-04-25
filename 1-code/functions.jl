@@ -276,16 +276,16 @@ function kdif(x, h0, width, ir, e)
 
     # Values given by Hervé Sinoquet, gives height, azimuth and fraction of diffuse light according
     # to the SOC standard for 23 directions
-    htab = (5 * 9.23, 2 * 10.81, 3 * 26.57, 5 * 31.08, 3 * 47.41, 2 * 52.62, 3 * 69.16)
+    htab = (repeat([9.23], 5)..., 10.81, 10.81, 26.57, 26.57, 26.57, repeat([31.08], 5)..., 47.41, 47.41, 47.41, 52.62, 52.62, 69.16, 69.16, 69.16)
     aztab = (12.23, 59.77, 84.23, 131.77, 156.23, 36, 108, 0, 72, 144, 23.27, 48.73, 95.27, 120.73, 167.27, 0, 72, 144, 36, 108, 0, 72, 144)
-    SOCtab = (5 * 0.0043, 2 * 0.0055, 3 * 0.0140, 5 * 0.0197, 3 * 0.0336, 2 * 0.0399, 3 * 0.0495)
+    SOCtab = (repeat([0.0043], 5)..., 0.0055, 0.0055, 0.0140, 0.0140, 0.0140, repeat([0.0197], 5)..., 0.0336, 0.0336, 0.0336, 0.0399, 0.0399, 0.0495, 0.0495, 0.0495)
 
     x = min(x, ir / 2)
     limite = width / 2.0
     kgdiffus = 0.0
 
     # For the right-hand side:
-    G = (h0 + e) / (ir - x - width / 2.0)
+    G = (h0 + e) / (ir - x - limite)
     for i in 1:23
         hcrit = atan(G * sin(aztab[i] / 180 * π)) / π * 180
         if hcrit < htab[i]
@@ -295,10 +295,10 @@ function kdif(x, h0, width, ir, e)
 
     # For the left-hand side:
     # If the point is not under the plant canopy (else it is only transmitted light):
-    if x > width / 2
-        G = (h0 + e) / (x - width / 2)
+    if x > limite
+        G = (h0 + e) / (x - limite)
         for i in 1:23
-            hcrit = atan(G * sin(aztab(i) / 180 * π)) / π * 180
+            hcrit = atan(G * sin(aztab[i] / 180 * π)) / π * 180
             if (hcrit < htab[i])
                 kgdiffus = kgdiffus + SOCtab[i]
             end
@@ -474,7 +474,7 @@ function P_from_θ(θ, tot_height, point_pos_m)
     P = sin(θ) * tot_height / cos(θ)
 
     # point_pos_m - P1 to get the true position in m from the relative position:
-    return Point(point_pos_m + P, 0)
+    return Point(point_pos_m - P, 0)
     #! Check if it is - or + P
 end
 
@@ -483,4 +483,19 @@ function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
     d_P_xpos = rescale(P1[1] / orig_xmax, 0, orig_xmax, to_xmax, to_ymax)
 
     return Point(d_P_xpos, orig_ymax)
+end
+
+
+function text_pos(str, x, y)
+    @layer begin
+        scale(1, -1) # to set the y axis up
+        text(str, x, -y)
+    end
+end
+
+function text_pos(str, p)
+    @layer begin
+        scale(1, -1) # to set the y axis up
+        text(str, p[1], -p[2])
+    end
 end

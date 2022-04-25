@@ -15,6 +15,7 @@ alpha = 0.0 # Crop row direction relative to north
 rel_sun_pos = 0.5
 point_pos_m = 0.4 # position of the point to simulate light interception, in meter
 light_from_sky = true # if false the light stops at the inner box, else at the sky
+display_text = true # display names and values?
 
 begin
     Drawing(image_dim[1], image_dim[2], :png)
@@ -24,11 +25,6 @@ begin
     sethue("black")
     scale(1, -1) # to set the y axis up
     translate(0, -t.height)
-
-    # sethue("red")
-    # circle(Point(0, 0), 10, :fill)
-    # sethue("green")
-    # circle(Point(0, t.height), 10, :fill)
 
     center = Point(t.width * 0.5, t.height * 0.5)
 
@@ -148,17 +144,16 @@ begin
         close=true
     )
 
-    @layer begin
-        # a1 = sin(θ1) * (h0 + height) / cos(θ1)
-        # a2 = sin(θ2) * (h0 + height) / cos(θ2)
-
-        sethue("black")
-        text_point = midpoint(sun_pos...)
-        # translate(text_point)
-        # scale(1, -1) # to set the y axis up
-        # text(string("kdir: ", round(kgdirect, digits=2)), O)
-        # text(string("kdir: ", round(kgdirect, digits=2)), text_point[1], -text_point[2])
-        text(string("kdir: ", round(kgdirect, digits=2)), text_point[1], text_point[2])
+    # Recompute the points P1 and P2 but at the inner
+    P1, P2 = P_from_θ.([θ1, θ2], h0 + height, point_pos_m)
+    P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_height, inner_box[2][1], inner_box[4][1])
+    text_point = midpoint(P1, P2)
+    if display_text
+        @layer begin
+            sethue("black")
+            setopacity(1)
+            text_pos(string("kdir: ", round(kgdirect, digits=2)), text_point[1], text_point[2] + 10)
+        end
     end
 
     # Compute transmitted light:
@@ -185,10 +180,25 @@ begin
         close=true
     )
 
-
+    text_point = midpoint(p[2], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
+    if display_text
+        @layer begin
+            kdifuse = kdif(point_pos_m, h0, width, interrow, height)
+            sethue("black")
+            setopacity(1)
+            text_pos(string("kdif: ", round(kdifuse, digits=2)), text_point[1], text_point[2] + 10)
+        end
+    end
 
     sethue("grey")
     circle(sample_point, 10, :fill)
+    if display_text
+        @layer begin
+            sethue("black")
+            setopacity(1)
+            text_pos("Sample point", sample_point[1] - 30, sample_point[2] - 20)
+        end
+    end
 
     finish()
     preview()
