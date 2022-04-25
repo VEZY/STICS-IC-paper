@@ -13,8 +13,8 @@ latitude = 43.61
 j = 1
 alpha = 0.0 # Crop row direction relative to north
 rel_sun_pos = 0.5
-point_pos_m = 0.4 # position of the point to simulate light interception for
-
+point_pos_m = 0.4 # position of the point to simulate light interception, in meter
+light_from_sky = true # if false the light stops at the inner box, else at the sky
 
 begin
     Drawing(image_dim[1], image_dim[2], :png)
@@ -91,12 +91,7 @@ begin
         poly(p, :fill, close=true) # Outter left side of the LHS plant
     end
 
-    θ1, θ2 = get_θ(latitude, j, width, point_pos_m, interrow, shape, h0, alpha, height)
-    rad2deg(cos(π / 2 + θ1))
-    rad2deg(cos(π / 2 + θ2))
-    #! Use these angles instead to compute direct light (relative to vertical I think)
-
-    point_pos = rescale(point_pos_rel, 0, interrow, x0[1], center[1]) # Point position on the plane coords
+    point_pos = rescale(point_pos_m / interrow, 0, interrow, x0, inner_box[4][1]) # Point position on the plane coords
     sample_point = Point(point_pos, y0) # Point coordinates
 
     # Compute diffuse light:
@@ -124,9 +119,37 @@ begin
     )
 
     # Compute direct light:
-    rel_sun_pos_min = max(rel_sun_pos - 0.1, 0.0)
-    rel_sun_pos_max = min(rel_sun_pos + 0.1, 1.0)
-    sun_pos = rescale.([rel_sun_pos_min, rel_sun_pos_max], 0, 1, p[2], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
+    light_ray_height = h0 + height
+    d_light_ray_height = d_height
+    if light_from_sky
+        light_ray_height *= rescale(t.height, sample_point[2], inner_box[4][2], 0, 1)
+        d_light_ray_height = t.height - sample_point[2]
+    end
+
+    # Get the value of θ1 and θ2, the angles relative to the vertical plane on the sample_point
+    # that give the view angle of the direct light comming from the sky:
+    θ1, θ2 = get_θ(latitude, j, width, point_pos_m, interrow, shape, h0, alpha, height)
+
+    # a1 and a2 are the distance between the vertical plane and the two points on the sky
+    # that provide the light:
+    a1 = sin(θ1) * light_ray_height / cos(θ1)
+    a2 = sin(θ2) * light_ray_height / cos(θ2)
+
+    a1_xpos_m = point_pos_m - a1
+    a2_xpos_m = point_pos_m - a2
+
+    d_a1_xpos = rescale(a1_xpos_m / interrow, 0, interrow, x0, inner_box[4][1])
+    d_a2_xpos = rescale(a2_xpos_m / interrow, 0, interrow, x0, inner_box[4][1])
+
+    # And this is their position on the drawing:
+    P1 = Point(d_a1_xpos, sample_point[2] + d_light_ray_height)
+    P2 = Point(d_a2_xpos, sample_point[2] + d_light_ray_height)
+    #! Check if it is - or + a1/a2
+
+    sun_pos = [P1, P2]
+    # rel_sun_pos_min = max(rel_sun_pos - 0.1, 0.0)
+    # rel_sun_pos_max = min(rel_sun_pos + 0.1, 1.0)
+    # sun_pos = rescale.([rel_sun_pos_min, rel_sun_pos_max], 0, 1, p[2], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
 
     sethue("yellow")
     poly(
