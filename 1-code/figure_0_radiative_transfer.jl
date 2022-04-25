@@ -11,11 +11,11 @@ shape = :dtriangle # Possible values: :dtriangle, :utriangle, :rectangle
 npoints = 200
 latitude = 43.61
 j = 170
-alpha = 0.0 # Crop row direction relative to north
-rel_sun_pos = 0.5
-point_pos_m = 0.4 # position of the point to simulate light interception, in meter
+alpha = deg2rad(0) # Crop row direction relative to north
 light_from_sky = true # if false the light stops at the inner box, else at the sky
 display_text = true # display names and values?
+n_sample_points = 200
+i_sample_point = 150 # Point to simulate (1:n_sample_points)
 
 begin
     Drawing(image_dim[1], image_dim[2], :png)
@@ -88,12 +88,37 @@ begin
         poly(p, :fill, close=true) # Outter left side of the LHS plant
     end
 
-    point_pos = rescale(point_pos_m / interrow, 0, interrow, x0, inner_box[4][1]) # Point position on the plane coords
-    sample_point = Point(point_pos, y0) # Point coordinates
+    # Draw the center line
+    bottom_center = midpoint(inner_box[2], inner_box[3])
+    top_center = midpoint(inner_box[1], inner_box[4])
+    sethue("black")
+    setdash("dot")
+    line(bottom_center, top_center, :stroke)
+
+    if display_text
+        @layer begin
+            sethue("black")
+            setopacity(1)
+            scale(1, -1) # to set the y axis up
+            setdash("solid")
+            label(
+                "Row center", :S, Point(bottom_center[1], -bottom_center[2]),
+                offset=20, leader=true, leaderoffsets=[0.4, 0.9]
+            )
+        end
+    end
+
+    all_point_pos_m = (1:n_sample_points) ./ n_sample_points .* (interrow / 2.0)
+    point_pos_m = all_point_pos_m[i_sample_point]
+    all_point_pos = rescale.(all_point_pos_m ./ interrow, 0, interrow, x0, inner_box[4][1]) # Point position on the plane coords
+    point_pos = all_point_pos[i_sample_point]
+    all_sample_points = Point.(all_point_pos, y0)
+    sample_point = all_sample_points[i_sample_point] # Point coordinates
 
     # Compute diffuse light:
     # Direct light: Drawing the right triangle between the vertical and θ1
-    sethue("khaki1")
+    sethue("white")
+    setopacity(0.2)
     poly(
         [
             Point(sample_point[1], p[2][2]),
@@ -134,6 +159,7 @@ begin
 
     sun_pos = [P1, P2]
 
+    setopacity(0.3)
     sethue("yellow")
     poly(
         [
@@ -154,7 +180,11 @@ begin
         @layer begin
             sethue("black")
             setopacity(1)
-            text_pos(string("kdir: ", round(kgdirect, digits=2)), text_point[1], text_point[2] + 10)
+            scale(1, -1) # to set the y axis up
+            label(
+                string("kdir: ", round(kgdirect, digits=2)), :N, Point(text_point[1], -text_point[2]),
+                offset=10, leader=false, leaderoffsets=[0.4, 0.9]
+            )
         end
     end
 
@@ -190,17 +220,48 @@ begin
             kdifuse = kdif(point_pos_m, h0, width, interrow, height)
             sethue("black")
             setopacity(1)
-            text_pos(string("kdif: ", round(kdifuse, digits=2)), text_point[1], text_point[2] + 10)
+            scale(1, -1) # to set the y axis up
+            label(
+                string("kdif: ", round(kdifuse, digits=2)), :N, Point(text_point[1], -text_point[2]),
+                offset=10, leader=false, leaderoffsets=[0.4, 0.9]
+            )
+        end
+    end
+
+    @layer begin
+        for (i, v) in enumerate(all_sample_points)
+            sethue("black")
+            setdash("solid")
+            setline(0.5)
+            setopacity(0.8)
+            i == i_sample_point && continue # skip if doing the current sample point
+            line(v, Point(v[1], v[2] - 3), :stroke)
+
+            if display_text && i == 1 || mod(i, 25) == 0
+                @layer begin
+                    sethue("black")
+                    setopacity(1)
+                    fontsize(5)
+                    text_pos(string(i), Point(v[1], v[2] - 8))
+                end
+            end
+
         end
     end
 
     sethue("grey")
     circle(sample_point, 10, :fill)
+
     if display_text
         @layer begin
             sethue("black")
             setopacity(1)
-            text_pos("Sample point", sample_point[1] - 30, sample_point[2] - 20)
+            scale(1, -1) # to set the y axis up
+            setdash("solid")
+            label(
+                "Sample point", :S, Point(sample_point[1], -sample_point[2]),
+                offset=20, leader=true, leaderoffsets=[0.4, 0.9]
+            )
         end
     end
 

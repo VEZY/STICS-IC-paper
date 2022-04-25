@@ -325,9 +325,9 @@ NB: This is the `kgeom` function from STICS
 """
 function kdir(lat, j, width, x, ir, shape, h0, alpha, e)
 
-    if x > ir / 2
+    if x > ir / 2.0
         @warn "sample point position > interrow / 2. Forcing it at `interrow / 2`."
-        x = min(x, ir / 2)
+        x = min(x, ir / 2.0)
     end
 
     θ1, θ2 = get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
@@ -355,44 +355,44 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
     # Rectangle shape
     if shape == :rectangle
         tgh = (h0 + e) / (ir - x - limite)
-        θ1 = tetacrit(lat, j, tgh, alpha)
+        θ1 = θcrit(lat, j, tgh, alpha)
         if x > limite
             tgh = (h0 + e) / (x - limite)
-            θ2 = tetacrit(lat, j, tgh, alpha)
+            θ2 = θcrit(lat, j, tgh, alpha)
         elseif x < limite
             tgh = h0 / (-x + limite)
-            θ2 = -tetacrit(lat, j, tgh, alpha)
+            θ2 = -θcrit(lat, j, tgh, alpha)
         elseif x == limite
             θ2 = 0
         end
     elseif shape == :dtriangle
         tgh = (h0 + e) / (ir - x - limite)
-        θ1 = tetacrit(lat, j, tgh, alpha)
+        θ1 = θcrit(lat, j, tgh, alpha)
         if x > limite
             tgh = (h0 + e) / (x - limite)
-            θ2 = tetacrit(lat, j, tgh, alpha)
+            θ2 = θcrit(lat, j, tgh, alpha)
         elseif x < limite
             tgh = (h0 + e) / (x - limite)
-            θ2 = -tetacrit(lat, j, tgh, alpha)
+            θ2 = -θcrit(lat, j, tgh, alpha)
         elseif x == limite
             θ2 = 0
         end
     elseif shape == :utriangle
         tgh = (h0 + e) / (ir - x - limite)
-        θ1 = tetacrit(lat, j, tgh, alpha)
+        θ1 = θcrit(lat, j, tgh, alpha)
         if x < limite2
             if (x > limite)
                 tgh = h0 / (x - limite)
-                θ2 = tetacrit(lat, j, tgh, alpha)
+                θ2 = θcrit(lat, j, tgh, alpha)
             elseif x < limite
                 tgh = h0 / (limite - x)
-                θ2 = -tetacrit(lat, j, tgh, alpha)
+                θ2 = -θcrit(lat, j, tgh, alpha)
             elseif x == limite
                 θ2 = 0.0
             end
             if x >= limite2
                 tgh = (h0 + e) / x
-                θ2 = tetacrit(lat, j, tgh, alpha)
+                θ2 = θcrit(lat, j, tgh, alpha)
             end
         end
     end
@@ -400,35 +400,36 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
 end
 
 """
-    tetacrit(lat, j, tgh, alpha)
+    θcrit(lat, j, tgh, alpha)
 
 Compute the cosinus of the theta angle for the apparent sun height `h` (tangent of the angle
 in radian)
 """
-function tetacrit(lat, j, tgh, alpha)
+function θcrit(lat, j, tgh, alpha)
     # Initialisations
     acrit = 0.0
     bcrit = 0.0
     a = 0.0
     b = 0.0
-    tetacriteria = 0.0
+    θcriteria = 0.0
     hcritprec = 0.0
     n = 3
-    teta = zeros(Float64, 180)
+    θ = zeros(Float64, 180)
     dec = decangle(j)
     hprec = 0.0
 
     for i in 1:(18*n)
-        teta[i] = 10.0 / n * (i - 1)
-        teta[i] = (teta[i] - 90) / 180 * π
+        θ[i] = 10.0 / n * (i - 1)
+        # This gives θ between 0.0 and 176.66666666666669 by steps of 3.33 degrees
+        θ[i] = (θ[i] - 90) / 180 * π
         # Sun position (h,azim)
-        sinh = sin(lat) * sin(dec) + cos(lat) * cos(dec) * cos(teta[i])
+        sinh = sin(lat) * sin(dec) + cos(lat) * cos(dec) * cos(θ[i])
         h = asin(sinh)
-        cosazim = (-cos(lat) * sin(dec) + sin(lat) * cos(dec) * cos(teta[i])) / cos(h)
+        cosazim = (-cos(lat) * sin(dec) + sin(lat) * cos(dec) * cos(θ[i])) / cos(h)
 
         cosazim = min(1.0, cosazim)
-        if teta[i] != 0.0
-            azim = acos(cosazim) * teta[i] / abs(teta[i])
+        if θ[i] != 0.0
+            azim = acos(cosazim) * θ[i] / abs(θ[i])
         else
             azim = 0.0
         end
@@ -440,21 +441,21 @@ function tetacrit(lat, j, tgh, alpha)
         # test for h = hcrit
         if hcritprec >= hprec && hcrit <= h && i > 1
             # Linear interpolation
-            acrit = (hcrit - hcritprec) / (teta[i] - teta[i-1])
-            bcrit = hcrit - acrit * teta[i]
-            a = (h - hprec) / (teta[i] - teta[i-1])
-            b = h - a * teta[i]
+            acrit = (hcrit - hcritprec) / (θ[i] - θ[i-1])
+            bcrit = hcrit - acrit * θ[i]
+            a = (h - hprec) / (θ[i] - θ[i-1])
+            b = h - a * θ[i]
             if a != acrit
-                tetacriteria = (b - bcrit) / (acrit - a)
+                θcriteria = (b - bcrit) / (acrit - a)
             end
-            return tetacriteria
+            return θcriteria
         end
 
         hcritprec = hcrit
         hprec = h
     end
 
-    return tetacriteria
+    return θcriteria
 end
 
 """
@@ -493,7 +494,7 @@ function text_pos(str, x, y)
     end
 end
 
-function text_pos(str, p)
+function text_pos(str, p; halign=:center)
     @layer begin
         scale(1, -1) # to set the y axis up
         text(str, p[1], -p[2])
