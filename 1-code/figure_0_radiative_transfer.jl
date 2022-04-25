@@ -4,7 +4,7 @@ includet("functions.jl")
 
 image_dim = (800, 400)
 interrow = 1.00
-h0 = 0.4
+h0 = 0.5
 width = 0.2
 height = 1.0
 shape = :dtriangle # Possible values: :dtriangle, :utriangle, :rectangle
@@ -117,7 +117,8 @@ begin
 
     # Compute direct light:
     light_ray_height = h0 + height
-    d_light_ray_height = d_height
+    d_light_ray_height = d_height + d_h0
+
     if light_from_sky
         light_ray_height *= rescale(t.height, sample_point[2], inner_box[4][2], 0, 1)
         d_light_ray_height = t.height - sample_point[2]
@@ -146,7 +147,8 @@ begin
 
     # Recompute the points P1 and P2 but at the inner
     P1, P2 = P_from_θ.([θ1, θ2], h0 + height, point_pos_m)
-    P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_height, inner_box[2][1], inner_box[4][1])
+    P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
+
     text_point = midpoint(P1, P2)
     if display_text
         @layer begin
