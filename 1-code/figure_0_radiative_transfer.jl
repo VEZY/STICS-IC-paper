@@ -4,13 +4,13 @@ includet("functions.jl")
 
 image_dim = (800, 400)
 interrow = 1.00
-h0 = 0.0
+h0 = 0.4
 width = 0.2
 height = 1.0
 shape = :dtriangle # Possible values: :dtriangle, :utriangle, :rectangle
 npoints = 200
 latitude = 43.61
-j = 1
+j = 170
 alpha = 0.0 # Crop row direction relative to north
 rel_sun_pos = 0.5
 point_pos_m = 0.4 # position of the point to simulate light interception, in meter
@@ -163,7 +163,8 @@ begin
         [
             p[2],
             sample_point,
-            inner_box[2]
+            inner_box[2],
+            p[3],
         ],
         :fill,
         close=true
@@ -174,7 +175,8 @@ begin
         [
             Point(inner_box[4][1] - d_width / 2, inner_box[4][2]),
             sample_point,
-            inner_box[3]
+            inner_box[3],
+            Point(inner_box[3][1], inner_box[3][2] + d_h0),
         ],
         :fill,
         close=true
