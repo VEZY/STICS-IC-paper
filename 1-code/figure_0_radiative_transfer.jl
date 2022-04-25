@@ -60,6 +60,7 @@ begin
     x0 = inner_box[2][1]
     y0 = inner_box[2][2]
     inner_box_width = inner_box[3][1] - inner_box[1][1]
+    inner_box_length = inner_box[3][2] - inner_box[1][2]
     # Drawing the left-hand side crop:
     setopacity(0.4)
     sethue("green")
@@ -128,28 +129,13 @@ begin
 
     # Get the value of θ1 and θ2, the angles relative to the vertical plane on the sample_point
     # that give the view angle of the direct light comming from the sky:
-    θ1, θ2 = get_θ(latitude, j, width, point_pos_m, interrow, shape, h0, alpha, height)
+    kgdirect, θ1, θ2 = kdir(latitude, j, width, point_pos_m, interrow, shape, h0, alpha, height)
 
-    # a1 and a2 are the distance between the vertical plane and the two points on the sky
-    # that provide the light:
-    a1 = sin(θ1) * light_ray_height / cos(θ1)
-    a2 = sin(θ2) * light_ray_height / cos(θ2)
-
-    a1_xpos_m = point_pos_m - a1
-    a2_xpos_m = point_pos_m - a2
-
-    d_a1_xpos = rescale(a1_xpos_m / interrow, 0, interrow, x0, inner_box[4][1])
-    d_a2_xpos = rescale(a2_xpos_m / interrow, 0, interrow, x0, inner_box[4][1])
-
-    # And this is their position on the drawing:
-    P1 = Point(d_a1_xpos, sample_point[2] + d_light_ray_height)
-    P2 = Point(d_a2_xpos, sample_point[2] + d_light_ray_height)
-    #! Check if it is - or + a1/a2
+    # Compute P1 and P2, the two points on the sky that provide the direct light view angle:
+    P1, P2 = P_from_θ.([θ1, θ2], light_ray_height, point_pos_m)
+    P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])
 
     sun_pos = [P1, P2]
-    # rel_sun_pos_min = max(rel_sun_pos - 0.1, 0.0)
-    # rel_sun_pos_max = min(rel_sun_pos + 0.1, 1.0)
-    # sun_pos = rescale.([rel_sun_pos_min, rel_sun_pos_max], 0, 1, p[2], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
 
     sethue("yellow")
     poly(
@@ -161,6 +147,19 @@ begin
         :fill,
         close=true
     )
+
+    @layer begin
+        # a1 = sin(θ1) * (h0 + height) / cos(θ1)
+        # a2 = sin(θ2) * (h0 + height) / cos(θ2)
+
+        sethue("black")
+        text_point = midpoint(sun_pos...)
+        # translate(text_point)
+        # scale(1, -1) # to set the y axis up
+        # text(string("kdir: ", round(kgdirect, digits=2)), O)
+        # text(string("kdir: ", round(kgdirect, digits=2)), text_point[1], -text_point[2])
+        text(string("kdir: ", round(kgdirect, digits=2)), text_point[1], text_point[2])
+    end
 
     # Compute transmitted light:
     # Transmitted light: Drawing the left triangle between θ1 and the horizontal

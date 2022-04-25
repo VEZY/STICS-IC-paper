@@ -223,7 +223,7 @@ function r_transmitted(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou
         kgdiffus = kdif(x, h0, width, ir, height)
 
         # Direct radiation
-        kgdirect = kdir(lat, j, width, x, ir, shape, h0, alpha, height)
+        kgdirect, θ1, θ2 = kdir(lat, j, width, x, ir, shape, h0, alpha, height)
 
         rdroit = kgdiffus * rdif + kgdirect * rdirect
         rtransmis[i] = (1.0 - rdroit) * (exp(-P_ktrou * (lai + eai)))
@@ -325,14 +325,18 @@ NB: This is the `kgeom` function from STICS
 """
 function kdir(lat, j, width, x, ir, shape, h0, alpha, e)
 
-    x = min(x, ir / 2)
+    if x > ir / 2
+        @warn "sample point position > interrow / 2. Forcing it at `interrow / 2`."
+        x = min(x, ir / 2)
+    end
 
     θ1, θ2 = get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
 
     kg = 0.5 * (cos(π / 2 + θ1) + cos(π / 2 + θ2))
 
-    return max(kg, 0.0)
+    return (max(kg, 0.0), θ1, θ2)
 end
+
 """
     get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
 
@@ -462,4 +466,21 @@ function decangle(j)
     theta1 = 2 * π * (j - 80) / 365
     theta2 = 0.034 * (sin(2 * π * j / 365) - sin(2 * π * 80 / 365))
     return asin(0.3978 * sin(theta1 - theta2))
+end
+
+
+function P_from_θ(θ, tot_height, point_pos_m)
+    # This is the X position of P in m relative to the sample point X
+    P = sin(θ) * tot_height / cos(θ)
+
+    # point_pos_m - P1 to get the true position in m from the relative position:
+    return Point(point_pos_m + P, 0)
+    #! Check if it is - or + P
+end
+
+function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
+    # Rescale to fit the position of the point on the drawing scale
+    d_P_xpos = rescale(P1[1] / orig_xmax, 0, orig_xmax, to_xmax, to_ymax)
+
+    return Point(d_P_xpos, orig_ymax)
 end
