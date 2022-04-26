@@ -885,7 +885,7 @@ begin
 
 	draw_transmitted_light(sample_point,p,inner_box,d_width,d_h0)
 	
-    text_point = midpoint(p[2], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
+    text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
     if display_text
         @layer begin
             kdifuse = kdif(point_pos_m, h0, width, interrow, height)
@@ -1660,7 +1660,7 @@ version = "3.5.0+0"
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
