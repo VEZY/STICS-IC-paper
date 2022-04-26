@@ -113,7 +113,7 @@ begin
 
     all_point_pos_m = (1:n_sample_points) ./ n_sample_points .* (interrow / 2.0)
     point_pos_m = all_point_pos_m[i_sample_point]
-    all_point_pos = rescale.(all_point_pos_m ./ interrow, 0, interrow, x0, inner_box[4][1]) # Point position on the plane coords
+    all_point_pos = rescale.(all_point_pos_m, 0, interrow, x0, inner_box[4][1]) # Point position on the plane coords
     point_pos = all_point_pos[i_sample_point]
     all_sample_points = Point.(all_point_pos, y0)
     sample_point = all_sample_points[i_sample_point] # Point coordinates

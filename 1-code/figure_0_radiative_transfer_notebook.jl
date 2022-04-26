@@ -18,6 +18,9 @@ end
 begin
 	using Luxor
 	using PlutoUI
+	using HypertextLiteral
+	using DataFrames
+	using UUIDs
 end
 
 # ╔═╡ 6788dbbe-317e-4212-a0e8-d417a52301f6
@@ -50,10 +53,100 @@ md"""
 ### Dynamic
 """
 
+# ╔═╡ d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
+function DataFrameInput(data_frame_input, combine_funct; title="")
+	table_header = []
+	table_body = []
+	col_names = [@htl("<th>$(col_name)</th>") for col_name in names(data_frame_input)]
+
+	function cell_element(row, cell)
+		if isa(cell, Slider) | isa(cell, Scrubbable) | isa(cell, TextField) | isa(cell, RangeSlider) | isa(cell, Radio)
+			@htl("<td>$(combine_funct(row, cell))</td>")
+		else
+			@htl("<td>$(cell)</td>")
+		end
+	end
+	
+	table_header = @htl("$(col_names)")
+	for df_row in eachrow(data_frame_input)
+		row_output = [cell_element(string(UUIDs.uuid4()), cell) for cell in df_row]
+		table_body = [table_body..., @htl("<tr>$(row_output)</tr>")]
+	end
+		
+	@htl("""
+	<h6 style="text-align: center;">$(title)</h6>
+	<table>
+	<thead>
+	<tr>
+	$(table_header)
+	</tr>
+	</thead>
+	<tbody>
+	$(table_body)
+	</tbody>
+	</table>
+	""")
+end
+
+# ╔═╡ e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
+begin
+params_ = 
+	params_ = let 
+		params_ = Any[
+			Slider(param.second[1];default = param.second[2],show_value=true) for param in [
+				"latitude" => (-90:1:90, 44),
+				"day" => (1:365, 1),
+				"width" => (0.05:0.05:1.0,0.2),
+				"interrow" => (0.05:0.05:1.0,1),
+				"height" => (0.05:0.05:1.0,0.8),
+				"sample_point" => (1:199.0,100),
+			]
+		]
+
+		push!(
+			params_,
+			Radio(["dtriangle" => "🔻","utriangle" => "🔺", "rectangle" => "🟥"];default = "dtriangle")
+		)
+	end
+	
+	params_df = DataFrame(
+			:Parameter => ["latitude", "day", "width", "interrow", "height", "sample_point","shape"],
+			:Units => ["degree", "julian day", "m", "m", "m", "index","-"],
+			 Symbol("Value") => params_	
+	)
+
+		
+	@bind df_values PlutoUI.combine() do Child
+		DataFrameInput(params_df, Child; title="Input Dataframe")
+	end
+end
+
+# ╔═╡ a24703dc-9b43-4b9c-9f2e-11b042c67af2
+params = Dict(zip(params_df.Parameter, [df_values[i] for i in 1:length(df_values)]));
+
+# ╔═╡ 6d52ea68-1c71-4cc4-970b-8c9a947fc582
+if params["width"]>params["interrow"] 
+	@warn "Plant width > interrow, will use interrow for the computation"
+end
+
 # ╔═╡ dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 md"""
 ## Diagram
 """
+
+# ╔═╡ 172d2086-efb1-4805-b75e-7801072347f4
+"""
+	P_from_θ(θ, tot_height, point_pos_m)
+
+Get the point X position (in m) of a ray in the sky giving the angle `θ` (angle to the vertical), the sky heigth (`sky_height`) and the point position on the X axis.
+"""
+function P_from_θ(θ, sky_height, x)
+    # This is the X position of P in m relative to the sample point X
+    P = sin(θ) * sky_height / cos(θ)
+
+    # x - P1 to get the true position in m from the relative position:
+    return Point(x - P, 0) #! Check if it is - or + P
+end
 
 # ╔═╡ e261142a-c411-40a3-85e4-ae979a4d9506
 md"""
@@ -492,57 +585,6 @@ md"""
 ## Drawing functions
 """
 
-# ╔═╡ 41283797-6d9e-4eb6-a12e-7ae72ba11f43
-"""
-	dynamic_inputs()
-
-Build sliders and Radio buttons for the inputs.
-
-"""
-function dynamic_inputs()
-	
-	return PlutoUI.combine() do Child
-		
-		inputs = [
-			md""" $(param.first): $(
-				Child(param.first, Slider(param.second[1];default = param.second[2],show_value=true))
-			)"""
-			
-			for param in [
-				"latitude" => (-90:1:90, 44),
-				"day" => (1:365, 1),
-				"width" => (0.05:0.05:1.0,0.2),
-				"interrow" => (0.05:0.05:1.0,1),
-				"height" => (0.05:0.05:1.0,0.8),
-				"sample_point" => (1:199.0,100),
-			]
-		]
-		shape_user = "shape" => (["dtriangle" => "🔻","utriangle" => "🔺", "rectangle" => "🟥"], "dtriangle")
-		
-		push!(inputs,
-				md""" $(shape_user.first): $(
-				Child(shape_user.first, Radio(shape_user.second[1];default = shape_user.second[2]))
-			)"""
-		)
-		
-		md"""
-		#### Dynamic inputs
-		$(inputs)
-		"""
-	end
-end
-
-# ╔═╡ d84dc3c7-56fe-4006-bb0b-389e0e622c3c
-@bind params dynamic_inputs()
-
-# ╔═╡ 87d2a668-72cf-4fbc-9394-e1672e8e91fb
-if params.width>params.interrow 
-	@warn "Plant width > interrow, will use interrow for the computation"
-end
-
-# ╔═╡ 026d15b0-b37f-4f1d-9bf9-90d0b5249d35
-params
-
 # ╔═╡ 4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
 """
     half_canopy_left(width, height, h0)
@@ -644,20 +686,6 @@ function draw_transmitted_light(sample_point,p,inner_box,d_width,d_h0)
 	)
 end
 
-# ╔═╡ 172d2086-efb1-4805-b75e-7801072347f4
-"""
-	P_from_θ(θ, tot_height, point_pos_m)
-
-Get the point X position (in m) of a ray in the sky giving the angle `θ` (angle to the vertical), the sky heigth (`sky_height`) and the point position on the X axis.
-"""
-function P_from_θ(θ, sky_height, x)
-    # This is the X position of P in m relative to the sample point X
-    P = sin(θ) * sky_height / cos(θ)
-
-    # x - P1 to get the true position in m from the relative position:
-    return Point(x - P, 0) #! Check if it is - or + P
-end
-
 # ╔═╡ 030d4bd1-b596-4590-b1c5-d53bdc656c7f
 """
 	P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
@@ -666,20 +694,21 @@ Rescale point P position from meters to drawing coordinates.
 """
 function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
     # Rescale to fit the position of the point on the drawing scale
-    d_P_xpos = rescale(P1[1] / orig_xmax, 0, orig_xmax, to_xmax, to_ymax)
+    d_P_xpos = rescale(P1[1], 0, orig_xmax, to_xmax, to_ymax)
 
     return Point(d_P_xpos, orig_ymax)
 end
 
 # ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
 begin
-	j = params.day
-	latitude_r = deg2rad(params.latitude)
-	interrow = params.interrow
-	shape = Symbol(params.shape)
-	width = min(params.width, interrow)
-	i_sample_point = params.sample_point
-
+	j = params["day"]
+	latitude_r = deg2rad(params["latitude"])
+	interrow = params["interrow"]
+	shape = Symbol(params["shape"])
+	width = min(params["width"], interrow)
+	height = params["height"]
+	i_sample_point = Int(params["sample_point"])
+	
 	# Beginning of the drawing:
 	Drawing(image_dim[1], image_dim[2], :png)
 	t = currentdrawing()
@@ -772,7 +801,7 @@ begin
 
     all_point_pos_m = (1:n_sample_points) ./ n_sample_points .* (interrow / 2.0)
     point_pos_m = all_point_pos_m[i_sample_point]
-    all_point_pos = rescale.(all_point_pos_m ./ interrow, 0, interrow, x0, inner_box[4][1]) # Point position on the plane coords
+    all_point_pos = rescale.(all_point_pos_m, 0, interrow, x0, inner_box[4][1]) # Point position on the plane coords
     point_pos = all_point_pos[i_sample_point]
     all_sample_points = Point.(all_point_pos, y0)
     sample_point = all_sample_points[i_sample_point] # Point coordinates
@@ -921,10 +950,15 @@ end
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 Luxor = "ae8d54c2-7ccd-5906-9d76-62fc9837b5bc"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [compat]
+DataFrames = "~1.3.3"
+HypertextLiteral = "~0.9.3"
 Luxor = "~3.2.0"
 PlutoUI = "~0.7.38"
 """
@@ -981,13 +1015,54 @@ git-tree-sha1 = "417b0ed7b8b838aa6ca0a87aadf1bb9eb111ce40"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.8"
 
+[[deps.Compat]]
+deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
+git-tree-sha1 = "b153278a25dd42c65abbf4e62344f9d22e59191b"
+uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
+version = "3.43.0"
+
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 
+[[deps.Crayons]]
+git-tree-sha1 = "249fe38abf76d48563e2f4556bebd215aa317e15"
+uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
+version = "4.1.1"
+
+[[deps.DataAPI]]
+git-tree-sha1 = "fb5f5316dd3fd4c5e7c30a24d50643b73e37cd40"
+uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
+version = "1.10.0"
+
+[[deps.DataFrames]]
+deps = ["Compat", "DataAPI", "Future", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrettyTables", "Printf", "REPL", "Reexport", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
+git-tree-sha1 = "6c19003824cbebd804a51211fd3bbd81bf1ecad5"
+uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+version = "1.3.3"
+
+[[deps.DataStructures]]
+deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
+git-tree-sha1 = "3daef5523dd2e769dad2365274f760ff5f282c7d"
+uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+version = "0.18.11"
+
+[[deps.DataValueInterfaces]]
+git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
+uuid = "e2d170a0-9d28-54be-80f0-106bbe20a464"
+version = "1.0.0"
+
 [[deps.Dates]]
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
+
+[[deps.DelimitedFiles]]
+deps = ["Mmap"]
+uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+
+[[deps.Distributed]]
+deps = ["Random", "Serialization", "Sockets"]
+uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[deps.Downloads]]
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
@@ -1029,6 +1104,12 @@ git-tree-sha1 = "21efd19106a55620a188615da6d3d06cd7f6ee03"
 uuid = "a3f928ae-7b40-5064-980b-68af3947d34b"
 version = "2.13.93+0"
 
+[[deps.Formatting]]
+deps = ["Printf"]
+git-tree-sha1 = "8339d61043228fdd3eb658d86c926cb282ae72a8"
+uuid = "59287772-0a20-5a39-b81b-1366585eb4c0"
+version = "0.4.2"
+
 [[deps.FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
 git-tree-sha1 = "87eb71354d8ec1a96d4a7636bd57a7347dde3ef9"
@@ -1040,6 +1121,10 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "aa31987c2ba8704e23c6c8ba8a4f769d5d7e4f91"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
 version = "1.0.10+0"
+
+[[deps.Future]]
+deps = ["Random"]
+uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
 [[deps.Gettext_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "XML2_jll"]
@@ -1091,6 +1176,16 @@ version = "0.2.2"
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+
+[[deps.InvertedIndices]]
+git-tree-sha1 = "bee5f1ef5bf65df56bdd2e40447590b272a5471f"
+uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
+version = "1.1.0"
+
+[[deps.IteratorInterfaceExtensions]]
+git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
+uuid = "82899510-4779-5014-852e-03e436cf321d"
+version = "1.0.0"
 
 [[deps.JLLWrappers]]
 deps = ["Preferences"]
@@ -1239,6 +1334,12 @@ git-tree-sha1 = "75a54abd10709c01f1b86b84ec225d26e840ed58"
 uuid = "e89f7d12-3494-54d1-8411-f7d8b9ae1f27"
 version = "0.5.0"
 
+[[deps.Missings]]
+deps = ["DataAPI"]
+git-tree-sha1 = "bf210ce90b6c9eed32d25dbcae1ebc565df2687f"
+uuid = "e1d29d7a-bbdc-5cf2-9ac0-f12de2c33e28"
+version = "1.0.2"
+
 [[deps.Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
@@ -1275,6 +1376,11 @@ git-tree-sha1 = "51a08fb14ec28da2ec7a927c4337e4332c2a4720"
 uuid = "91d4177d-7536-5919-b921-800302f37372"
 version = "1.3.2+0"
 
+[[deps.OrderedCollections]]
+git-tree-sha1 = "85f8e6578bf1f9ee0d11e7bb1b1456435479d47c"
+uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+version = "1.4.1"
+
 [[deps.PCRE_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b2a7af664e098055a7529ad1a900ded962bca488"
@@ -1309,11 +1415,23 @@ git-tree-sha1 = "670e559e5c8e191ded66fa9ea89c97f10376bb4c"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 version = "0.7.38"
 
+[[deps.PooledArrays]]
+deps = ["DataAPI", "Future"]
+git-tree-sha1 = "28ef6c7ce353f0b35d0df0d5930e0d072c1f5b9b"
+uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
+version = "1.4.1"
+
 [[deps.Preferences]]
 deps = ["TOML"]
 git-tree-sha1 = "47e5f437cc0e7ef2ce8406ce1e7e24d44915f88d"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
 version = "1.3.0"
+
+[[deps.PrettyTables]]
+deps = ["Crayons", "Formatting", "Markdown", "Reexport", "Tables"]
+git-tree-sha1 = "dfb54c4e414caa595a1f2ed759b160f5a3ddcba5"
+uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
+version = "1.3.1"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -1354,8 +1472,18 @@ uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
+[[deps.SharedArrays]]
+deps = ["Distributed", "Mmap", "Random", "Serialization"]
+uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
+
 [[deps.Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
+
+[[deps.SortingAlgorithms]]
+deps = ["DataStructures"]
+git-tree-sha1 = "b3363d7460f7d098ca0912c69b082f75625d7508"
+uuid = "a2af1166-a08f-5f64-846c-94a0d3cef48c"
+version = "1.0.1"
 
 [[deps.SparseArrays]]
 deps = ["LinearAlgebra", "Random"]
@@ -1368,6 +1496,18 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+
+[[deps.TableTraits]]
+deps = ["IteratorInterfaceExtensions"]
+git-tree-sha1 = "c06b2f539df1c6efa794486abfb6ed2022561a39"
+uuid = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
+version = "1.0.1"
+
+[[deps.Tables]]
+deps = ["DataAPI", "DataValueInterfaces", "IteratorInterfaceExtensions", "LinearAlgebra", "OrderedCollections", "TableTraits", "Test"]
+git-tree-sha1 = "5ce79ce186cc678bbb5c5681ca3379d1ddae11a1"
+uuid = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
+version = "1.7.0"
 
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
@@ -1515,11 +1655,12 @@ version = "3.5.0+0"
 # ╟─f92c1e63-d40f-41eb-8d58-b44b62e44ff9
 # ╠═311611bd-89f9-4e34-84cb-11924e8efc2d
 # ╟─4dff9014-73ff-4c32-b6ad-c936bd892588
-# ╠═d84dc3c7-56fe-4006-bb0b-389e0e622c3c
-# ╟─87d2a668-72cf-4fbc-9394-e1672e8e91fb
+# ╟─d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
+# ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
+# ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
+# ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╠═026d15b0-b37f-4f1d-9bf9-90d0b5249d35
-# ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
@@ -1531,10 +1672,9 @@ version = "3.5.0+0"
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
-# ╠═41283797-6d9e-4eb6-a12e-7ae72ba11f43
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
 # ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
-# ╟─172d2086-efb1-4805-b75e-7801072347f4
 # ╟─030d4bd1-b596-4590-b1c5-d53bdc656c7f
+# ╟─172d2086-efb1-4805-b75e-7801072347f4
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

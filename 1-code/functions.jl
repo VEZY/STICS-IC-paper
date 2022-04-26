@@ -479,7 +479,7 @@ end
 
 function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
     # Rescale to fit the position of the point on the drawing scale
-    d_P_xpos = rescale(P1[1] / orig_xmax, 0, orig_xmax, to_xmax, to_ymax)
+    d_P_xpos = rescale(P1[1], 0, orig_xmax, to_xmax, to_ymax)
 
     return Point(d_P_xpos, orig_ymax)
 end
