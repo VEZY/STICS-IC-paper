@@ -2,27 +2,29 @@ using Luxor
 
 includet("functions.jl")
 
-image_dim = (800, 400)
-interrow = 1.00
-h0 = 0.5
-width_user = 0.2
-height = 1.0
-shape_user = :utriangle # Possible values: :dtriangle, :utriangle, :rectangle
-npoints = 200
-latitude = 43.61
-j = 170
-alpha = deg2rad(0) # Crop row direction relative to north
-light_from_sky = true # if false the light stops at the inner box, else at the sky
-display_text = true # display names and values?
-n_sample_points = 200
-i_sample_point = 150 # Point to simulate (1:n_sample_points)
+begin
+    image_dim = (800, 400)
+    interrow = 0.6
+    h0 = 0.5
+    width = 0.2
+    height = 0.65
+    shape = :utriangle # Possible values: :dtriangle, :utriangle, :rectangle
+    npoints = 200
+    latitude = 43.61
+    j = 1
+    alpha = deg2rad(0) # Crop row direction relative to north
+    light_from_sky = true # if false the light stops at the inner box, else at the sky
+    display_text = true # display names and values?
+    n_sample_points = 200
+    i_sample_point = 77 # Point to simulate (1:n_sample_points)
+end
 
 begin
-    shape = Symbol(shape_user)
-    width = min(width_user, interrow)
     latitude_r = deg2rad(latitude)
-    Drawing(image_dim[1], image_dim[2], :png)
+    width = min(width, interrow)
 
+    # Beginning of the drawing:
+    Drawing(image_dim[1], image_dim[2], :png)
     t = currentdrawing()
     background("white")
     sethue("black")
@@ -195,9 +197,9 @@ begin
     # Transmitted light: Drawing the left triangle between θ1 and the horizontal
     sethue("goldenrod")
 
-    draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
+    draw_transmitted_light(sample_point, p, inner_box)
 
-    text_point = midpoint(p[2], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
+    text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
     if display_text
         @layer begin
             kdifuse = kdif(point_pos_m, h0, width, interrow, height)

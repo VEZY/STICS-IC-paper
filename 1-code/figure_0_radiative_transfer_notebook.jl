@@ -60,7 +60,7 @@ function DataFrameInput(data_frame_input, combine_funct; title="")
 	col_names = [@htl("<th>$(col_name)</th>") for col_name in names(data_frame_input)]
 
 	function cell_element(row, cell)
-		if isa(cell, Slider) | isa(cell, Scrubbable) | isa(cell, TextField) | isa(cell, RangeSlider) | isa(cell, Radio)
+		if isa(cell, Slider) | isa(cell, Scrubbable) | isa(cell, TextField) | isa(cell, RangeSlider) | isa(cell, Radio) | isa(cell, Select)
 			@htl("<td>$(combine_funct(row, cell))</td>")
 		else
 			@htl("<td>$(cell)</td>")
@@ -105,7 +105,7 @@ params_ =
 
 		push!(
 			params_,
-			Radio(["dtriangle" => "🔻","utriangle" => "🔺", "rectangle" => "🟥"];default = "dtriangle")
+			Select(["dtriangle" => "🔻","utriangle" => "🔺", "rectangle" => "🟥"];default = "dtriangle")
 		)
 	end
 	
@@ -133,20 +133,6 @@ end
 md"""
 ## Diagram
 """
-
-# ╔═╡ 172d2086-efb1-4805-b75e-7801072347f4
-"""
-	P_from_θ(θ, tot_height, point_pos_m)
-
-Get the point X position (in m) of a ray in the sky giving the angle `θ` (angle to the vertical), the sky heigth (`sky_height`) and the point position on the X axis.
-"""
-function P_from_θ(θ, sky_height, x)
-    # This is the X position of P in m relative to the sample point X
-    P = sin(θ) * sky_height / cos(θ)
-
-    # x - P1 to get the true position in m from the relative position:
-    return Point(x - P, 0) #! Check if it is - or + P
-end
 
 # ╔═╡ e261142a-c411-40a3-85e4-ae979a4d9506
 md"""
@@ -697,6 +683,20 @@ function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
     d_P_xpos = rescale(P1[1], 0, orig_xmax, to_xmax, to_ymax)
 
     return Point(d_P_xpos, orig_ymax)
+end
+
+# ╔═╡ 172d2086-efb1-4805-b75e-7801072347f4
+"""
+	P_from_θ(θ, tot_height, point_pos_m)
+
+Get the point X position (in m) of a ray in the sky giving the angle `θ` (angle to the vertical), the sky heigth (`sky_height`) and the point position on the X axis.
+"""
+function P_from_θ(θ, sky_height, x)
+    # This is the X position of P in m relative to the sample point X
+    P = sin(θ) * sky_height / cos(θ)
+
+    # x - P1 to get the true position in m from the relative position:
+    return Point(x - P, 0) #! Check if it is - or + P
 end
 
 # ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
@@ -1656,11 +1656,11 @@ version = "3.5.0+0"
 # ╠═311611bd-89f9-4e34-84cb-11924e8efc2d
 # ╟─4dff9014-73ff-4c32-b6ad-c936bd892588
 # ╟─d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
+# ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
-# ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc

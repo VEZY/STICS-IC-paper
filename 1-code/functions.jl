@@ -4,7 +4,7 @@
 Draw the half crop canopy for the plant on the left-hand side. We draw only the half canopy
 because we only use this one for computations.
 
-# Arguments
+##### Arguments
 
 - `shape`: the plant canopy shape: `:rectangle`, `:utriangle`, `:dtriangle`.
 - `width`: the plant canopy widht (total)
@@ -12,7 +12,7 @@ because we only use this one for computations.
 - `h0=0.0`: the base canopy height (default to 0 for the ground for annual crops)
 - `x0=0.0`: the x coordinate of the left-hand plant
 
-# Details
+##### Details
 
 `:utriangle` is a triangle pointing up towards the sky, and `:dtriangle` pointing down
 towards the ground.
@@ -485,14 +485,13 @@ function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
 end
 
 """
-	draw_transmitted_light(sample_point,p,inner_box,d_width,d_h0)
+	draw_transmitted_light(sample_point,p,inner_box)
 
 Draw the transmitted light using the plants dimensions.
 """
-function draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
+function draw_transmitted_light(sample_point, p, inner_box)
     # Transmitted light: Drawing the left triangle between θ1 and the horizontal
     corner_left = inner_box[2]
-    plant_x = [i[1] for i in p]
     plant_y = [i[2] for i in p]
     plant_base_points = sort(p[plant_y.==minimum(plant_y)])
     plant_top_points = p[plant_y.==maximum(plant_y)]
