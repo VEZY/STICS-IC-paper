@@ -5,9 +5,9 @@ includet("functions.jl")
 image_dim = (800, 400)
 interrow = 1.00
 h0 = 0.5
-width = 0.2
+width_user = 0.2
 height = 1.0
-shape = :dtriangle # Possible values: :dtriangle, :utriangle, :rectangle
+shape_user = :utriangle # Possible values: :dtriangle, :utriangle, :rectangle
 npoints = 200
 latitude = 43.61
 j = 170
@@ -18,6 +18,9 @@ n_sample_points = 200
 i_sample_point = 150 # Point to simulate (1:n_sample_points)
 
 begin
+    shape = Symbol(shape_user)
+    width = min(width_user, interrow)
+    latitude_r = deg2rad(latitude)
     Drawing(image_dim[1], image_dim[2], :png)
 
     t = currentdrawing()
@@ -103,7 +106,7 @@ begin
             setdash("solid")
             label(
                 "Row center", :S, Point(bottom_center[1], -bottom_center[2]),
-                offset=20, leader=true, leaderoffsets=[0.4, 0.9]
+                offset=25, leader=true, leaderoffsets=[0.5, 0.9]
             )
         end
     end
@@ -116,7 +119,7 @@ begin
     sample_point = all_sample_points[i_sample_point] # Point coordinates
 
     # Compute diffuse light:
-    # Direct light: Drawing the right triangle between the vertical and θ1
+    # Diffuse light: Drawing the right triangle between the vertical and θ1
     sethue("white")
     setopacity(0.2)
     poly(
@@ -129,7 +132,7 @@ begin
         close=true
     )
 
-    # Direct light: Drawing the left triangle between the vertical and θ2
+    # Diffuse light: Drawing the left triangle between the vertical and θ2
     poly(
         [
             p[2],
@@ -151,7 +154,7 @@ begin
 
     # Get the value of θ1 and θ2, the angles relative to the vertical plane on the sample_point
     # that give the view angle of the direct light comming from the sky:
-    kgdirect, θ1, θ2 = kdir(latitude, j, width, point_pos_m, interrow, shape, h0, alpha, height)
+    kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, height)
 
     # Compute P1 and P2, the two points on the sky that provide the direct light view angle:
     P1, P2 = P_from_θ.([θ1, θ2], light_ray_height, point_pos_m)
@@ -191,28 +194,8 @@ begin
     # Compute transmitted light:
     # Transmitted light: Drawing the left triangle between θ1 and the horizontal
     sethue("goldenrod")
-    poly(
-        [
-            p[2],
-            sample_point,
-            inner_box[2],
-            p[3],
-        ],
-        :fill,
-        close=true
-    )
 
-    # Transmitted light: Drawing the right triangle between θ2 and the horizontal
-    poly(
-        [
-            Point(inner_box[4][1] - d_width / 2, inner_box[4][2]),
-            sample_point,
-            inner_box[3],
-            Point(inner_box[3][1], inner_box[3][2] + d_h0),
-        ],
-        :fill,
-        close=true
-    )
+    draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
 
     text_point = midpoint(p[2], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
     if display_text
@@ -229,28 +212,35 @@ begin
     end
 
     @layer begin
+        sethue("grey")
+        setopacity(0.5)
+        newpath()
+        carc(sample_point, 20, π, 0, :fill)
+    end
+
+    @layer begin
         for (i, v) in enumerate(all_sample_points)
             sethue("black")
             setdash("solid")
             setline(0.5)
             setopacity(0.8)
-            i == i_sample_point && continue # skip if doing the current sample point
-            line(v, Point(v[1], v[2] - 3), :stroke)
+            i != i_sample_point && line(v, Point(v[1], v[2] - 3), :stroke)
 
             if display_text && i == 1 || mod(i, 25) == 0
                 @layer begin
                     sethue("black")
                     setopacity(1)
                     fontsize(5)
-                    text_pos(string(i), Point(v[1], v[2] - 8))
+                    scale(1, -1) # to set the y axis up
+                    label(
+                        string(i), :S, Point(v[1], -v[2]),
+                        offset=5, leader=false
+                    )
                 end
             end
 
         end
     end
-
-    sethue("grey")
-    circle(sample_point, 10, :fill)
 
     if display_text
         @layer begin
@@ -260,16 +250,11 @@ begin
             setdash("solid")
             label(
                 "Sample point", :S, Point(sample_point[1], -sample_point[2]),
-                offset=20, leader=true, leaderoffsets=[0.4, 0.9]
+                offset=25, leader=true, leaderoffsets=[0.5, 0.9]
             )
         end
     end
 
     finish()
     preview()
-end
-
-
-function timestem()
-
 end

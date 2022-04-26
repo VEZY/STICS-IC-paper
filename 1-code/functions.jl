@@ -390,10 +390,9 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
             elseif x == limite
                 θ2 = 0.0
             end
-            if x >= limite2
-                tgh = (h0 + e) / x
-                θ2 = θcrit(lat, j, tgh, alpha)
-            end
+        else
+            tgh = (h0 + e) / x
+            θ2 = θcrit(lat, j, tgh, alpha)
         end
     end
     return (θ1, θ2)
@@ -461,7 +460,7 @@ end
 """
     decangle(j)
 
-Sun declination according to the julian day `j`
+Sun declination angle according to the julian day `j`
 """
 function decangle(j)
     theta1 = 2 * π * (j - 80) / 365
@@ -470,13 +469,12 @@ function decangle(j)
 end
 
 
-function P_from_θ(θ, tot_height, point_pos_m)
-    # This is the X position of P in m relative to the sample point X
-    P = sin(θ) * tot_height / cos(θ)
+function P_from_θ(θ, sky_height, x)
+    # This is the x position of P in m relative to the sample point X
+    P_x = sin(θ) * sky_height / cos(θ)
 
-    # point_pos_m - P1 to get the true position in m from the relative position:
-    return Point(point_pos_m - P, 0)
-    #! Check if it is - or + P
+    # x - P1 to get the true position in m from the relative position:
+    return Point(x - P_x, 0) #! Check if it is - or + P_x
 end
 
 function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
@@ -486,17 +484,42 @@ function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
     return Point(d_P_xpos, orig_ymax)
 end
 
+"""
+	draw_transmitted_light(sample_point,p,inner_box,d_width,d_h0)
 
-function text_pos(str, x, y)
-    @layer begin
-        scale(1, -1) # to set the y axis up
-        text(str, x, -y)
-    end
-end
+Draw the transmitted light using the plants dimensions.
+"""
+function draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
+    # Transmitted light: Drawing the left triangle between θ1 and the horizontal
+    corner_left = inner_box[2]
+    plant_x = [i[1] for i in p]
+    plant_y = [i[2] for i in p]
+    plant_base_points = sort(p[plant_y.==minimum(plant_y)])
+    plant_top_points = p[plant_y.==maximum(plant_y)]
+    plant_top_point = sort(plant_top_points)[end]
 
-function text_pos(str, p; halign=:center)
-    @layer begin
-        scale(1, -1) # to set the y axis up
-        text(str, p[1], -p[2])
-    end
+    p_outline = poly(
+        [
+            sample_point,
+            corner_left,
+            plant_base_points...,
+            plant_top_point,
+            sample_point
+        ],
+        :fill
+    )
+
+    # Transmitted light: Drawing the right triangle between θ2 and the horizontal
+    # Computing the coordinates of the LHS of the right plant:
+    p_outline_right = [corner_left, plant_base_points..., plant_top_point]
+
+    polyscale!(p_outline_right, -1, 1; center=O) # Mirroring
+    p_outline_right = [i - Point(-(inner_box[2][1] * 2 + (inner_box[3][1] - inner_box[1][1])), 0) for i in p_outline_right] # Translating to the right position
+
+    p_outline_right = [sample_point, p_outline_right..., sample_point]
+
+    poly(
+        p_outline_right,
+        :fill
+    )
 end
