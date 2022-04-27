@@ -465,7 +465,7 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
         # In this case it may happen that θ1 > θ2, which means the point sees nothing
         # because the top of the righ-hand side plant is above the view angle of the point (i.e.
         # it is completely shaded.
-        if θ1 > θ2
+        if θ1 < θ2
             θ1 = 0.0
             θ2 = 0.0
         end

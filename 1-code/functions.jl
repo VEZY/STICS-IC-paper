@@ -462,9 +462,17 @@ Note that the function returns G1, the ratio for the plant on the right, and G2,
 ratio for the plant on the left.
 """
 function get_G(x, shape, limite, h0, e, width, ir)
-    # g1 = (h0 + e) / (ir - x - limite)
-    # G1 is the angle with the right-hand side plant
+
+    # RV: G1 is the angle with the right-hand side plant
     # G2 with the left-hand side plant.
+    # We use trigonometry here, remember tan(β) = AC/AB ? Well here AC is the crop height,
+    # and AB is the distance between the point and the plant on the horizontal plane.
+    #! For AB, we take `ir - x - limite` to get the distance to the crop heigth at its edge. This
+    #! works only for the rectangle and the up-triangle, but not for the down-triangle, in which
+    #! case we have to use `ir - x` when the point is far from the plant, and `ir - x- limite`
+    #! when it is closer to the plant and the point sees the down corner instead of the top corner.
+    # This is the same for the right plant but a little bit more complicated.
+
     if shape == :rectangle
         G1 = (h0 + e) / (ir - x - limite)
 
@@ -566,10 +574,10 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
         # The point is below the canopy, its angle is negative (going towards the right-hand-side)
         θ2 = -θ2
 
-        # In this case it may happen that θ1 > θ2, which means the point sees nothing
+        # In this case it may happen that θ1 < θ2, which means the point sees nothing
         # because the top of the righ-hand side plant is above the view angle of the point (i.e.
         # it is completely shaded.
-        if θ1 > θ2
+        if θ1 < θ2
             θ1 = 0.0
             θ2 = 0.0
         end
