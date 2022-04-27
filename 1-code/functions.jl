@@ -220,7 +220,7 @@ function r_transmitted(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou
         xprec = x
 
         # Diffuse radiation:
-        kgdiffus = kdif(x, h0, width, ir, height)
+        kgdiffus, H = kdif(x, h0, width, ir, height)
 
         # Direct radiation
         kgdirect, θ1, θ2 = kdir(lat, j, width, x, ir, shape, h0, alpha, height)
@@ -262,7 +262,7 @@ end
 """
     kdif(x, h0, width, ir, e)
 
-Fraction of diffuse radiation received by a point.
+Fraction of diffuse radiation coming from the sky received by a point.
 
 # Arguments
 
@@ -272,40 +272,70 @@ Fraction of diffuse radiation received by a point.
 - `ir`: the interrow distance, *i.e.* the distance between two plants
 - `e`: the effective canopy thickness
 """
-function kdif(x, h0, width, ir, e)
+function kdif(x, h0, width, ir, e, shape)
 
-    # Values given by Hervé Sinoquet, gives height, azimuth and fraction of diffuse light according
-    # to the SOC standard for 23 directions
-    htab = (repeat([9.23], 5)..., 10.81, 10.81, 26.57, 26.57, 26.57, repeat([31.08], 5)..., 47.41, 47.41, 47.41, 52.62, 52.62, 69.16, 69.16, 69.16)
-    aztab = (12.23, 59.77, 84.23, 131.77, 156.23, 36, 108, 0, 72, 144, 23.27, 48.73, 95.27, 120.73, 167.27, 0, 72, 144, 36, 108, 0, 72, 144)
-    SOCtab = (repeat([0.0043], 5)..., 0.0055, 0.0055, 0.0140, 0.0140, 0.0140, repeat([0.0197], 5)..., 0.0336, 0.0336, 0.0336, 0.0399, 0.0399, 0.0495, 0.0495, 0.0495)
+    # Values given by Hervé Sinoquet, gives angle zenith (h, in degrees), azimuth (az,
+    # degrees) and fraction of diffuse light according to the SOC standard for 23 directions
+    h = (repeat([9.23], 5)..., 10.81, 10.81, 26.57, 26.57, 26.57, repeat([31.08], 5)..., 47.41, 47.41, 47.41, 52.62, 52.62, 69.16, 69.16, 69.16)
+    az = (12.23, 59.77, 84.23, 131.77, 156.23, 36, 108, 0, 72, 144, 23.27, 48.73, 95.27, 120.73, 167.27, 0, 72, 144, 36, 108, 0, 72, 144)
+    diffuse = (repeat([0.0043], 5)..., 0.0055, 0.0055, 0.0140, 0.0140, 0.0140, repeat([0.0197], 5)..., 0.0336, 0.0336, 0.0336, 0.0399, 0.0399, 0.0495, 0.0495, 0.0495)
 
     x = min(x, ir / 2)
     limite = width / 2.0
+    if shape == :utriangle
+        limite2 = width / 2 * (h0 / e + 1)
+    end
     kgdiffus = 0.0
+    H = [] # Container for the angle of rays that effectively receive diffuse light
+    sizehint!(H, 23 * 2) # Reserve 46 values (the maximum number of rays that receive light)
 
     # For the right-hand side:
     G = (h0 + e) / (ir - x - limite)
+    # NB: using trigonometry here, remember tan(β) = AC/AB ? Well here AC is the crop height,
+    # and AB is the distance between the point and the plant on the horizontal plane.
+    #! For AB, we take `ir - x - limite` to get the distance to the crop heigth at its edge. This
+    #! works only for the rectangle and the up-triangle, but not for the down-triangle, in which
+    #! case it should be `ir - x` when the point is far from the plant, and `ir - x- limite`
+    #! when it is closer to the plant and the point sees the down corner instead of the top corner
+
+    # So atan(G) woule be the β from above, and it represents the angle between the horizontal
+    # line (AB) and BC, the line between the point and the top of the canopy.
+
     for i in 1:23
-        hcrit = atan(G * sin(aztab[i] / 180 * π)) / π * 180
-        if hcrit < htab[i]
-            kgdiffus = kgdiffus + SOCtab[i]
+        hcrit = rad2deg(atan(G * sin(deg2rad(az[i]))))
+        # h is the ray position in the sky, hcrit the position of the top right corner of the plant
+        if hcrit < h[i]
+            # We add the diffuse light from this angle only if the point views the sky at this
+            # angle. i.e. if the ray is higher than the angle of the top of the plant canopy.
+            push!(H, hcrit) # This ray receives light from the sky
+            kgdiffus = kgdiffus + diffuse[i]
         end
     end
 
     # For the left-hand side:
-    # If the point is not under the plant canopy (else it is only transmitted light):
+    # If the point is not under the plant canopy, else it is only transmitted light, so 0 kgdiffus:
     if x > limite
-        G = (h0 + e) / (x - limite)
+        if shape == :utriangle
+            if x < limite2
+
+            else
+
+            end
+        else
+            G = (h0 + e) / (x - limite)
+        end
         for i in 1:23
-            hcrit = atan(G * sin(aztab[i] / 180 * π)) / π * 180
-            if (hcrit < htab[i])
-                kgdiffus = kgdiffus + SOCtab[i]
+            hcrit = atan(G * sin(az[i] / 180 * π)) / π * 180
+            if (hcrit < h[i])
+                push!(H, hcrit)
+                kgdiffus = kgdiffus + diffuse[i]
             end
         end
     end
+    # NB: note that the left-hand side is never computed when the point is below the plant canopy
+    # x < limite because we know that it reveives only transmitted light, and no sky diffuse light
 
-    return kgdiffus
+    return (kgdiffus, H)
 end
 
 """
@@ -347,56 +377,140 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
     limite = width / 2
 
     if (e > 0.0)
+        # If we use a triangle pointing up, we need limite2
         limite2 = width / 2 * (h0 / e + 1)
+        # limite2 is the limit in the point x position above which the point starts to see
+        # the top of the canopy. Below that it only sees the bottom of the canopy, which blocks
+        # its view.
     else
         shape = :rectangle
     end
 
+    # NB: using trigonometry here, remember tan(β) = AC/AB ? Well here AC is the crop height,
+    # and AB is the distance between the point and the plant on the horizontal plane.
+
+    # So atan(G) woule be the β from above, and it represents the angle between the horizontal
+    # line (AB) and BC, the line between the point and the top of the canopy.
+
+    # For reference, RHS means the right-hand side, and LHS means left-hand side.
+    # θ1 = angle between the vertical plane and the line from the point to the top canopy of the RHS plant
+    # θ2 = angle between the vertical plane and the line from the point to the canopy of the LHS plant
+
+    # θ2 depends on the plant shape and on the position of the point on the plane because for the
+    # rectangle and top triangle a different part of the plant blocks the light: either the top
+    # of the canopy if the point is not directly below the plant, or the bottom of the canopy
+    # if it is right below (x < limite)
+
+    g1 = (h0 + e) / (ir - x - limite)
+    θ1 = θcrit(lat, j, g1, alpha)
+
     # Rectangle shape
     if shape == :rectangle
-        tgh = (h0 + e) / (ir - x - limite)
-        θ1 = θcrit(lat, j, tgh, alpha)
         if x > limite
-            tgh = (h0 + e) / (x - limite)
-            θ2 = θcrit(lat, j, tgh, alpha)
+            # the point is not under plant canopy
+            g2 = (h0 + e) / (x - limite)
+            θ2 = θcrit(lat, j, g2, alpha)
         elseif x < limite
-            tgh = h0 / (-x + limite)
-            θ2 = -θcrit(lat, j, tgh, alpha)
+            # the point is under plant canopy
+            g2 = h0 / (-x + limite)
+            θ2 = -θcrit(lat, j, g2, alpha)
         elseif x == limite
-            θ2 = 0
+            θ2 = 0 # In this case the end of the canopy is right above
         end
     elseif shape == :dtriangle
-        tgh = (h0 + e) / (ir - x - limite)
-        θ1 = θcrit(lat, j, tgh, alpha)
+        # Triangle pointing down
         if x > limite
-            tgh = (h0 + e) / (x - limite)
-            θ2 = θcrit(lat, j, tgh, alpha)
+            g2 = (h0 + e) / (x - limite)
+            θ2 = θcrit(lat, j, g2, alpha)
         elseif x < limite
-            tgh = (h0 + e) / (x - limite)
-            θ2 = -θcrit(lat, j, tgh, alpha)
+            g2 = (h0 + e) / (x - limite)
+            θ2 = -θcrit(lat, j, g2, alpha)
         elseif x == limite
             θ2 = 0
         end
     elseif shape == :utriangle
-        tgh = (h0 + e) / (ir - x - limite)
-        θ1 = θcrit(lat, j, tgh, alpha)
+        # RV: Triangle pointing up, the most complex one because the point can see either the top
+        # of the canopy if it is far enough (x >= limite2), or just the bottom if it is close
+        # to it or under it.
         if x < limite2
             if (x > limite)
-                tgh = h0 / (x - limite)
-                θ2 = θcrit(lat, j, tgh, alpha)
+                g2 = h0 / (x - limite)
+                θ2 = θcrit(lat, j, g2, alpha)
             elseif x < limite
-                tgh = h0 / (limite - x)
-                θ2 = -θcrit(lat, j, tgh, alpha)
+                g2 = h0 / (limite - x)
+                θ2 = -θcrit(lat, j, g2, alpha)
             elseif x == limite
                 θ2 = 0.0
             end
         else
-            tgh = (h0 + e) / x
-            θ2 = θcrit(lat, j, tgh, alpha)
+            g2 = (h0 + e) / x
+            θ2 = θcrit(lat, j, g2, alpha)
         end
     end
     return (θ1, θ2)
 end
+
+"""
+    get_G_left(x, shape, limite, h0, e, width)
+
+Get the ratio between the crop height and the distance between the point x and the plant.
+The crop height and distance to the plant are always computed using the top of the crop
+**seen** by the point, which can be different than the top of the canopy if the point is
+under the canopy, or close to the canopy and the canopy as a up-pointing triangle.
+
+It is only applied to the left-hand side plant because it is considered the points always
+sees the top of the the right-hand side plant.
+"""
+function get_G_left(x, shape, limite, h0, e, width)
+    if shape == :rectangle
+        if x >= limite
+            # the point is not under plant canopy
+            G = (h0 + e) / (x - limite)
+        elseif x < limite
+            # the point is under plant canopy
+            G = h0 / (-x + limite)
+        elseif x == limite
+            G = 0.0
+        end
+    elseif shape == :dtriangle
+        # Triangle pointing down
+        if x > limite
+            G = (h0 + e) / (x - limite)
+        elseif x < limite
+            G = (h0 + e) / (x - limite)
+        elseif x == limite
+            G = 0.0
+        end
+    elseif shape == :utriangle
+        # RV: Triangle pointing up, the most complex one because the point can see either the top
+        # of the canopy if it is far enough (x >= limite2), or just the bottom if it is close
+        # to it or under it.
+
+        if (e > 0.0)
+            limite2 = width / 2 * (h0 / e + 1)
+            # limite2 is the limit in the point x position above which the point starts to see
+            # the top of the canopy. Below that it only sees the bottom of the canopy, which blocks
+            # its view.
+        else
+            limite2 = 0.0
+        end
+
+        if x < limite2
+            if (x > limite)
+                G = h0 / (x - limite)
+            elseif x < limite
+                G = h0 / (limite - x)
+            elseif x == limite
+                G = 0.0
+            end
+        else
+            G = (h0 + e) / x
+        end
+    end
+
+    return G
+end
+
 
 """
     θcrit(lat, j, tgh, alpha)
@@ -419,8 +533,10 @@ function θcrit(lat, j, tgh, alpha)
 
     for i in 1:(18*n)
         θ[i] = 10.0 / n * (i - 1)
-        # This gives θ between 0.0 and 176.66666666666669 by steps of 3.33 degrees
+        # This gives θ between 0.0 and 176.66 by steps of 3.33 degrees
+        # Then we transform into radians and move it to the vertical as reference
         θ[i] = (θ[i] - 90) / 180 * π
+
         # Sun position (h,azim)
         sinh = sin(lat) * sin(dec) + cos(lat) * cos(dec) * cos(θ[i])
         h = asin(sinh)
@@ -435,10 +551,11 @@ function θcrit(lat, j, tgh, alpha)
         if (sinh < 0.0)
             h = 0.0
         end
-        # Critical height
+        # Critical height (top right corner of the plant)
         hcrit = atan(tgh * abs(sin(azim + alpha + 0.00001)))
-        # test for h = hcrit
+
         if hcritprec >= hprec && hcrit <= h && i > 1
+            # h is the sun position in the sky, hcrit the position of the top right corner of the plant
             # Linear interpolation
             acrit = (hcrit - hcritprec) / (θ[i] - θ[i-1])
             bcrit = hcrit - acrit * θ[i]
@@ -469,17 +586,22 @@ function decangle(j)
 end
 
 
-function P_from_θ(θ, sky_height, x)
+function P_from_θ(θ, sky_height, x, side=:left)
     # This is the x position of P in m relative to the sample point X
     P_x = sin(θ) * sky_height / cos(θ)
 
     # x - P1 to get the true position in m from the relative position:
-    return Point(x - P_x, 0) #! Check if it is - or + P_x
+    if side == :left
+        Point(x - P_x, 0)
+    else
+        Point(x + P_x, 0)
+    end
+    return  #! Check if it is - or + P_x
 end
 
-function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
+function P_drawing(P, orig_xmax, orig_ymax, to_xmax, to_ymax)
     # Rescale to fit the position of the point on the drawing scale
-    d_P_xpos = rescale(P1[1], 0, orig_xmax, to_xmax, to_ymax)
+    d_P_xpos = rescale(P[1], 0, orig_xmax, to_xmax, to_ymax)
 
     return Point(d_P_xpos, orig_ymax)
 end

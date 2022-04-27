@@ -670,6 +670,8 @@ function draw_transmitted_light(sample_point,p,inner_box,d_width,d_h0)
 		p_outline_right,
 		:fill
 	)
+
+	(p_outline, p_outline_right)
 end
 
 # ╔═╡ 030d4bd1-b596-4590-b1c5-d53bdc656c7f
@@ -687,16 +689,22 @@ end
 
 # ╔═╡ 172d2086-efb1-4805-b75e-7801072347f4
 """
-	P_from_θ(θ, tot_height, point_pos_m)
+	P_from_θ(θ, sky_height, x, side)
 
 Get the point X position (in m) of a ray in the sky giving the angle `θ` (angle to the vertical), the sky heigth (`sky_height`) and the point position on the X axis.
 """
-function P_from_θ(θ, sky_height, x)
+function P_from_θ(θ, sky_height, x, side)
     # This is the X position of P in m relative to the sample point X
-    P = sin(θ) * sky_height / cos(θ)
+    P_x = sin(θ) * sky_height / cos(θ)
 
-    # x - P1 to get the true position in m from the relative position:
-    return Point(x - P, 0) #! Check if it is - or + P
+    # x +/- P1 to get the true position in m from the relative position:
+	if side == :left
+		# Left to the point vertical
+        return Point(x - P_x, 0)
+    else
+		# Right to the point vertical
+        return Point(x + P_x, 0)
+    end
 end
 
 # ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
@@ -845,7 +853,8 @@ begin
     kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, height)
 
     # Compute P1 and P2, the two points on the sky that provide the direct light view angle:
-    P1, P2 = P_from_θ.([θ1, θ2], light_ray_height, point_pos_m)
+	P1 = P_from_θ(θ1, light_ray_height, point_pos_m, :left)
+	P2 = P_from_θ(θ2, light_ray_height, point_pos_m, :right)
     P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])
 
     sun_pos = [P1, P2]
@@ -863,7 +872,9 @@ begin
     )
 
     # Recompute the points P1 and P2 but at the inner
-    P1, P2 = P_from_θ.([θ1, θ2], h0 + height, point_pos_m)
+	P1 = P_from_θ(θ1, h0 + height, point_pos_m, :left)
+	P2 = P_from_θ(θ2, h0 + height, point_pos_m, :right)
+    # P1, P2 = P_from_θ.([θ1, θ2], h0 + height, point_pos_m)
     P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
 
     text_point = midpoint(P1, P2)
@@ -883,7 +894,27 @@ begin
     # Transmitted light: Drawing the left triangle between θ1 and the horizontal
     sethue("goldenrod")
 
-	draw_transmitted_light(sample_point,p,inner_box,d_width,d_h0)
+	(p_trans_left, p_trans_right) = draw_transmitted_light(sample_point,p,inner_box,d_width,d_h0)
+
+    @layer begin
+        sethue("black")
+        setopacity(0.5)
+        setdash("solid")
+		H1 = anglethreepoints(p_trans_left[end-1],p_trans_left[1], p_trans_left[2])
+		newpath()
+		(p_trans_left, p_trans_right)
+		arc(sample_point, 50, 0, cos(π/2 + H1), :path)
+		p_arc = pathtopoly()[1]        
+		poly(p_arc, :stroke)
+
+		@layer begin
+            scale(1, -1)
+			mid_p_arc = midpoint(p_arc[1], p_arc[end])
+			label(string("H2: ",round(rad2deg(H1), digits=2), "°"), :NE, Point(mid_p_arc[1], -mid_p_arc[2]),offset=10)
+			# offset=10, leader=false, leaderoffsets=[0.4, 0.9]
+        end
+
+    end
 	
     text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
     if display_text
@@ -1660,21 +1691,21 @@ version = "3.5.0+0"
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
 # ╟─58ec9faa-cbf1-4e46-b4bb-420586ac7dba
 # ╟─0385990f-397e-46f8-93d7-578c8ead2be3
+# ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
 # ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
-# ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
 # ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─030d4bd1-b596-4590-b1c5-d53bdc656c7f
-# ╟─172d2086-efb1-4805-b75e-7801072347f4
+# ╠═172d2086-efb1-4805-b75e-7801072347f4
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

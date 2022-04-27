@@ -202,12 +202,12 @@ begin
     text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
     if display_text
         @layer begin
-            kdifuse = kdif(point_pos_m, h0, width, interrow, height)
+            kdiffuse, H = kdif(point_pos_m, h0, width, interrow, height)
             sethue("black")
             setopacity(1)
             scale(1, -1) # to set the y axis up
             label(
-                string("kdif: ", round(kdifuse, digits=2)), :N, Point(text_point[1], -text_point[2]),
+                string("kdif: ", round(kdiffuse, digits=2)), :N, Point(text_point[1], -text_point[2]),
                 offset=10, leader=false, leaderoffsets=[0.4, 0.9]
             )
         end
