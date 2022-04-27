@@ -159,7 +159,9 @@ begin
     kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, height)
 
     # Compute P1 and P2, the two points on the sky that provide the direct light view angle:
-    P1, P2 = P_from_θ.([θ1, θ2], light_ray_height, point_pos_m)
+    P1 = P_from_θ(θ1, light_ray_height, point_pos_m, :left)
+    P2 = P_from_θ(θ2, light_ray_height, point_pos_m, :right)
+
     P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])
 
     sun_pos = [P1, P2]
@@ -177,7 +179,8 @@ begin
     )
 
     # Recompute the points P1 and P2 but at the inner
-    P1, P2 = P_from_θ.([θ1, θ2], h0 + height, point_pos_m)
+    P1 = P_from_θ(θ1, h0 + height, point_pos_m, :left)
+    P2 = P_from_θ(θ2, h0 + height, point_pos_m, :right)
     P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
 
     text_point = midpoint(P1, P2)

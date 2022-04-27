@@ -592,11 +592,10 @@ function P_from_θ(θ, sky_height, x, side=:left)
 
     # x - P1 to get the true position in m from the relative position:
     if side == :left
-        Point(x - P_x, 0)
+        return Point(x - P_x, 0)
     else
-        Point(x + P_x, 0)
+        return Point(x + P_x, 0)
     end
-    return  #! Check if it is - or + P_x
 end
 
 function P_drawing(P, orig_xmax, orig_ymax, to_xmax, to_ymax)

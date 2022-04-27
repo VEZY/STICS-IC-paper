@@ -43,7 +43,7 @@ begin
 	h0 = 0.5
 	npoints = 200
 	alpha = deg2rad(0) # Crop row direction relative to north
-	light_from_sky = true # if false the light stops at the inner box, else at the sky
+	light_from_sky = false # if false the light stops at the inner box, else at the sky
 	display_text = true # display names and values?
 	n_sample_points = 200
 end
@@ -352,52 +352,73 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
     limite = width / 2
 
     if (e > 0.0)
+        # If we use a triangle pointing up, we need limite2
         limite2 = width / 2 * (h0 / e + 1)
+        # limite2 is the limit in the point x position above which the point starts to see
+        # the top of the canopy. Below that it only sees the bottom of the canopy, which blocks
+        # its view.
     else
         shape = :rectangle
     end
 
+    # NB: using trigonometry here, remember tan(β) = AC/AB ? Well here AC is the crop height, and AB is the distance between the point and the plant on the horizontal plane.
+
+    # So atan(G) woule be the β from above, and it represents the angle between the horizontal
+    # line (AB) and BC, the line between the point and the top of the canopy.
+
+    # For reference, RHS means the right-hand side, and LHS means left-hand side.
+    # θ1 = angle between the vertical plane and the line from the point to the top canopy of the RHS plant
+    # θ2 = angle between the vertical plane and the line from the point to the canopy of the LHS plant
+
+    # θ2 depends on the plant shape and on the position of the point on the plane because for the
+    # rectangle and top triangle a different part of the plant blocks the light: either the top
+    # of the canopy if the point is not directly below the plant, or the bottom of the canopy
+    # if it is right below (x < limite)
+
+    g1 = (h0 + e) / (ir - x - limite)
+    θ1 = θcrit(lat, j, g1, alpha)
+
     # Rectangle shape
     if shape == :rectangle
-        tgh = (h0 + e) / (ir - x - limite)
-        θ1 = θcrit(lat, j, tgh, alpha)
         if x > limite
-            tgh = (h0 + e) / (x - limite)
-            θ2 = θcrit(lat, j, tgh, alpha)
+            # the point is not under plant canopy
+            g2 = (h0 + e) / (x - limite)
+            θ2 = θcrit(lat, j, g2, alpha)
         elseif x < limite
-            tgh = h0 / (-x + limite)
-            θ2 = -θcrit(lat, j, tgh, alpha)
+            # the point is under plant canopy
+            g2 = h0 / (-x + limite)
+            θ2 = -θcrit(lat, j, g2, alpha)
         elseif x == limite
-            θ2 = 0
+            θ2 = 0 # In this case the end of the canopy is right above
         end
     elseif shape == :dtriangle
-        tgh = (h0 + e) / (ir - x - limite)
-        θ1 = θcrit(lat, j, tgh, alpha)
+        # Triangle pointing down
         if x > limite
-            tgh = (h0 + e) / (x - limite)
-            θ2 = θcrit(lat, j, tgh, alpha)
+            g2 = (h0 + e) / (x - limite)
+            θ2 = θcrit(lat, j, g2, alpha)
         elseif x < limite
-            tgh = (h0 + e) / (x - limite)
-            θ2 = -θcrit(lat, j, tgh, alpha)
+            g2 = (h0 + e) / (x - limite)
+            θ2 = -θcrit(lat, j, g2, alpha)
         elseif x == limite
             θ2 = 0
         end
     elseif shape == :utriangle
-        tgh = (h0 + e) / (ir - x - limite)
-        θ1 = θcrit(lat, j, tgh, alpha)
+        # RV: Triangle pointing up, the most complex one because the point can see either the top
+        # of the canopy if it is far enough (x >= limite2), or just the bottom if it is close
+        # to it or under it.
         if x < limite2
             if (x > limite)
-                tgh = h0 / (x - limite)
-                θ2 = θcrit(lat, j, tgh, alpha)
+                g2 = h0 / (x - limite)
+                θ2 = θcrit(lat, j, g2, alpha)
             elseif x < limite
-                tgh = h0 / (limite - x)
-                θ2 = -θcrit(lat, j, tgh, alpha)
+                g2 = h0 / (limite - x)
+                θ2 = -θcrit(lat, j, g2, alpha)
             elseif x == limite
                 θ2 = 0.0
             end
-		else
-			tgh = (h0 + e) / x
-			θ2 = θcrit(lat, j, tgh, alpha)
+        else
+            g2 = (h0 + e) / x
+            θ2 = θcrit(lat, j, g2, alpha)
         end
     end
     return (θ1, θ2)
@@ -1697,10 +1718,10 @@ version = "3.5.0+0"
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
 # ╟─58ec9faa-cbf1-4e46-b4bb-420586ac7dba
 # ╟─0385990f-397e-46f8-93d7-578c8ead2be3
-# ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
+# ╠═4ab56f65-3314-4dc4-9eb1-59f68058e435
 # ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
-# ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
+# ╠═54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
