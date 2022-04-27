@@ -143,6 +143,83 @@ These are the functions used in this notebook. Some are related to the drawing o
 ### STICS functions
 """
 
+# ╔═╡ 09a77c7f-409d-4083-8267-d52ba0346c9c
+"""
+    get_G(x, shape, limite, h0, e, width)
+
+Get the ratio between the crop height and the distance between the point x and the plant.
+The crop height and distance to the plant are always computed using the top of the crop
+**seen** by the point, which can be different than the top of the canopy if the point is
+under the canopy, or close to the canopy and the canopy is an up-pointing triangle.
+
+Note that the function returns G1, the ratio for the plant on the right, and G2, the
+ratio for the plant on the left.
+"""
+function get_G(x, shape, limite, h0, e, width, ir)
+    # g1 = (h0 + e) / (ir - x - limite)
+    # G1 is the angle with the right-hand side plant
+    # G2 with the left-hand side plant.
+    if shape == :rectangle
+        G1 = (h0 + e) / (ir - x - limite)
+
+        if x >= limite
+            # the point is not under plant canopy
+            G2 = (h0 + e) / (x - limite)
+        elseif x < limite
+            # the point is under plant canopy
+            G2 = h0 / (-x + limite)
+        elseif x == limite
+            G2 = 0.0
+        end
+    elseif shape == :dtriangle
+		G1 = (h0 + e) / (ir - x - limite)
+        # Triangle pointing down
+        if x > limite
+            G2 = (h0 + e) / (x - limite)
+        elseif x < limite
+            G2 = (h0 + e) / (x - limite)
+        elseif x == limite
+            G2 = 0.0
+        end
+    elseif shape == :utriangle
+        # RV: Triangle pointing up, the most complex one because the point can see either the top
+        # of the canopy if it is far enough (x >= limite2), or just the bottom if it is close
+        # to it or under it.
+
+        if (e > 0.0)
+            limite2 = width / 2 * (h0 / e + 1)
+            # limite2 is the limit in the point x position above which the point starts to see
+            # the top of the canopy. Below that it only sees the bottom of the canopy, which blocks
+            # its view.
+        else
+            limite2 = 0.0
+        end
+
+        if x < limite2
+            if (ir - x) < limite2
+                # G1 is inside the limit of the right-hand-side plant,
+                # It does not see the top of the plant, bu only the bottom corner
+                G1 = h0 / (ir - x - limite)
+            else
+                # G1 sees the top of the right-hand side plant
+                G1 = (h0 + e) / (ir - x)
+            end
+            if (x > limite)
+                G2 = h0 / (x - limite)
+            elseif x < limite
+                G2 = h0 / (limite - x)
+            elseif x == limite
+                G2 = 0.0
+            end
+        else
+            G1 = (h0 + e) / (ir - x)
+            G2 = (h0 + e) / x
+        end
+    end
+
+    return (G1, G2)
+end
+
 # ╔═╡ 6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 """
     kdif(x, h0, width, ir, e)
@@ -341,7 +418,7 @@ function θcrit(lat, j, tgh, alpha)
 end
 
 
-# ╔═╡ 4ab56f65-3314-4dc4-9eb1-59f68058e435
+# ╔═╡ fbe6d054-56ff-4201-8d55-f5afcda7ec52
 """
     get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
 
@@ -361,7 +438,8 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
         shape = :rectangle
     end
 
-    # NB: using trigonometry here, remember tan(β) = AC/AB ? Well here AC is the crop height, and AB is the distance between the point and the plant on the horizontal plane.
+    # NB: using trigonometry here, remember tan(β) = AC/AB ? Well here AC is the crop height,
+    # and AB is the distance between the point and the plant on the horizontal plane.
 
     # So atan(G) woule be the β from above, and it represents the angle between the horizontal
     # line (AB) and BC, the line between the point and the top of the canopy.
@@ -375,52 +453,24 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
     # of the canopy if the point is not directly below the plant, or the bottom of the canopy
     # if it is right below (x < limite)
 
-    g1 = (h0 + e) / (ir - x - limite)
-    θ1 = θcrit(lat, j, g1, alpha)
+    G1, G2 = get_G(x, shape, limite, h0, e, width, ir)
 
-    # Rectangle shape
-    if shape == :rectangle
-        if x > limite
-            # the point is not under plant canopy
-            g2 = (h0 + e) / (x - limite)
-            θ2 = θcrit(lat, j, g2, alpha)
-        elseif x < limite
-            # the point is under plant canopy
-            g2 = h0 / (-x + limite)
-            θ2 = -θcrit(lat, j, g2, alpha)
-        elseif x == limite
-            θ2 = 0 # In this case the end of the canopy is right above
-        end
-    elseif shape == :dtriangle
-        # Triangle pointing down
-        if x > limite
-            g2 = (h0 + e) / (x - limite)
-            θ2 = θcrit(lat, j, g2, alpha)
-        elseif x < limite
-            g2 = (h0 + e) / (x - limite)
-            θ2 = -θcrit(lat, j, g2, alpha)
-        elseif x == limite
-            θ2 = 0
-        end
-    elseif shape == :utriangle
-        # RV: Triangle pointing up, the most complex one because the point can see either the top
-        # of the canopy if it is far enough (x >= limite2), or just the bottom if it is close
-        # to it or under it.
-        if x < limite2
-            if (x > limite)
-                g2 = h0 / (x - limite)
-                θ2 = θcrit(lat, j, g2, alpha)
-            elseif x < limite
-                g2 = h0 / (limite - x)
-                θ2 = -θcrit(lat, j, g2, alpha)
-            elseif x == limite
-                θ2 = 0.0
-            end
-        else
-            g2 = (h0 + e) / x
-            θ2 = θcrit(lat, j, g2, alpha)
+    θ1 = -θcrit(lat, j, G1, alpha) # θ1 is negative because it runs clockwise
+    θ2 = θcrit(lat, j, G2, alpha) # θ2 is positive, it is counter-clockwise
+
+    if x < limite
+        # The point is below the canopy, its angle is negative (going towards the right-hand-side)
+        θ2 = -θ2
+
+        # In this case it may happen that θ1 > θ2, which means the point sees nothing
+        # because the top of the righ-hand side plant is above the view angle of the point (i.e.
+        # it is completely shaded.
+        if θ1 > θ2
+            θ1 = 0.0
+            θ2 = 0.0
         end
     end
+
     return (θ1, θ2)
 end
 
@@ -450,7 +500,7 @@ function kdir(lat, j, width, x, ir, shape, h0, alpha, e)
 
     θ1, θ2 = get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
 
-    kg = 0.5 * (cos(π / 2 + θ1) + cos(π / 2 + θ2))
+    kg = 0.5 * (cos(π / 2 - θ1) + cos(π / 2 + θ2))
 
     return (max(kg, 0.0), θ1, θ2)
 end
@@ -587,6 +637,89 @@ function transrad(rg, width, P_latitude, P_parsurrg, j, ir, shape, h0, alpha, rd
     return raint
 end
 
+# ╔═╡ 4ab56f65-3314-4dc4-9eb1-59f68058e435
+"""
+    get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
+
+Compute the two angles that gives the portion of sky that is seen by a point.
+"""
+function get_θ_old(lat, j, width, x, ir, shape, h0, alpha, e)
+
+    limite = width / 2
+
+    if (e > 0.0)
+        # If we use a triangle pointing up, we need limite2
+        limite2 = width / 2 * (h0 / e + 1)
+        # limite2 is the limit in the point x position above which the point starts to see
+        # the top of the canopy. Below that it only sees the bottom of the canopy, which blocks
+        # its view.
+    else
+        shape = :rectangle
+    end
+
+    # NB: using trigonometry here, remember tan(β) = AC/AB ? Well here AC is the crop height, and AB is the distance between the point and the plant on the horizontal plane.
+
+    # So atan(G) woule be the β from above, and it represents the angle between the horizontal
+    # line (AB) and BC, the line between the point and the top of the canopy.
+
+    # For reference, RHS means the right-hand side, and LHS means left-hand side.
+    # θ1 = angle between the vertical plane and the line from the point to the top canopy of the RHS plant
+    # θ2 = angle between the vertical plane and the line from the point to the canopy of the LHS plant
+
+    # θ2 depends on the plant shape and on the position of the point on the plane because for the
+    # rectangle and top triangle a different part of the plant blocks the light: either the top
+    # of the canopy if the point is not directly below the plant, or the bottom of the canopy
+    # if it is right below (x < limite)
+
+    g1 = (h0 + e) / (ir - x - limite)
+    θ1 = θcrit(lat, j, g1, alpha)
+
+    # Rectangle shape
+    if shape == :rectangle
+        if x > limite
+            # the point is not under plant canopy
+            g2 = (h0 + e) / (x - limite)
+            θ2 = θcrit(lat, j, g2, alpha)
+        elseif x < limite
+            # the point is under plant canopy
+            g2 = h0 / (-x + limite)
+            θ2 = -θcrit(lat, j, g2, alpha)
+        elseif x == limite
+            θ2 = 0 # In this case the end of the canopy is right above
+        end
+    elseif shape == :dtriangle
+        # Triangle pointing down
+        if x > limite
+            g2 = (h0 + e) / (x - limite)
+            θ2 = θcrit(lat, j, g2, alpha)
+        elseif x < limite
+            g2 = (h0 + e) / (x - limite)
+            θ2 = -θcrit(lat, j, g2, alpha)
+        elseif x == limite
+            θ2 = 0
+        end
+    elseif shape == :utriangle
+        # RV: Triangle pointing up, the most complex one because the point can see either the top
+        # of the canopy if it is far enough (x >= limite2), or just the bottom if it is close
+        # to it or under it.
+        if x < limite2
+            if (x > limite)
+                g2 = h0 / (x - limite)
+                θ2 = θcrit(lat, j, g2, alpha)
+            elseif x < limite
+                g2 = h0 / (limite - x)
+                θ2 = -θcrit(lat, j, g2, alpha)
+            elseif x == limite
+                θ2 = 0.0
+            end
+        else
+            g2 = (h0 + e) / x
+            θ2 = θcrit(lat, j, g2, alpha)
+        end
+    end
+    return (θ1, θ2)
+end
+
 # ╔═╡ 3c421bef-6123-4554-b2de-b8ceabaf1b39
 md"""
 ## Drawing functions
@@ -714,18 +847,12 @@ end
 
 Get the point X position (in m) of a ray in the sky giving the angle `θ` (angle to the vertical), the sky heigth (`sky_height`) and the point position on the X axis.
 """
-function P_from_θ(θ, sky_height, x, side)
+function P_from_θ(θ, sky_height, x)
     # This is the X position of P in m relative to the sample point X
     P_x = sin(θ) * sky_height / cos(θ)
 
-    # x +/- P1 to get the true position in m from the relative position:
-	if side == :left
-		# Left to the point vertical
-        return Point(x - P_x, 0)
-    else
-		# Right to the point vertical
-        return Point(x + P_x, 0)
-    end
+    # x - P1 to get the true position in m from the relative position:
+	return Point(x + P_x, 0)
 end
 
 # ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
@@ -874,8 +1001,8 @@ begin
     kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, height)
 
     # Compute P1 and P2, the two points on the sky that provide the direct light view angle:
-	P1 = P_from_θ(θ1, light_ray_height, point_pos_m, :left)
-	P2 = P_from_θ(θ2, light_ray_height, point_pos_m, :right)
+	P1 = P_from_θ(θ1, light_ray_height, point_pos_m)
+	P2 = P_from_θ(θ2, light_ray_height, point_pos_m)
     P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])
 
     sun_pos = [P1, P2]
@@ -893,8 +1020,8 @@ begin
     )
 
     # Recompute the points P1 and P2 but at the inner
-	P1 = P_from_θ(θ1, h0 + height, point_pos_m, :left)
-	P2 = P_from_θ(θ2, h0 + height, point_pos_m, :right)
+	P1 = P_from_θ(θ1, h0 + height, point_pos_m)
+	P2 = P_from_θ(θ2, h0 + height, point_pos_m)
     # P1, P2 = P_from_θ.([θ1, θ2], h0 + height, point_pos_m)
     P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
 
@@ -931,7 +1058,7 @@ begin
 		@layer begin
             scale(1, -1)
 			mid_p_arc = midpoint(p_arc[1], p_arc[end])
-			label(string("H2: ",round(rad2deg(H1), digits=2), "°"), :NE, Point(mid_p_arc[1], -mid_p_arc[2]),offset=10)
+			# label(string("H2: ",round(rad2deg(H1), digits=2), "°"), :NE, Point(mid_p_arc[1], -mid_p_arc[2]),offset=10)
 			# offset=10, leader=false, leaderoffsets=[0.4, 0.9]
         end
 
@@ -1718,10 +1845,12 @@ version = "3.5.0+0"
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
 # ╟─58ec9faa-cbf1-4e46-b4bb-420586ac7dba
 # ╟─0385990f-397e-46f8-93d7-578c8ead2be3
-# ╠═4ab56f65-3314-4dc4-9eb1-59f68058e435
+# ╟─fbe6d054-56ff-4201-8d55-f5afcda7ec52
+# ╠═09a77c7f-409d-4083-8267-d52ba0346c9c
+# ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
 # ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
-# ╠═54cda4ec-dc89-41d4-a28d-544f556c2f34
+# ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524

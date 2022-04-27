@@ -362,7 +362,7 @@ function kdir(lat, j, width, x, ir, shape, h0, alpha, e)
 
     θ1, θ2 = get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
 
-    kg = 0.5 * (cos(π / 2 + θ1) + cos(π / 2 + θ2))
+    kg = 0.5 * (cos(π / 2 - θ1) + cos(π / 2 + θ2))
 
     return (max(kg, 0.0), θ1, θ2)
 end
@@ -372,7 +372,7 @@ end
 
 Compute the two angles that gives the portion of sky that is seen by a point.
 """
-function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
+function get_θ_old(lat, j, width, x, ir, shape, h0, alpha, e)
 
     limite = width / 2
 
@@ -451,35 +451,42 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
 end
 
 """
-    get_G_left(x, shape, limite, h0, e, width)
+    get_G(x, shape, limite, h0, e, width)
 
 Get the ratio between the crop height and the distance between the point x and the plant.
 The crop height and distance to the plant are always computed using the top of the crop
 **seen** by the point, which can be different than the top of the canopy if the point is
-under the canopy, or close to the canopy and the canopy as a up-pointing triangle.
+under the canopy, or close to the canopy and the canopy is an up-pointing triangle.
 
-It is only applied to the left-hand side plant because it is considered the points always
-sees the top of the the right-hand side plant.
+Note that the function returns G1, the ratio for the plant on the right, and G2, the
+ratio for the plant on the left.
 """
-function get_G_left(x, shape, limite, h0, e, width)
+function get_G(x, shape, limite, h0, e, width, ir)
+    # g1 = (h0 + e) / (ir - x - limite)
+    # G1 is the angle with the right-hand side plant
+    # G2 with the left-hand side plant.
     if shape == :rectangle
+        G1 = (h0 + e) / (ir - x - limite)
+
         if x >= limite
             # the point is not under plant canopy
-            G = (h0 + e) / (x - limite)
+            G2 = (h0 + e) / (x - limite)
         elseif x < limite
             # the point is under plant canopy
-            G = h0 / (-x + limite)
+            G2 = h0 / (-x + limite)
         elseif x == limite
-            G = 0.0
+            G2 = 0.0
         end
     elseif shape == :dtriangle
+        G1 = (h0 + e) / (ir - x - limite)
+
         # Triangle pointing down
         if x > limite
-            G = (h0 + e) / (x - limite)
+            G2 = (h0 + e) / (x - limite)
         elseif x < limite
-            G = (h0 + e) / (x - limite)
+            G2 = (h0 + e) / (x - limite)
         elseif x == limite
-            G = 0.0
+            G2 = 0.0
         end
     elseif shape == :utriangle
         # RV: Triangle pointing up, the most complex one because the point can see either the top
@@ -496,19 +503,79 @@ function get_G_left(x, shape, limite, h0, e, width)
         end
 
         if x < limite2
+            if (ir - x) < limite2
+                # G1 is inside the limit of the right-hand-side plant,
+                # It does not see the top of the plant, bu only the bottom corner
+                G1 = h0 / (ir - x - limite)
+            else
+                # G1 sees the top of the right-hand side plant
+                G1 = (h0 + e) / (ir - x)
+            end
+
             if (x > limite)
-                G = h0 / (x - limite)
+                G2 = h0 / (x - limite)
             elseif x < limite
-                G = h0 / (limite - x)
+                G2 = h0 / (limite - x)
             elseif x == limite
-                G = 0.0
+                G2 = 0.0
             end
         else
-            G = (h0 + e) / x
+            G1 = (h0 + e) / (ir - x)
+            G2 = (h0 + e) / x
         end
     end
 
-    return G
+    return (G1, G2)
+end
+
+function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
+
+    limite = width / 2
+
+    if (e > 0.0)
+        # If we use a triangle pointing up, we need limite2
+        limite2 = width / 2 * (h0 / e + 1)
+        # limite2 is the limit in the point x position above which the point starts to see
+        # the top of the canopy. Below that it only sees the bottom of the canopy, which blocks
+        # its view.
+    else
+        shape = :rectangle
+    end
+
+    # NB: using trigonometry here, remember tan(β) = AC/AB ? Well here AC is the crop height,
+    # and AB is the distance between the point and the plant on the horizontal plane.
+
+    # So atan(G) woule be the β from above, and it represents the angle between the horizontal
+    # line (AB) and BC, the line between the point and the top of the canopy.
+
+    # For reference, RHS means the right-hand side, and LHS means left-hand side.
+    # θ1 = angle between the vertical plane and the line from the point to the top canopy of the RHS plant
+    # θ2 = angle between the vertical plane and the line from the point to the canopy of the LHS plant
+
+    # θ2 depends on the plant shape and on the position of the point on the plane because for the
+    # rectangle and top triangle a different part of the plant blocks the light: either the top
+    # of the canopy if the point is not directly below the plant, or the bottom of the canopy
+    # if it is right below (x < limite)
+
+    G1, G2 = get_G(x, shape, limite, h0, e, width, ir)
+
+    θ1 = -θcrit(lat, j, G1, alpha) # θ1 is negative because it runs clockwise
+    θ2 = θcrit(lat, j, G2, alpha) # θ2 is positive, it is counter-clockwise
+
+    if x < limite
+        # The point is below the canopy, its angle is negative (going towards the right-hand-side)
+        θ2 = -θ2
+
+        # In this case it may happen that θ1 > θ2, which means the point sees nothing
+        # because the top of the righ-hand side plant is above the view angle of the point (i.e.
+        # it is completely shaded.
+        if θ1 > θ2
+            θ1 = 0.0
+            θ2 = 0.0
+        end
+    end
+
+    return (θ1, θ2)
 end
 
 
