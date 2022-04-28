@@ -53,85 +53,14 @@ md"""
 ### Dynamic
 """
 
-# ╔═╡ d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
-function DataFrameInput(data_frame_input, combine_funct; title="")
-	table_header = []
-	table_body = []
-	col_names = [@htl("<th>$(col_name)</th>") for col_name in names(data_frame_input)]
-
-	function cell_element(row, cell)
-		if isa(cell, Slider) | isa(cell, Scrubbable) | isa(cell, TextField) | isa(cell, RangeSlider) | isa(cell, Radio) | isa(cell, Select)
-			@htl("<td>$(combine_funct(row, cell))</td>")
-		else
-			@htl("<td>$(cell)</td>")
-		end
-	end
-	
-	table_header = @htl("$(col_names)")
-	for df_row in eachrow(data_frame_input)
-		row_output = [cell_element(string(UUIDs.uuid4()), cell) for cell in df_row]
-		table_body = [table_body..., @htl("<tr>$(row_output)</tr>")]
-	end
-		
-	@htl("""
-	<h6 style="text-align: center;">$(title)</h6>
-	<table>
-	<thead>
-	<tr>
-	$(table_header)
-	</tr>
-	</thead>
-	<tbody>
-	$(table_body)
-	</tbody>
-	</table>
-	""")
-end
-
-# ╔═╡ e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
-begin
-params_ = 
-	params_ = let 
-		params_ = Any[
-			Slider(param.second[1];default = param.second[2],show_value=true) for param in [
-				"latitude" => (-90:1:90, 44),
-				"day" => (1:365, 1),
-				"width" => (0.05:0.05:1.0,0.2),
-				"interrow" => (0.05:0.05:1.0,1),
-				"height" => (0.05:0.05:1.0,0.8),
-				"sample_point" => (1:199.0,100),
-			]
-		]
-
-		push!(
-			params_,
-			Select(["dtriangle" => "🔻","utriangle" => "🔺", "rectangle" => "🟥"];default = "dtriangle")
-		)
-	end
-	
-	params_df = DataFrame(
-			:Parameter => ["latitude", "day", "width", "interrow", "height", "sample_point","shape"],
-			:Units => ["degree", "julian day", "m", "m", "m", "index","-"],
-			 Symbol("Value") => params_	
-	)
-
-		
-	@bind df_values PlutoUI.combine() do Child
-		DataFrameInput(params_df, Child; title="Input Dataframe")
-	end
-end
-
-# ╔═╡ a24703dc-9b43-4b9c-9f2e-11b042c67af2
-params = Dict(zip(params_df.Parameter, [df_values[i] for i in 1:length(df_values)]));
-
-# ╔═╡ 6d52ea68-1c71-4cc4-970b-8c9a947fc582
-if params["width"]>params["interrow"] 
-	@warn "Plant width > interrow, will use interrow for the computation"
-end
-
 # ╔═╡ dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 md"""
 ## Diagram
+"""
+
+# ╔═╡ 9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
+md"""
+Please note that the direct angles (`kdir`) are projected in 2D, but are computed in the 3D space following row orientation and sun azimuthal and zenithal angles. So it is perfectly normal to see the angles appearing *"into"* the plant crown, and that's because the angle is in fact projected towards or away from you, thus appearing drawn on top of the plant.
 """
 
 # ╔═╡ e261142a-c411-40a3-85e4-ae979a4d9506
@@ -226,15 +155,22 @@ end
 
 Fraction of diffuse radiation received by a point.
 
+The computation uses a turtle with 46 (2x23) directions to discretize the hemisphere. Then a ray is emmitted from each direction of the turtle to check if the point sees the sky at this particular angle. If so, it cumulates the proportion of diffuse radiation in this sky sector. 
+
+This is done in two steps: 
+
+- first for the plant on the right-hand side of the interrow, for 23 directions.
+- then for the plant on the left-hand side, for 23 directions again. This side is only computed if the sample point is not under the crown of left-hand side plant, because else it means it only receives transmitted light from these point of views.
+
 ##### Arguments
 
-- `x`: the point x coordinates
-- `h0`: the canopy base height
-- `width`: the plant canopy widht
-- `ir`: the interrow distance, *i.e.* the distance between two plants
-- `e`: the effective canopy thickness
+- `x`: the sample point x coordinates
+- `h0`: the crown base height
+- `width`: the crown width
+- `ir`: the interrow distance, *i.e.* the distance between the two plants
+- `e`: the effective canopy thickness (*i.e.* plant height - h0).
 """
-function kdif(x, h0, width, ir, e,shape)
+function kdif(x, h0, width, ir, e, shape)
 
     # Values given by Hervé Sinoquet, gives height, azimuth and fraction of diffuse light according
     # to the SOC standard for 23 directions
@@ -254,15 +190,13 @@ function kdif(x, h0, width, ir, e,shape)
     for i in 1:23
 		# hcrit is the ray that point to the top of the plant according to the azimuthal angle (= points to the plant at aztab = 0, and below when turning)
         # hcrit = 90 - atan(G * sin(aztab[i] - 90 / 180 * π)) / π * 180
-		hcrit = (π / 2 - atan(G1 * sin(aztab[i] / 180 * π))) / π * 180
+		hcrit = atan(G1 * sin(aztab[i] / 180 * π)) / π * 180
 
-		push!(Hcrit1, deg2rad(hcrit)) # angles for top of the plant (RHS)
-		# if aztab[i] in (84.23, 95.27)
-		# 	push!(Hcrit1, deg2rad(hcrit))
-		# end
+		# push!(Hcrit1, deg2rad(hcrit)) # angles for top of the plant (RHS)
         if hcrit < htab[i]
 			# This ray receives light from the sky
             kgdiffus = kgdiffus + SOCtab[i]
+			push!(Hcrit1, π / 2 - deg2rad(htab[i])) # angles above the canopy (pointing to the sky)
         end
     end
 
@@ -271,15 +205,12 @@ function kdif(x, h0, width, ir, e,shape)
     if x > limite
         for i in 1:23
             # hcrit = atan(G2 * sin(aztab[i]/ 180 * π)) / π * 180 - 180
-			hcrit = (π / 2 - atan(G2 * sin(aztab[i] / 180 * π))) / π * 180
-			push!(Hcrit2, -deg2rad(hcrit)) # angles for top of the plant (LHS)
-
-			# if aztab[i] in (84.23, 95.27)
-			# 	push!(Hcrit, -deg2rad(hcrit))
-			# end
-
+			hcrit = atan(G2 * sin(aztab[i] / 180 * π)) / π * 180
+	
+			# push!(Hcrit2, -deg2rad(hcrit)) # angles for top of the plant (LHS)
             if (hcrit < htab[i])
                 kgdiffus = kgdiffus + SOCtab[i]
+				push!(Hcrit2, -(π / 2 - deg2rad(htab[i]))) # angles above the canopy (pointing to the sky
             end
         end
     end
@@ -871,9 +802,111 @@ function P_from_θ(θ, sky_height, x)
 	return Point(x + P_x, 0)
 end
 
+# ╔═╡ d07ff0dc-40d5-4e03-84d3-115a891d4530
+"""
+	draw_diffuse_angles(sample_point, H, sky_height, sky_height_d, point_pos_m, interrow, inner_box)
+
+Draw the lines that define the angles at which the sample point sees the sky. Note that the lines appear below the crop, but it is just a matter of perspective because they point to directions that we don't see in 2D (towards us or away from us).
+
+Used in the computation of the diffuse light interception where each angle that sees sky cumulates a proportion of the sky viewed. The function is applied one side after the other (right and left).
+"""
+function draw_diffuse_angles(sample_point, H, sky_height, sky_height_d, point_pos_m, interrow, inner_box)
+		@layer begin 
+			P_H_m = P_from_θ.(H, sky_height, point_pos_m)
+			P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + sky_height_d, inner_box[2][1], inner_box[4][1])				
+	
+			for i in P_H_d
+				line(sample_point,i, :stroke)
+			end
+		end
+end
+
+# ╔═╡ d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
+"""
+	DataFrameInput(data_frame_input, combine_funct; title="")
+
+Make a DataFrame of binded widgets out of a Pluto `combine` array.
+
+Adapted from [this code](https://github.com/jeremiahpslewis/PlutoMiscellany.jl/blob/main/notebooks/DataFrameInput_Widget.jl) from the Github account **@jeremiahpslewis**.
+"""
+function DataFrameInput(data_frame_input, combine_funct; title="")
+	table_header = []
+	table_body = []
+	col_names = [@htl("<th>$(col_name)</th>") for col_name in names(data_frame_input)]
+
+	function cell_element(row, cell)
+		if isa(cell, Slider) | isa(cell, Scrubbable) | isa(cell, TextField) | isa(cell, RangeSlider) | isa(cell, Radio) | isa(cell, Select) | isa(cell, CheckBox)
+			@htl("<td>$(combine_funct(row, cell))</td>")
+		else
+			@htl("<td>$(cell)</td>")
+		end
+	end
+	
+	table_header = @htl("$(col_names)")
+	for df_row in eachrow(data_frame_input)
+		row_output = [cell_element(string(UUIDs.uuid4()), cell) for cell in df_row]
+		table_body = [table_body..., @htl("<tr>$(row_output)</tr>")]
+	end
+		
+	@htl("""
+	<h6 style="text-align: center;">$(title)</h6>
+	<table>
+	<thead>
+	<tr>
+	$(table_header)
+	</tr>
+	</thead>
+	<tbody>
+	$(table_body)
+	</tbody>
+	</table>
+	""")
+end
+
+# ╔═╡ e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
+begin
+params_ = let 
+		params_ = Any[
+			Slider(param.second[1];default = param.second[2],show_value=true) for param in [
+				"latitude" => (-90:1:90, 44),
+				"day" => (1:365, 1),
+				"width" => (0.05:0.05:1.0,0.2),
+				"interrow" => (0.05:0.05:2.0,1),
+				"height" => (0.05:0.05:1.0,0.8),
+				"sample_point" => (1:199.0,100),
+			]
+		]
+
+		push!(
+			params_,
+			Select(["dtriangle" => "🔻","utriangle" => "🔺", "rectangle" => "🟥"];default = "dtriangle")
+		)
+
+		push!(
+			params_,
+			CheckBox()
+		)
+	end
+	
+	params_df = DataFrame(
+			:Parameter => ["latitude", "day", "width", "interrow", "height", "sample_point","shape", "diffuse_angles"],
+			:Units => ["degree", "julian day", "m", "m", "m", "index","-","-"],
+			 Symbol("Value") => params_	
+	)
+
+		
+	@bind df_values PlutoUI.combine() do Child
+		DataFrameInput(params_df, Child; title="Input Dataframe")
+	end
+end
+
+# ╔═╡ a24703dc-9b43-4b9c-9f2e-11b042c67af2
+params = Dict(zip(params_df.Parameter, [df_values[i] for i in 1:length(df_values)]));
+
 # ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
 begin
 	j = params["day"]
+	diffuse_angles = params["diffuse_angles"]
 	latitude_r = deg2rad(params["latitude"])
 	interrow = params["interrow"]
 	shape = Symbol(params["shape"])
@@ -1038,8 +1071,8 @@ begin
     # Recompute the points P1 and P2 but at the inner
 	P1 = P_from_θ(θ1, h0 + height, point_pos_m)
 	P2 = P_from_θ(θ2, h0 + height, point_pos_m)
-    # P1, P2 = P_from_θ.([θ1, θ2], h0 + height, point_pos_m)
-    P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
+
+	P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
 
     text_point = midpoint(P1, P2)
     if display_text
@@ -1082,33 +1115,19 @@ begin
 	#   end
 	
     text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
-
 	kgdiffus,H1,H2 = kdif(point_pos_m, h0, width, interrow, height, shape)
-	@layer begin 
-		#################################
-		# G1, G2 = get_G(point_pos_m, shape, width/2, h0, height, width, interrow)
-		# H1 = π/2 - atan(G1)
-		#################################
+	
+	if diffuse_angles
 		setline(8)
 		setdash("dot")
 		setopacity(0.8)
 		sethue("red")
 		setline(1)
-		P_H_m = P_from_θ.(H1, light_ray_height, point_pos_m)
-		P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])				
-		#################################
-		# line(sample_point,P_H_d, :stroke)
-		#################################
-		for i in P_H_d
-			line(sample_point,i, :stroke)
-		end
-		
-		P_H_m = P_from_θ.(H2, light_ray_height, point_pos_m)
-		P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])				
+		# RHS: 
+		draw_diffuse_angles(sample_point, H1, light_ray_height, d_light_ray_height, point_pos_m, interrow, inner_box)
+		# LHS:
 		sethue("green")
-		for i in P_H_d
-			line(sample_point,i, :stroke)
-		end
+		draw_diffuse_angles(sample_point, H2, light_ray_height, d_light_ray_height, point_pos_m, interrow, inner_box)
 	end
 
 	if display_text
@@ -1169,6 +1188,22 @@ begin
 
     finish()
     preview()
+end
+
+# ╔═╡ 6d52ea68-1c71-4cc4-970b-8c9a947fc582
+let
+str = ""
+if params["width"]>params["interrow"] 
+	str = str * "\nPlant width > interrow, will use interrow for the computation"
+end
+
+if diffuse_angles 
+	str = str * """\nDiffuse angles are projected in 2D but are computed in the 3D space, so an angle that appears below the top of the plant crown in the diagram in in fact above, but either points to a direction towards of away from you."""
+end
+
+if length(str) > 0
+	@warn str
+end
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -1879,12 +1914,12 @@ version = "3.5.0+0"
 # ╟─f92c1e63-d40f-41eb-8d58-b44b62e44ff9
 # ╠═311611bd-89f9-4e34-84cb-11924e8efc2d
 # ╟─4dff9014-73ff-4c32-b6ad-c936bd892588
-# ╟─d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
 # ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
@@ -1893,7 +1928,7 @@ version = "3.5.0+0"
 # ╟─fbe6d054-56ff-4201-8d55-f5afcda7ec52
 # ╟─09a77c7f-409d-4083-8267-d52ba0346c9c
 # ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
-# ╠═6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
+# ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
@@ -1902,5 +1937,7 @@ version = "3.5.0+0"
 # ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─030d4bd1-b596-4590-b1c5-d53bdc656c7f
 # ╟─172d2086-efb1-4805-b75e-7801072347f4
+# ╟─d07ff0dc-40d5-4e03-84d3-115a891d4530
+# ╟─d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
