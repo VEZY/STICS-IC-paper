@@ -234,7 +234,7 @@ Fraction of diffuse radiation received by a point.
 - `ir`: the interrow distance, *i.e.* the distance between two plants
 - `e`: the effective canopy thickness
 """
-function kdif(x, h0, width, ir, e)
+function kdif(x, h0, width, ir, e,shape)
 
     # Values given by Hervé Sinoquet, gives height, azimuth and fraction of diffuse light according
     # to the SOC standard for 23 directions
@@ -245,12 +245,19 @@ function kdif(x, h0, width, ir, e)
     x = min(x, ir / 2)
     limite = width / 2.0
     kgdiffus = 0.0
+	Hcrit = [] # Container for the angle of rays that effectively receive diffuse light
+
 
     # For the right-hand side:
-    G = (h0 + e) / (ir - x - limite)
+	G, G2 = get_G(x, shape, limite, h0, e, width, ir)
+	G = (h0 + e) / (ir - x - limite)
     for i in 1:23
-        hcrit = atan(G * sin(aztab[i] / 180 * π)) / π * 180
+		# hcrit is the ray that point to the top of the plant according to the azimuthal angle 
+        hcrit = 90 - atan(G * sin(aztab[i] - 90 / 180 * π)) / π * 180
+		push!(Hcrit, deg2rad(hcrit)) 
+
         if hcrit < htab[i]
+			# This ray receives light from the sky
             kgdiffus = kgdiffus + SOCtab[i]
         end
     end
@@ -258,16 +265,17 @@ function kdif(x, h0, width, ir, e)
     # For the left-hand side:
     # If the point is not under the plant canopy (else it is only transmitted light):
     if x > limite
-        G = (h0 + e) / (x - limite)
         for i in 1:23
-            hcrit = atan(G * sin(aztab[i] / 180 * π)) / π * 180
+            hcrit = 90 - atan(G2 * sin(aztab[i] - 90 / 180 * π)) / π * 180
+			# push!(Hcrit, deg2rad(hcrit))
+
             if (hcrit < htab[i])
                 kgdiffus = kgdiffus + SOCtab[i]
             end
         end
     end
 
-    return kgdiffus
+    return (kgdiffus, Hcrit)
 end
 
 # ╔═╡ 78cc38c7-22ab-4f24-b68f-4ba0f668d253
@@ -548,7 +556,7 @@ function r_transmitted(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou
         xprec = x
 
         # Diffuse radiation:
-        kgdiffus = kdif(x, h0, width, ir, height)
+        kgdiffus, H = kdif(x, h0, width, ir, height)
 
         # Direct radiation
         kgdirect, θ1, θ2 = kdir(lat, j, width, x, ir, shape, h0, alpha, height)
@@ -1065,14 +1073,28 @@ begin
     end
 	
     text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
-    if display_text
+
+	kgdiffus,H = kdif(point_pos_m, h0, width, interrow, height, shape)
+	@layer begin 
+		P_H_m = P_from_θ.(H, light_ray_height, point_pos_m)
+		P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])				
+		setline(8)
+		setdash("dot")
+		setopacity(0.8)
+		sethue("red")
+		setline(1)
+		for i in P_H_d
+			line(sample_point,i, :stroke)
+		end
+	end
+
+	if display_text
         @layer begin
-            kdifuse = kdif(point_pos_m, h0, width, interrow, height)
             sethue("black")
             setopacity(1)
             scale(1, -1) # to set the y axis up
             label(
-                string("kdif: ", round(kdifuse, digits=2)), :N, Point(text_point[1], -text_point[2]),
+                string("kdif: ", round(kgdiffus, digits=2)), :N, Point(text_point[1], -text_point[2]),
                 offset=10, leader=false, leaderoffsets=[0.4, 0.9]
             )
         end
@@ -1125,6 +1147,9 @@ begin
     finish()
     preview()
 end
+
+# ╔═╡ f6e03199-658a-4987-8178-bc6e669686bd
+rad2deg.(H)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1838,6 +1863,7 @@ version = "3.5.0+0"
 # ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
+# ╠═f6e03199-658a-4987-8178-bc6e669686bd
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
@@ -1846,9 +1872,9 @@ version = "3.5.0+0"
 # ╟─58ec9faa-cbf1-4e46-b4bb-420586ac7dba
 # ╟─0385990f-397e-46f8-93d7-578c8ead2be3
 # ╟─fbe6d054-56ff-4201-8d55-f5afcda7ec52
-# ╠═09a77c7f-409d-4083-8267-d52ba0346c9c
+# ╟─09a77c7f-409d-4083-8267-d52ba0346c9c
 # ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
-# ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
+# ╠═6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
@@ -1856,6 +1882,6 @@ version = "3.5.0+0"
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
 # ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─030d4bd1-b596-4590-b1c5-d53bdc656c7f
-# ╠═172d2086-efb1-4805-b75e-7801072347f4
+# ╟─172d2086-efb1-4805-b75e-7801072347f4
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
