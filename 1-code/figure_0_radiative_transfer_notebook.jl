@@ -245,17 +245,21 @@ function kdif(x, h0, width, ir, e,shape)
     x = min(x, ir / 2)
     limite = width / 2.0
     kgdiffus = 0.0
-	Hcrit = [] # Container for the angle of rays that effectively receive diffuse light
+	Hcrit1 = [] # Container for the angle of rays that effectively receive diffuse light on the righ-hand-side
+	Hcrit2 = [] # Container for the angle of rays that effectively receive diffuse light on the left-hand-side
 
 
     # For the right-hand side:
-	G, G2 = get_G(x, shape, limite, h0, e, width, ir)
-	G = (h0 + e) / (ir - x - limite)
+	G1, G2 = get_G(x, shape, limite, h0, e, width, ir)
     for i in 1:23
-		# hcrit is the ray that point to the top of the plant according to the azimuthal angle 
-        hcrit = 90 - atan(G * sin(aztab[i] - 90 / 180 * π)) / π * 180
-		push!(Hcrit, deg2rad(hcrit)) 
+		# hcrit is the ray that point to the top of the plant according to the azimuthal angle (= points to the plant at aztab = 0, and below when turning)
+        # hcrit = 90 - atan(G * sin(aztab[i] - 90 / 180 * π)) / π * 180
+		hcrit = (π / 2 - atan(G1 * sin(aztab[i] / 180 * π))) / π * 180
 
+		push!(Hcrit1, deg2rad(hcrit)) # angles for top of the plant (RHS)
+		# if aztab[i] in (84.23, 95.27)
+		# 	push!(Hcrit1, deg2rad(hcrit))
+		# end
         if hcrit < htab[i]
 			# This ray receives light from the sky
             kgdiffus = kgdiffus + SOCtab[i]
@@ -266,8 +270,13 @@ function kdif(x, h0, width, ir, e,shape)
     # If the point is not under the plant canopy (else it is only transmitted light):
     if x > limite
         for i in 1:23
-            hcrit = 90 - atan(G2 * sin(aztab[i] - 90 / 180 * π)) / π * 180
-			# push!(Hcrit, deg2rad(hcrit))
+            # hcrit = atan(G2 * sin(aztab[i]/ 180 * π)) / π * 180 - 180
+			hcrit = (π / 2 - atan(G2 * sin(aztab[i] / 180 * π))) / π * 180
+			push!(Hcrit2, -deg2rad(hcrit)) # angles for top of the plant (LHS)
+
+			# if aztab[i] in (84.23, 95.27)
+			# 	push!(Hcrit, -deg2rad(hcrit))
+			# end
 
             if (hcrit < htab[i])
                 kgdiffus = kgdiffus + SOCtab[i]
@@ -275,7 +284,7 @@ function kdif(x, h0, width, ir, e,shape)
         end
     end
 
-    return (kgdiffus, Hcrit)
+    return (kgdiffus, Hcrit1, Hcrit2)
 end
 
 # ╔═╡ 78cc38c7-22ab-4f24-b68f-4ba0f668d253
@@ -424,7 +433,6 @@ function θcrit(lat, j, tgh, alpha)
 
     return θcriteria
 end
-
 
 # ╔═╡ fbe6d054-56ff-4201-8d55-f5afcda7ec52
 """
@@ -1052,37 +1060,52 @@ begin
 
 	(p_trans_left, p_trans_right) = draw_transmitted_light(sample_point,p,inner_box,d_width,d_h0)
 
-    @layer begin
-        sethue("black")
-        setopacity(0.5)
-        setdash("solid")
-		H1 = anglethreepoints(p_trans_left[end-1],p_trans_left[1], p_trans_left[2])
-		newpath()
-		(p_trans_left, p_trans_right)
-		arc(sample_point, 50, 0, cos(π/2 + H1), :path)
-		p_arc = pathtopoly()[1]        
-		poly(p_arc, :stroke)
-
-		@layer begin
-            scale(1, -1)
-			mid_p_arc = midpoint(p_arc[1], p_arc[end])
-			# label(string("H2: ",round(rad2deg(H1), digits=2), "°"), :NE, Point(mid_p_arc[1], -mid_p_arc[2]),offset=10)
-			# offset=10, leader=false, leaderoffsets=[0.4, 0.9]
-        end
-
-    end
+	# Theta angle :
+	#   @layer begin
+	#       sethue("black")
+	#       setopacity(0.5)
+	#       setdash("solid")
+		# H1 = anglethreepoints(p_trans_left[end-1],p_trans_left[1], p_trans_left[2])
+		# newpath()
+		# (p_trans_left, p_trans_right)
+		# arc(sample_point, 50, 0, cos(π/2 + H1), :path)
+		# p_arc = pathtopoly()[1]        
+		# poly(p_arc, :stroke)
+	
+		# @layer begin
+	#           scale(1, -1)
+		# 	mid_p_arc = midpoint(p_arc[1], p_arc[end])
+		# 	label(string("H2: ",round(rad2deg(H1), digits=2), "°"), :NE, Point(mid_p_arc[1], -mid_p_arc[2]),offset=10)
+		# 	# offset=10, leader=false, leaderoffsets=[0.4, 0.9]
+	#       end
+	
+	#   end
 	
     text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
 
-	kgdiffus,H = kdif(point_pos_m, h0, width, interrow, height, shape)
+	kgdiffus,H1,H2 = kdif(point_pos_m, h0, width, interrow, height, shape)
 	@layer begin 
-		P_H_m = P_from_θ.(H, light_ray_height, point_pos_m)
-		P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])				
+		#################################
+		# G1, G2 = get_G(point_pos_m, shape, width/2, h0, height, width, interrow)
+		# H1 = π/2 - atan(G1)
+		#################################
 		setline(8)
 		setdash("dot")
 		setopacity(0.8)
 		sethue("red")
 		setline(1)
+		P_H_m = P_from_θ.(H1, light_ray_height, point_pos_m)
+		P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])				
+		#################################
+		# line(sample_point,P_H_d, :stroke)
+		#################################
+		for i in P_H_d
+			line(sample_point,i, :stroke)
+		end
+		
+		P_H_m = P_from_θ.(H2, light_ray_height, point_pos_m)
+		P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])				
+		sethue("green")
 		for i in P_H_d
 			line(sample_point,i, :stroke)
 		end
@@ -1147,9 +1170,6 @@ begin
     finish()
     preview()
 end
-
-# ╔═╡ f6e03199-658a-4987-8178-bc6e669686bd
-rad2deg.(H)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1863,9 +1883,8 @@ version = "3.5.0+0"
 # ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
-# ╠═f6e03199-658a-4987-8178-bc6e669686bd
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc

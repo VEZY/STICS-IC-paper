@@ -23,6 +23,7 @@ begin
     latitude_r = deg2rad(latitude)
     width = min(width, interrow)
 
+
     # Beginning of the drawing:
     Drawing(image_dim[1], image_dim[2], :png)
     t = currentdrawing()
@@ -159,9 +160,8 @@ begin
     kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, height)
 
     # Compute P1 and P2, the two points on the sky that provide the direct light view angle:
-    P1 = P_from_θ(θ1, light_ray_height, point_pos_m, :left)
-    P2 = P_from_θ(θ2, light_ray_height, point_pos_m, :right)
-
+    P1 = P_from_θ(θ1, light_ray_height, point_pos_m)
+    P2 = P_from_θ(θ2, light_ray_height, point_pos_m)
     P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])
 
     sun_pos = [P1, P2]
@@ -179,8 +179,9 @@ begin
     )
 
     # Recompute the points P1 and P2 but at the inner
-    P1 = P_from_θ(θ1, h0 + height, point_pos_m, :left)
-    P2 = P_from_θ(θ2, h0 + height, point_pos_m, :right)
+    P1 = P_from_θ(θ1, h0 + height, point_pos_m)
+    P2 = P_from_θ(θ2, h0 + height, point_pos_m)
+    # P1, P2 = P_from_θ.([θ1, θ2], h0 + height, point_pos_m)
     P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
 
     text_point = midpoint(P1, P2)
@@ -200,17 +201,51 @@ begin
     # Transmitted light: Drawing the left triangle between θ1 and the horizontal
     sethue("goldenrod")
 
-    draw_transmitted_light(sample_point, p, inner_box)
+    (p_trans_left, p_trans_right) = draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
+
+    @layer begin
+        sethue("black")
+        setopacity(0.5)
+        setdash("solid")
+        H1 = anglethreepoints(p_trans_left[end-1], p_trans_left[1], p_trans_left[2])
+        newpath()
+        (p_trans_left, p_trans_right)
+        arc(sample_point, 50, 0, cos(π / 2 + H1), :path)
+        p_arc = pathtopoly()[1]
+        poly(p_arc, :stroke)
+
+        @layer begin
+            scale(1, -1)
+            mid_p_arc = midpoint(p_arc[1], p_arc[end])
+            # label(string("H2: ",round(rad2deg(H1), digits=2), "°"), :NE, Point(mid_p_arc[1], -mid_p_arc[2]),offset=10)
+            # offset=10, leader=false, leaderoffsets=[0.4, 0.9]
+        end
+
+    end
 
     text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
+
+    kgdiffus, H = kdif(point_pos_m, h0, width, interrow, height, shape)
+    @layer begin
+        P_H_m = P_from_θ.(H, light_ray_height, point_pos_m)
+        P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])
+        setline(8)
+        setdash("dot")
+        setopacity(0.8)
+        sethue("red")
+        setline(1)
+        for i in P_H_d
+            line(sample_point, i, :stroke)
+        end
+    end
+
     if display_text
         @layer begin
-            kdiffuse, H = kdif(point_pos_m, h0, width, interrow, height)
             sethue("black")
             setopacity(1)
             scale(1, -1) # to set the y axis up
             label(
-                string("kdif: ", round(kdiffuse, digits=2)), :N, Point(text_point[1], -text_point[2]),
+                string("kdif: ", round(kgdiffus, digits=2)), :N, Point(text_point[1], -text_point[2]),
                 offset=10, leader=false, leaderoffsets=[0.4, 0.9]
             )
         end

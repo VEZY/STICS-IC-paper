@@ -262,9 +262,9 @@ end
 """
     kdif(x, h0, width, ir, e)
 
-Fraction of diffuse radiation coming from the sky received by a point.
+Fraction of diffuse radiation received by a point.
 
-# Arguments
+##### Arguments
 
 - `x`: the point x coordinates
 - `h0`: the canopy base height
@@ -272,64 +272,53 @@ Fraction of diffuse radiation coming from the sky received by a point.
 - `ir`: the interrow distance, *i.e.* the distance between two plants
 - `e`: the effective canopy thickness
 """
-function kdif(x, h0, width, ir, e, shape, alpha)
+function kdif(x, h0, width, ir, e, shape)
 
-    # Values given by Hervé Sinoquet, gives angle zenith (h, in degrees), azimuth (az,
-    # degrees) and fraction of diffuse light according to the SOC standard for 2x23 directions (=46).
-    h = (repeat([9.23], 5)..., 10.81, 10.81, 26.57, 26.57, 26.57, repeat([31.08], 5)..., 47.41, 47.41, 47.41, 52.62, 52.62, 69.16, 69.16, 69.16)
-    az = (12.23, 59.77, 84.23, 131.77, 156.23, 36, 108, 0, 72, 144, 23.27, 48.73, 95.27, 120.73, 167.27, 0, 72, 144, 36, 108, 0, 72, 144)
-    diffuse = (repeat([0.0043], 5)..., 0.0055, 0.0055, 0.0140, 0.0140, 0.0140, repeat([0.0197], 5)..., 0.0336, 0.0336, 0.0336, 0.0399, 0.0399, 0.0495, 0.0495, 0.0495)
-    # RV: this is a turtle with 46 directions, if you want to see one, you can go to the documentation
-    # Of the ARCHIMED model: https://archimed-platform.github.io/archimed-phys-user-doc/3-inputs/2-general_config/#simulation-controls
-
+    # Values given by Hervé Sinoquet, gives height, azimuth and fraction of diffuse light according
+    # to the SOC standard for 23 directions
+    htab = (repeat([9.23], 5)..., 10.81, 10.81, 26.57, 26.57, 26.57, repeat([31.08], 5)..., 47.41, 47.41, 47.41, 52.62, 52.62, 69.16, 69.16, 69.16)
+    aztab = (12.23, 59.77, 84.23, 131.77, 156.23, 36, 108, 0, 72, 144, 23.27, 48.73, 95.27, 120.73, 167.27, 0, 72, 144, 36, 108, 0, 72, 144)
+    SOCtab = (repeat([0.0043], 5)..., 0.0055, 0.0055, 0.0140, 0.0140, 0.0140, repeat([0.0197], 5)..., 0.0336, 0.0336, 0.0336, 0.0399, 0.0399, 0.0495, 0.0495, 0.0495)
 
     x = min(x, ir / 2)
     limite = width / 2.0
-    if shape == :utriangle
-        limite2 = width / 2 * (h0 / e + 1)
-    end
     kgdiffus = 0.0
-    H = [] # Container for the angle of rays that effectively receive diffuse light
-    sizehint!(H, 23 * 2) # Reserve 46 values (the maximum number of rays that receive light)
+    Hcrit = [] # Container for the angle of rays that effectively receive diffuse light
+
 
     # For the right-hand side:
     G1, G2 = get_G(x, shape, limite, h0, e, width, ir)
-    # NB: using trigonometry here, remember tan(β) = AC/AB ? Well G is AC/AB.
-    # So atan(G) would be the β from above, and it represents the angle between the horizontal
-    # line (AB) and BC, the line between the point and the top of the canopy.
-
     for i in 1:23
-        # hcrit1 is the angle that gives the direction to the top right corner of the plant from the vertical
-        # hcrit2 is the same but for the left plant.
-        hcrit1 = rad2deg(atan(G1 * abs(sin(deg2rad(az[i] + alpha)))))
-        hcrit2 = rad2deg(atan(G2 * abs(sin(deg2rad(az[i] + alpha)))))
-        # RV: We need hcrit2 here because if the point is under the left plant it is shaded
-        # by the plant (at least partly)
-
-        # h is the ray position in the sky, and hcrit1 -> hcrit2 is the sky view angle
-        if hcrit1 < h[i] #< hcrit2
-            # We add the diffuse light from this angle only if the point views the sky at this
-            # angle. i.e. if the ray direction is higher than the top of the plant canopy.
-            push!(H, hcrit1) # This ray receives light from the sky
-            kgdiffus = kgdiffus + diffuse[i]
+        # hcrit is the ray that point to the top of the plant according to the azimuthal angle
+        # hcrit = 90 - atan(G * sin(aztab[i] - 90 / 180 * π)) / π * 180
+        # hcrit = atan(G * sin(aztab[i] / 180 * π)) / π * 180
+        hcrit = atan(G1) / π * 180
+        if aztab[i] in (84.23, 95.27)
+            push!(Hcrit, deg2rad(hcrit))
+        end
+        if hcrit < htab[i]
+            # This ray receives light from the sky
+            kgdiffus = kgdiffus + SOCtab[i]
         end
     end
 
     # For the left-hand side:
-    # If the point is not under the plant canopy, else it is only transmitted light, so 0 kgdiffus:
+    # If the point is not under the plant canopy (else it is only transmitted light):
     if x > limite
         for i in 1:23
-            hcrit = atan(G2 * sin(az[i] / 180 * π + alpha)) / π * 180
-            if (hcrit < h[i])
-                # push!(H, hcrit)
-                kgdiffus = kgdiffus + diffuse[i]
+            # hcrit = atan(G2 * sin(aztab[i]/ 180 * π)) / π * 180 - 180
+            hcrit = atan(G2) / π * 180
+            if aztab[i] in (84.23, 95.27)
+                push!(Hcrit, deg2rad(hcrit))
+            end
+
+            if (hcrit < htab[i])
+                kgdiffus = kgdiffus + SOCtab[i]
             end
         end
     end
-    # RV: note that the left-hand side is never computed when the point is below the plant canopy
-    # x < limite because we know that it reveives only transmitted light, and no sky diffuse light
 
-    return (kgdiffus, H)
+    return (kgdiffus, Hcrit)
 end
 
 """
@@ -574,8 +563,8 @@ end
 """
     θcrit(lat, j, tgh, alpha)
 
-Compute the cosinus of the theta angle for the apparent sun height `h` (tangent of the angle
-in radian)
+Compute the angle that gives the direction to the height of the plant viewed by the
+sample point.
 """
 function θcrit(lat, j, tgh, alpha)
     # Initialisations
@@ -589,13 +578,11 @@ function θcrit(lat, j, tgh, alpha)
     θ = zeros(Float64, 180)
     dec = decangle(j)
     hprec = 0.0
-
+    azim = 0.0
     for i in 1:(18*n)
         θ[i] = 10.0 / n * (i - 1)
-        # This gives θ between 0.0 and 176.66 by steps of 3.33 degrees
-        # Then we transform into radians and move it to the vertical as reference
+        # This gives θ between 0.0 and 176.66666666666669 by steps of 3.33 degrees
         θ[i] = (θ[i] - 90) / 180 * π
-
         # Sun position (h,azim)
         sinh = sin(lat) * sin(dec) + cos(lat) * cos(dec) * cos(θ[i])
         h = asin(sinh)
@@ -603,18 +590,18 @@ function θcrit(lat, j, tgh, alpha)
 
         cosazim = min(1.0, cosazim)
         if θ[i] != 0.0
-            azim = acos(cosazim) * θ[i] / abs(θ[i])
+            global azim = acos(cosazim) * θ[i] / abs(θ[i])
         else
-            azim = 0.0
+            global azim = 0.0
         end
         if (sinh < 0.0)
             h = 0.0
         end
-        # Critical height (top right corner of the plant)
+        # Critical height
         hcrit = atan(tgh * abs(sin(azim + alpha + 0.00001)))
-
+        # test for h = hcrit
         if hcritprec >= hprec && hcrit <= h && i > 1
-            # h is the sun position in the sky, hcrit the position of the top right corner of the plant
+            println(azim)
             # Linear interpolation
             acrit = (hcrit - hcritprec) / (θ[i] - θ[i-1])
             bcrit = hcrit - acrit * θ[i]
@@ -665,13 +652,14 @@ function P_drawing(P, orig_xmax, orig_ymax, to_xmax, to_ymax)
 end
 
 """
-	draw_transmitted_light(sample_point,p,inner_box)
+	draw_transmitted_light(sample_point,p,inner_box,d_width,d_h0)
 
 Draw the transmitted light using the plants dimensions.
 """
-function draw_transmitted_light(sample_point, p, inner_box)
+function draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
     # Transmitted light: Drawing the left triangle between θ1 and the horizontal
     corner_left = inner_box[2]
+    plant_x = [i[1] for i in p]
     plant_y = [i[2] for i in p]
     plant_base_points = sort(p[plant_y.==minimum(plant_y)])
     plant_top_points = p[plant_y.==maximum(plant_y)]
@@ -701,4 +689,6 @@ function draw_transmitted_light(sample_point, p, inner_box)
         p_outline_right,
         :fill
     )
+
+    (p_outline, p_outline_right)
 end
