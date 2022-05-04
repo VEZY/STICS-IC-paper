@@ -20,8 +20,13 @@ begin
 	using PlutoUI
 	using HypertextLiteral
 	using DataFrames
-	using UUIDs
+	using UUIDs # Used for the magick of the interactive parameters DataFrame
+	using Thebes # Add 3D to Luxor
+	using Rotations # For 3D rotations
 end
+
+# ╔═╡ 8db00b5e-b7f7-4a47-a76e-8a1d89d0b799
+include(dirname(dirname(pathof(Thebes))) * "/data/moreobjects.jl");
 
 # ╔═╡ 6788dbbe-317e-4212-a0e8-d417a52301f6
 md"""
@@ -45,6 +50,7 @@ begin
 	alpha = deg2rad(0) # Crop row direction relative to north
 	light_from_sky = false # if false the light stops at the inner box, else at the sky
 	display_text = true # display names and values?
+	display_icosahedron = false # display the truncated icosahedron that shows diffuse directions
 	n_sample_points = 200
 end
 
@@ -56,6 +62,11 @@ md"""
 # ╔═╡ dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 md"""
 ## Diagram
+"""
+
+# ╔═╡ 78c00fe4-feb0-45de-b5e1-df0fae546287
+md"""
+*Figure 1. Diagram of the light interception computation for each sample point below the crop.*
 """
 
 # ╔═╡ 9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
@@ -183,7 +194,8 @@ function kdif(x, h0, width, ir, e, shape)
     kgdiffus = 0.0
 	Hcrit1 = [] # Container for the angle of rays that effectively receive diffuse light on the righ-hand-side
 	Hcrit2 = [] # Container for the angle of rays that effectively receive diffuse light on the left-hand-side
-
+	az1 = [] # Container for the azimuthal angle of the ray
+	az2 = []
 
     # For the right-hand side:
 	G1, G2 = get_G(x, shape, limite, h0, e, width, ir)
@@ -196,7 +208,8 @@ function kdif(x, h0, width, ir, e, shape)
         if hcrit < htab[i]
 			# This ray receives light from the sky
             kgdiffus = kgdiffus + SOCtab[i]
-			push!(Hcrit1, π / 2 - deg2rad(htab[i])) # angles above the canopy (pointing to the sky)
+			push!(Hcrit1, deg2rad(htab[i])) # angles above the canopy (pointing to the sky)
+			push!(az1, deg2rad(aztab[i])) # azimuthal angle of the ray
         end
     end
 
@@ -210,12 +223,13 @@ function kdif(x, h0, width, ir, e, shape)
 			# push!(Hcrit2, -deg2rad(hcrit)) # angles for top of the plant (LHS)
             if (hcrit < htab[i])
                 kgdiffus = kgdiffus + SOCtab[i]
-				push!(Hcrit2, -(π / 2 - deg2rad(htab[i]))) # angles above the canopy (pointing to the sky
+				push!(Hcrit2, π/2 - deg2rad(htab[i])) # angles above the canopy (pointing to the sky
+				push!(az2, deg2rad(aztab[i]))
             end
         end
     end
 
-    return (kgdiffus, Hcrit1, Hcrit2)
+    return (kgdiffus, Hcrit1, Hcrit2, az1, az2)
 end
 
 # ╔═╡ 78cc38c7-22ab-4f24-b68f-4ba0f668d253
@@ -811,7 +825,8 @@ Draw the lines that define the angles at which the sample point sees the sky. No
 Used in the computation of the diffuse light interception where each angle that sees sky cumulates a proportion of the sky viewed. The function is applied one side after the other (right and left).
 """
 function draw_diffuse_angles(sample_point, H, sky_height, sky_height_d, point_pos_m, interrow, inner_box)
-		@layer begin 
+		@layer begin
+			
 			P_H_m = P_from_θ.(H, sky_height, point_pos_m)
 			P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + sky_height_d, inner_box[2][1], inner_box[4][1])				
 	
@@ -819,6 +834,22 @@ function draw_diffuse_angles(sample_point, H, sky_height, sky_height_d, point_po
 				line(sample_point,i, :stroke)
 			end
 		end
+end
+
+# ╔═╡ fe676fa3-bc50-493d-b41f-55fdcba91d83
+function draw_diffuse_angles_3d(sample_point, H, az)
+	center_point = Point3D(sample_point[1], sample_point[2], 0)
+	end_line = Point3D(sample_point[1] + 100, sample_point[2], 0)
+	end_line_points = fill(end_line, length(H))
+	for i in 1:length(H)
+		@layer begin
+			end_line_point = rotateby(end_line, center_point, RotXYZ(0,az[i],H[i]))
+			# pin(center_point,end_line_point)
+			line(Point(center_point[1],center_point[2]), Point(end_line_point[1], end_line_point[2]), :stroke)
+			end_line_points[i] = end_line_point
+		end
+	end
+	return center_point,end_line_points
 end
 
 # ╔═╡ d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
@@ -868,7 +899,7 @@ begin
 params_ = let 
 		params_ = Any[
 			Slider(param.second[1];default = param.second[2],show_value=true) for param in [
-				"latitude" => (-90:1:90, 44),
+				"latitude" => (-90:1:90, 0.0),
 				"day" => (1:365, 1),
 				"width" => (0.05:0.05:1.0,0.2),
 				"interrow" => (0.05:0.05:2.0,1),
@@ -902,6 +933,22 @@ end
 
 # ╔═╡ a24703dc-9b43-4b9c-9f2e-11b042c67af2
 params = Dict(zip(params_df.Parameter, [df_values[i] for i in 1:length(df_values)]));
+
+# ╔═╡ 6d52ea68-1c71-4cc4-970b-8c9a947fc582
+let
+str = ""
+if params["width"]>params["interrow"] 
+	str = str * "\nPlant width > interrow, will use interrow for the computation"
+end
+
+if params["diffuse_angles"]
+	str = str * """\nDiffuse angles are projected in 2D but are computed in the 3D space, so an angle that appears below the top of the plant crown in the diagram in in fact above, but either points to a direction towards of away from you."""
+end
+
+if length(str) > 0
+	@warn str
+end
+end
 
 # ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
 begin
@@ -1115,19 +1162,23 @@ begin
 	#   end
 	
     text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
-	kgdiffus,H1,H2 = kdif(point_pos_m, h0, width, interrow, height, shape)
+	kgdiffus,H1,H2,az1,az2 = kdif(point_pos_m, h0, width, interrow, height, shape)
 	
 	if diffuse_angles
-		setline(8)
-		setdash("dot")
-		setopacity(0.8)
-		sethue("red")
-		setline(1)
-		# RHS: 
-		draw_diffuse_angles(sample_point, H1, light_ray_height, d_light_ray_height, point_pos_m, interrow, inner_box)
-		# LHS:
-		sethue("green")
-		draw_diffuse_angles(sample_point, H2, light_ray_height, d_light_ray_height, point_pos_m, interrow, inner_box)
+		@layer begin
+			setdash("solid")
+			setopacity(0.5)
+			sethue("red")
+			setline(1)
+
+			# scale(-1, 1)
+			# RHS: 
+			center_point,end_line_points = draw_diffuse_angles_3d(sample_point, H1, π/2 .- az1)
+			# LHS:
+			sethue("green")
+			center_point,end_line_points = draw_diffuse_angles_3d(sample_point, π/2 .- H2, - π/2 .- az2)
+			# draw_diffuse_angles(sample_point, H2, light_ray_height, d_light_ray_height, point_pos_m, interrow, inner_box)
+		end
 	end
 
 	if display_text
@@ -1142,12 +1193,17 @@ begin
         end
     end
 
-    @layer begin
-        sethue("grey")
-        setopacity(0.5)
-        newpath()
-        carc(sample_point, 20, π, 0, :fill)
-    end
+	if display_icosahedron
+	    @layer begin
+			ti = make(truncated_icosahedron)
+	        sethue("grey")
+			setline(3)
+			scaleby!(ti, 50, 50, -50)
+			translate(Point(sample_point[1], sample_point[2]))
+			# pin(ti, gfunction=wireframe)
+			pin(ti)
+	    end
+	end
 
     @layer begin
         for (i, v) in enumerate(all_sample_points)
@@ -1190,21 +1246,8 @@ begin
     preview()
 end
 
-# ╔═╡ 6d52ea68-1c71-4cc4-970b-8c9a947fc582
-let
-str = ""
-if params["width"]>params["interrow"] 
-	str = str * "\nPlant width > interrow, will use interrow for the computation"
-end
-
-if diffuse_angles 
-	str = str * """\nDiffuse angles are projected in 2D but are computed in the 3D space, so an angle that appears below the top of the plant crown in the diagram in in fact above, but either points to a direction towards of away from you."""
-end
-
-if length(str) > 0
-	@warn str
-end
-end
+# ╔═╡ 2a595f7f-4ed0-4894-b95c-7e9e5c68b63c
+center_point,end_line_points
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1213,6 +1256,8 @@ DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 Luxor = "ae8d54c2-7ccd-5906-9d76-62fc9837b5bc"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
+Thebes = "8b424ff8-82f5-59a4-86a6-de3761897198"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [compat]
@@ -1220,6 +1265,8 @@ DataFrames = "~1.3.3"
 HypertextLiteral = "~0.9.3"
 Luxor = "~3.2.0"
 PlutoUI = "~0.7.38"
+Rotations = "~1.3.1"
+Thebes = "~0.7.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -1261,6 +1308,24 @@ deps = ["Artifacts", "Bzip2_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll",
 git-tree-sha1 = "4b859a208b2397a7a623a03449e4636bdb17bcf2"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.16.1+1"
+
+[[deps.Calculus]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
+uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
+version = "0.5.1"
+
+[[deps.ChainRulesCore]]
+deps = ["Compat", "LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "9950387274246d08af38f6eef8cb5480862a435f"
+uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+version = "1.14.0"
+
+[[deps.ChangesOfVariables]]
+deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
+git-tree-sha1 = "bf98fa45a0a4cee295de98d4c1462be26345b9a1"
+uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
+version = "0.1.2"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
@@ -1323,9 +1388,21 @@ uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
+[[deps.DocStringExtensions]]
+deps = ["LibGit2"]
+git-tree-sha1 = "b19534d1895d702889b219c382a6e18010797f0b"
+uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+version = "0.8.6"
+
 [[deps.Downloads]]
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+
+[[deps.DualNumbers]]
+deps = ["Calculus", "NaNMath", "SpecialFunctions"]
+git-tree-sha1 = "5837a837389fccf076445fce071c8ddaea35a566"
+uuid = "fa6b7ba4-c1ee-5f82-b5fc-ecf0adba8f74"
+version = "0.6.8"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1436,10 +1513,21 @@ version = "0.2.2"
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
+[[deps.InverseFunctions]]
+deps = ["Test"]
+git-tree-sha1 = "91b5dcf362c5add98049e6c29ee756910b03051d"
+uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
+version = "0.1.3"
+
 [[deps.InvertedIndices]]
 git-tree-sha1 = "bee5f1ef5bf65df56bdd2e40447590b272a5471f"
 uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
 version = "1.1.0"
+
+[[deps.IrrationalConstants]]
+git-tree-sha1 = "7fd44fd4ff43fc60815f8e764c0f352b83c49151"
+uuid = "92d709cd-6900-40b7-9082-c6be49f344b6"
+version = "0.1.1"
 
 [[deps.IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
@@ -1564,6 +1652,12 @@ version = "2.36.0+0"
 deps = ["Libdl", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
+[[deps.LogExpFunctions]]
+deps = ["ChainRulesCore", "ChangesOfVariables", "DocStringExtensions", "InverseFunctions", "IrrationalConstants", "LinearAlgebra"]
+git-tree-sha1 = "44a7b7bb7dd1afe12bac119df6a7e540fa2c96bc"
+uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
+version = "0.3.13"
+
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
@@ -1623,11 +1717,21 @@ version = "1.3.5+1"
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
 
+[[deps.OpenLibm_jll]]
+deps = ["Artifacts", "Libdl"]
+uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
+
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "ab05aa4cc89736e95915b01e7279e61b1bfe33b8"
 uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
 version = "1.1.14+0"
+
+[[deps.OpenSpecFun_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "13652491f6856acfd2db29360e1bbcd4565d04f1"
+uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
+version = "0.5.5+0"
 
 [[deps.Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1654,9 +1758,9 @@ version = "1.50.3+0"
 
 [[deps.Parsers]]
 deps = ["Dates"]
-git-tree-sha1 = "3b429f37de37f1fc603cc1de4a799dc7fbe4c0b6"
+git-tree-sha1 = "1285416549ccfcdf0c50d4997a94331e88d68413"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.3.0"
+version = "2.3.1"
 
 [[deps.Pixman_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1700,6 +1804,12 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 deps = ["Printf"]
 uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 
+[[deps.Quaternions]]
+deps = ["DualNumbers", "LinearAlgebra", "Random"]
+git-tree-sha1 = "b327e4db3f2202a4efafe7569fcbe409106a1f75"
+uuid = "94ee1d12-ae83-5a48-8b1c-48b8ff168ae0"
+version = "0.5.6"
+
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
@@ -1718,6 +1828,12 @@ deps = ["UUIDs"]
 git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
+
+[[deps.Rotations]]
+deps = ["LinearAlgebra", "Quaternions", "Random", "StaticArrays", "Statistics"]
+git-tree-sha1 = "3177100077c68060d63dd71aec209373c3ec339b"
+uuid = "6038ab10-8711-5258-84ad-4b1120ba62dc"
+version = "1.3.1"
 
 [[deps.Rsvg]]
 deps = ["Cairo", "Glib_jll", "Librsvg_jll"]
@@ -1748,6 +1864,18 @@ version = "1.0.1"
 deps = ["LinearAlgebra", "Random"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
+[[deps.SpecialFunctions]]
+deps = ["ChainRulesCore", "IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
+git-tree-sha1 = "5ba658aeecaaf96923dce0da9e703bd1fe7666f9"
+uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
+version = "2.1.4"
+
+[[deps.StaticArrays]]
+deps = ["LinearAlgebra", "Random", "Statistics"]
+git-tree-sha1 = "cd56bf18ed715e8b09f06ef8c6b781e6cdc49911"
+uuid = "90137ffa-7385-5640-81b9-e52037218182"
+version = "1.4.4"
+
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
@@ -1775,6 +1903,12 @@ uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[[deps.Thebes]]
+deps = ["Colors", "Luxor", "Rotations", "StaticArrays", "Test"]
+git-tree-sha1 = "dee3949f7286cd457cb536fa60a802861e0ae738"
+uuid = "8b424ff8-82f5-59a4-86a6-de3761897198"
+version = "0.7.0"
 
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
@@ -1910,6 +2044,7 @@ version = "3.5.0+0"
 
 # ╔═╡ Cell order:
 # ╠═f5cd7710-c533-11ec-1490-a502fac92221
+# ╠═8db00b5e-b7f7-4a47-a76e-8a1d89d0b799
 # ╟─6788dbbe-317e-4212-a0e8-d417a52301f6
 # ╟─f92c1e63-d40f-41eb-8d58-b44b62e44ff9
 # ╠═311611bd-89f9-4e34-84cb-11924e8efc2d
@@ -1918,7 +2053,9 @@ version = "3.5.0+0"
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╠═2a595f7f-4ed0-4894-b95c-7e9e5c68b63c
+# ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
@@ -1928,7 +2065,7 @@ version = "3.5.0+0"
 # ╟─fbe6d054-56ff-4201-8d55-f5afcda7ec52
 # ╟─09a77c7f-409d-4083-8267-d52ba0346c9c
 # ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
-# ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
+# ╠═6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
@@ -1938,6 +2075,7 @@ version = "3.5.0+0"
 # ╟─030d4bd1-b596-4590-b1c5-d53bdc656c7f
 # ╟─172d2086-efb1-4805-b75e-7801072347f4
 # ╟─d07ff0dc-40d5-4e03-84d3-115a891d4530
+# ╠═fe676fa3-bc50-493d-b41f-55fdcba91d83
 # ╟─d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
