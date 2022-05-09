@@ -45,7 +45,7 @@ md"""
 # ╔═╡ 311611bd-89f9-4e34-84cb-11924e8efc2d
 begin
 	image_dim = (800, 400)
-	h0 = 0.5
+	h0 = 0.2
 	npoints = 200
 	alpha = deg2rad(0) # Crop row direction relative to north
 	light_from_sky = false # if false the light stops at the inner box, else at the sky
@@ -998,6 +998,36 @@ begin
     inner_box_width = inner_box[3][1] - inner_box[1][1]
     inner_box_length = inner_box[3][2] - inner_box[1][2]
 
+	# Show base height:	
+	@layer begin
+		sethue("grey")
+		setopacity(1)
+		scale(-1,1)
+		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+		dimension(inner_box[2], Point(inner_box[2][1],inner_box[2][2] + d_h0),
+	    offset        = 45,
+	    fromextension = [45, 5],
+	    toextension   = [45, 5],
+	    textrotation  = π/2,
+	    textgap       = 20,
+	    format        = (d) -> string("H0:", round(height, digits=1)))
+	end
+	
+	# Show plant height:	
+	@layer begin
+		sethue("grey")
+		setopacity(1)
+		scale(-1,1)
+		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+		dimension(Point(inner_box[2][1],inner_box[2][2]+d_h0), inner_box[1],
+	    offset        = 45,
+	    fromextension = [45, 5],
+	    toextension   = [45, 5],
+	    textrotation  = π/2,
+	    textgap       = 40,
+	    format        = (d) -> string("Height:", round(height, digits=1)))
+	end
+	
 	# Show interrow dimension:	
 	@layer begin
 		sethue("grey")
