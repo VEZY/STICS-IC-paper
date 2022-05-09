@@ -845,7 +845,7 @@ function draw_diffuse_angles_3d(sample_point, H, az)
 		@layer begin
 			end_line_point = rotateby(end_line, center_point, RotXYZ(0,az[i],H[i]))
 			# pin(center_point,end_line_point)
-			line(Point(center_point[1],center_point[2]), Point(end_line_point[1], end_line_point[2]), :stroke)
+			arrow(Point(center_point[1],center_point[2]), Point(end_line_point[1], end_line_point[2]))
 			end_line_points[i] = end_line_point
 		end
 	end
@@ -942,7 +942,7 @@ if params["width"]>params["interrow"]
 end
 
 if params["diffuse_angles"]
-	str = str * """\nDiffuse angles are projected in 2D but are computed in the 3D space, so an angle that appears below the top of the plant crown in the diagram in in fact above, but either points to a direction towards of away from you."""
+	str = str * """\nDiffuse angles are projected in 2D but are actually computed in the 3D space"""
 end
 
 if length(str) > 0
@@ -973,12 +973,9 @@ begin
 
     # Drawing the big box inside the plot that delimits the scene boundary:
     outer_box_rel_width = 0.8 # Width of the outter box relative to figure width
-    outer_box_rel_height = 0.8 # Height of the outter box relative to figure height
+    outer_box_rel_height = 0.75 # Height of the outter box relative to figure height
     outer_box_width = outer_box_rel_width * t.width
     outer_box_height = outer_box_rel_height * t.height
-
-    # sethue("grey")
-    # setdash("dot")
     outer_box = box(center, outer_box_width, outer_box_height, :none)
 
     # Rescaling the crop dimensions to match the drawing coordinates:
@@ -1000,10 +997,26 @@ begin
     y0 = inner_box[2][2]
     inner_box_width = inner_box[3][1] - inner_box[1][1]
     inner_box_length = inner_box[3][2] - inner_box[1][2]
-    # Drawing the left-hand side crop:
-    setopacity(0.4)
-    sethue("green")
 
+	# Show interrow dimension:
+	
+	@layer begin
+		sethue("grey")
+		scale(-1,1)
+		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+		dimension(inner_box[1], inner_box[4],
+	    offset        = 45,
+	    fromextension = [30, 5],
+	    toextension   = [30, 5],
+	    textrotation  = π/2,
+	    textgap       = 40,
+	    format        = (d) -> string("Interrow:", round(interrow, digits=1)))
+	end
+	
+	# Drawing the left-hand side crop:
+    setopacity(0.4)
+    sethue("green")	
+	
     # Draw right sides of the plants
     p = half_canopy_left(shape, d_width, d_height, d_h0 + y0, x0)
     # NB: h0 + y0 to add the box height to the crop height
@@ -1170,14 +1183,11 @@ begin
 			setopacity(0.5)
 			sethue("red")
 			setline(1)
-
-			# scale(-1, 1)
 			# RHS: 
 			center_point,end_line_points = draw_diffuse_angles_3d(sample_point, H1, π/2 .- az1)
 			# LHS:
 			sethue("green")
 			center_point,end_line_points = draw_diffuse_angles_3d(sample_point, π/2 .- H2, - π/2 .- az2)
-			# draw_diffuse_angles(sample_point, H2, light_ray_height, d_light_ray_height, point_pos_m, interrow, inner_box)
 		end
 	end
 
@@ -1246,8 +1256,8 @@ begin
     preview()
 end
 
-# ╔═╡ 2a595f7f-4ed0-4894-b95c-7e9e5c68b63c
-center_point,end_line_points
+# ╔═╡ a8c65376-8ade-4658-9f63-82bea4a7fb02
+inner_box
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2053,7 +2063,7 @@ version = "3.5.0+0"
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╠═2a595f7f-4ed0-4894-b95c-7e9e5c68b63c
+# ╠═a8c65376-8ade-4658-9f63-82bea4a7fb02
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
