@@ -24,10 +24,12 @@ worspaces_path = normalizePath("0-data/usms-optim-beer", winslash = "/")
 
 workspace_usms =
   list(
-    "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0", # replace by N1?
+    "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0",
     "Angers-SC-Pea" = "SC_Pea_Angers_2003_N0",
-    "Auzeville-Pea-SC" = "SC_Pea_2005-2006_N0",
-    "Auzeville-Wheat-SC" = "SC_Wheat_2005-2006_N0",
+    "Auzeville-Pea-SC" = "SC_Pea_2005-2006_N0", # substitutive (mixed between rows)
+    "Auzeville-Wheat-SC" = "SC_Wheat_2005-2006_N0", # substitutive 
+    "Auzeville-Pea-2012-SC" = "SC_Pea_2012-2013_N1", # mixed on the row
+    "Auzeville-Wheat-2012-SC" = "SC_Wheat_2012-2013_N1", # mixed on the row
     "sojaTardif2012-SC" = "SojaTardif-SC2012",
     "tourPrecoce2012-SC" = "TournPrecoce-SC2012",
     "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2007",
@@ -40,9 +42,9 @@ plant_files = list.files(file.path("0-data/usms-optim-beer",names(workspace_usms
 # Activate Beer's law:
 lapply(plant_files, function(x){
   set_param_xml(
-    xml_file = x,
-    param_name = "codetransrad",
-    param_value = 1,
+    file = x,
+    param = "codetransrad",
+    values = 1,
     overwrite = TRUE
   )
 })

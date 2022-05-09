@@ -10,14 +10,14 @@ run_simulation = function(workspaces,variables,javastics,usms=NULL){
       # Generate the var.mod file:
       SticsRFiles::gen_varmod(i, variables)
       # Run the simulations:
-      SticsOnR::run_javastics(javastics_path = javastics, workspace_path = i,
+      SticsOnR::run_javastics(javastics = javastics, workspace = i,
                               stics_exe = "Stics_IC_v13-01-2022.exe",
-                              usms_list = usms_i)
+                              usm = usms_i)
       # Get the results
-      sim = get_sim(workspace = i, usm_name = usms_i, usms_filepath = file.path(i,"usms.xml"))
+      sim = get_sim(workspace = i, usm = usms_i, usms_file = file.path(i,"usms.xml"))
 
       # Get the observations
-      obs = get_obs(workspace =  i, usm_name = usms_i, usms_filepath = file.path(i,"usms.xml"))
+      obs = get_obs(workspace =  i, usm = usms_i, usms_file = file.path(i,"usms.xml"))
 
       sim = lapply(sim, rename_plant, "poi" = "pea", "ble" = "wheat","esc" = "barley")
       class(sim) = append(class(sim),"cropr_simulation")
@@ -102,11 +102,11 @@ optim_height = function(workspace, usms){
   x0 = get_param_xml(file.path(workspace,"param_newform.xml"),"haut_dev_x01")[[1]][[1]]
   k = get_param_xml(file.path(workspace,"param_newform.xml"),"haut_dev_k1")[[1]][[1]]
   plant_file = list.files(file.path(workspace,"plant"), full.names = TRUE)
-  hautmax_ref = get_param_xml(xml_file = plant_file, param_name = "hautmax")[[1]][[1]]
+  hautmax_ref = get_param_xml(file = plant_file, param = "hautmax")[[1]][[1]]
 
   obs_merged = dplyr::bind_rows(obs, .id = "situation")
 
-  sim_merged = CroPlotR::bind_rows_sim(sim)
+  sim_merged = CroPlotR::bind_rows(sim)
 
   res_all = left_join(obs_merged,sim_merged%>%select("situation","Date", "somupvtsem"),
                       by = c("situation","Date"))
@@ -310,8 +310,8 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
         }
         set_param_xml(
           xml_file = xml_file,
-          param_name = params,
-          param_value = res$final_values[params],
+          param = params,
+          values = res$final_values[params],
           overwrite = TRUE
         )
       }
@@ -366,13 +366,13 @@ summarize_optimization = function(workspaces_orig, workspaces_opti,parameters_va
   params = unique(unlist(lapply(parameters_vars, function(x) x$params)))
   plant_file_orig = list.files(file.path(workspaces_orig,"plant"), full.names = TRUE)
   plant_file_optim = list.files(file.path(workspaces_opti,"plant"), full.names = TRUE)
-  param_orig = get_param_xml(xml_file = plant_file_orig, param_name = params)
-  param_optim = get_param_xml(xml_file = plant_file_optim, param_name = params)
+  param_orig = get_param_xml(file = plant_file_orig, param = params)
+  param_optim = get_param_xml(file = plant_file_optim, param = params)
   
-  param_orig2 = get_param_xml(xml_file = file.path(workspaces_orig,"param_newform.xml"),
-                              param_name = params)
-  param_optim2 = get_param_xml(xml_file = file.path(workspaces_opti,"param_newform.xml"),
-                               param_name = params)
+  param_orig2 = get_param_xml(file = file.path(workspaces_orig,"param_newform.xml"),
+                              param = params)
+  param_optim2 = get_param_xml(file = file.path(workspaces_opti,"param_newform.xml"),
+                               param = params)
   names(param_orig2) = names(param_optim2) = names(param_orig)
   
   df = data.frame(plant = NA, parameter = params, original_value = NA, optimized_value = NA)

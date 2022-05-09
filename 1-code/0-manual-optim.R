@@ -9,7 +9,7 @@
 # Import the packages -----------------------------------------------------
 
 library(SticsRPacks)
-library(tidyverse)
+library(dplyr)
 source("1-code/functions.R")
 
 # Define javaStics installation -------------------------------------------
@@ -39,7 +39,8 @@ sim_variables = c("lai(n)","masec(n)","QNplante","Qfix","mafruit","fapar","ilaxs
 # Run the simulations -----------------------------------------------------
 
 SticsRFiles::get_usms_list(file = file.path(workspace_pea_barley,"usms.xml"))
-usms = "IC_Wheat_Pea_2012-2013_N1"
+usms = "IC_Wheat_Pea_2012-2013_N0"
+# usms = "SC_Wheat_2012-2013_N0"
 # usms= "Fababean_Wheat_IC_2007"
 # usms = "Wheat_SC_2007"
 # usms = "Fababean_SC_2007"
@@ -58,8 +59,8 @@ usms = "IC_Wheat_Pea_2012-2013_N1"
 
 obs = get_obs(
   workspace = workspace_pea_barley, 
-  usm_name = usms, 
-  usms_filepath = file.path(workspace_pea_barley,"usms.xml")
+  usm = usms, 
+  usms_file = file.path(workspace_pea_barley,"usms.xml")
 )
 
 SticsRFiles::gen_varmod(workspace_pea_barley, sim_variables)

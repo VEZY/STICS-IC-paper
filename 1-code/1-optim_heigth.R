@@ -16,6 +16,8 @@ workspace_usms =
     "Angers-SC-Pea" = "SC_Pea_Angers_2003_N0",
     "Auzeville-Pea-SC" = "SC_Pea_2005-2006_N0",
     "Auzeville-Wheat-SC" = "SC_Wheat_2005-2006_N0",
+    "Auzeville-Pea-2012-SC" = "SC_Pea_2012-2013_N1",
+    "Auzeville-Wheat-2012-SC" = "SC_Wheat_2012-2013_N1",
     "sojaTardif2012-SC" = "SojaTardif-SC2012",
     "tourPrecoce2012-SC" = "TournPrecoce-SC2012",
     "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2007",
@@ -36,6 +38,7 @@ workspace_usms_IC =
   list(
     "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
     "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
+    "Auzeville-IC-2012" = c(p = "Auzeville-Wheat-2012-SC", a = "Auzeville-Pea-2012-SC"),
     "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC"),
     "Auzeville_wfb-Fababean-Wheat-IC" = c(p = "Auzeville_wfb-Fababean-SC", a = "Auzeville_wfb-Wheat-SC")
   )

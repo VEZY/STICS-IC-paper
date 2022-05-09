@@ -26,6 +26,7 @@ workspace_usms =
   list(
     "Angers-IC-Pea_Barley" = "IC_PeaBarley_Angers_2003_N0_D50-50", # replace by N1?
     "Auzeville-IC" = "IC_Wheat_Pea_2005-2006_N0",
+    "Auzeville-IC-mixed" = "IC_Wheat_Pea_2012-2013_N0",
     "1Tprecoce2Stardif2012" = "1Tprecoce2Stardif2012",
     "Auzeville_wfb-Fababean-Wheat-IC" = "Fababean_Wheat_IC_2007"
   )
