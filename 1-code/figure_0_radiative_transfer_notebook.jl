@@ -998,16 +998,16 @@ begin
     inner_box_width = inner_box[3][1] - inner_box[1][1]
     inner_box_length = inner_box[3][2] - inner_box[1][2]
 
-	# Show interrow dimension:
-	
+	# Show interrow dimension:	
 	@layer begin
 		sethue("grey")
+		setopacity(1)
 		scale(-1,1)
 		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
 		dimension(inner_box[1], inner_box[4],
 	    offset        = 45,
-	    fromextension = [30, 5],
-	    toextension   = [30, 5],
+	    fromextension = [45, 5],
+	    toextension   = [45, 5],
 	    textrotation  = π/2,
 	    textgap       = 40,
 	    format        = (d) -> string("Interrow:", round(interrow, digits=1)))
@@ -1132,21 +1132,27 @@ begin
 	P1 = P_from_θ(θ1, h0 + height, point_pos_m)
 	P2 = P_from_θ(θ2, h0 + height, point_pos_m)
 
-	P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
+	P1_d, P2_d = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
 
-    text_point = midpoint(P1, P2)
+    text_point = midpoint(P1_d, P2_d)
     if display_text
-        @layer begin
-            sethue("black")
-            setopacity(1)
-            scale(1, -1) # to set the y axis up
-            label(
-                string("kdir: ", round(kgdirect, digits=2)), :N, Point(text_point[1], -text_point[2]),
-                offset=10, leader=false, leaderoffsets=[0.4, 0.9]
-            )
-        end
+		@layer begin
+			sethue("grey")
+			setopacity(1)
+			scale(1, -1)
+			# translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+			dimension(Point(P1_d[1], -P1_d[2]), Point(P2_d[1], -P2_d[2]),
+			offset        = 15,
+			fromextension = [15, 5],
+			toextension   = [15, 5],
+			textrotation  = π/2,
+			textgap       = 40,
+			format        = (d) -> string("kdir: ", round(kgdirect, digits=2)))
+		end
     end
 
+
+	
     # Compute transmitted light:
     # Transmitted light: Drawing the left triangle between θ1 and the horizontal
     sethue("goldenrod")
@@ -1192,14 +1198,19 @@ begin
 	end
 
 	if display_text
-        @layer begin
-            sethue("black")
-            setopacity(1)
-            scale(1, -1) # to set the y axis up
-            label(
-                string("kdif: ", round(kgdiffus, digits=2)), :N, Point(text_point[1], -text_point[2]),
-                offset=10, leader=false, leaderoffsets=[0.4, 0.9]
-            )
+       	# Show kdif from top:	
+		@layer begin
+			sethue("grey")
+			setopacity(1)
+			scale(-1,1)
+			translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+			dimension(Point(p[1][1] + d_width / 2,p[1][2]), Point(inner_box[4][1] - d_width / 2, inner_box[4][2]),
+			offset        = 30,
+			fromextension = [30, 5],
+			toextension   = [30, 5],
+			textrotation  = π/2,
+			textgap       = 40,
+			format        = (d) -> string("kdif: ", round(kgdiffus, digits=2)))
         end
     end
 
@@ -1255,9 +1266,6 @@ begin
     finish()
     preview()
 end
-
-# ╔═╡ a8c65376-8ade-4658-9f63-82bea4a7fb02
-inner_box
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2063,7 +2071,6 @@ version = "3.5.0+0"
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╠═a8c65376-8ade-4658-9f63-82bea4a7fb02
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
