@@ -53,8 +53,8 @@ begin
 	display_text = true # display names and values?
 	display_icosahedron = false # display the truncated icosahedron that shows diffuse directions
 	n_sample_points = 200
-	# colormap = ColorScheme(range(colorant"red", colorant"orange", length=100)) # colormap for the diffuse angles
-	colormap = colorschemes[:autumn1]
+	colormap = ColorScheme(range(colorant"black", colorant"grey", length=100)) # colormap for the diffuse angles
+	# colormap = colorschemes[:autumn1]
 end
 
 # ╔═╡ 4dff9014-73ff-4c32-b6ad-c936bd892588
@@ -69,7 +69,7 @@ md"""
 
 # ╔═╡ 78c00fe4-feb0-45de-b5e1-df0fae546287
 md"""
-*Figure 1. Diagram of the light interception computation for each sample point below the crop.*
+*Figure 1. Diagram of the light interception computation for each sample point below the crop. Grey arrows represent sampled angles for diffuse light coming from the sky, drawn in 2D but computed in the 3D space. Yellow triangle represents the view angle receiving direct light, whith space (triangles) receiving diffuse light. Green triangles represent the inner-part of the plant canopy, i.e. the part between the interrow.*
 """
 
 # ╔═╡ 9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
@@ -945,7 +945,7 @@ if params["width"]>params["interrow"]
 end
 
 if params["diffuse_angles"]
-	str = str * """\nDiffuse angles are projected in 2D but are actually computed in the 3D space"""
+	str = str * """\nDiffuse and direct angles are projected in 2D but are actually computed in the 3D space, so they can appear poiting below the canopy, while in fact pointing towards or afar from us."""
 end
 
 if length(str) > 0
@@ -1140,7 +1140,7 @@ begin
 
     # Get the value of θ1 and θ2, the angles relative to the vertical plane on the sample_point
     # that give the view angle of the direct light comming from the sky:
-    kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, height)
+    kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, height - h0)
 
     # Compute P1 and P2, the two points on the sky that provide the direct light view angle:
 	P1 = P_from_θ(θ1, light_ray_height, point_pos_m)
@@ -1215,7 +1215,7 @@ begin
 	#   end
 	
     text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
-	kgdiffus,H1,H2,az1,az2 = kdif(point_pos_m, h0, width, interrow, height, shape)
+	kgdiffus,H1,H2,az1,az2 = kdif(point_pos_m, h0, width, interrow, height-h0, shape)
 	
 	if diffuse_angles
 		@layer begin
