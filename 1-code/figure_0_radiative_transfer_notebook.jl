@@ -23,6 +23,7 @@ begin
 	using UUIDs # Used for the magick of the interactive parameters DataFrame
 	using Thebes # Add 3D to Luxor
 	using Rotations # For 3D rotations
+	using Colors, ColorSchemes # For the color palette of the diffuse arrows
 end
 
 # ╔═╡ 8db00b5e-b7f7-4a47-a76e-8a1d89d0b799
@@ -52,6 +53,8 @@ begin
 	display_text = true # display names and values?
 	display_icosahedron = false # display the truncated icosahedron that shows diffuse directions
 	n_sample_points = 200
+	# colormap = ColorScheme(range(colorant"red", colorant"orange", length=100)) # colormap for the diffuse angles
+	colormap = colorschemes[:autumn1]
 end
 
 # ╔═╡ 4dff9014-73ff-4c32-b6ad-c936bd892588
@@ -816,34 +819,34 @@ function P_from_θ(θ, sky_height, x)
 	return Point(x + P_x, 0)
 end
 
-# ╔═╡ d07ff0dc-40d5-4e03-84d3-115a891d4530
+# ╔═╡ fe676fa3-bc50-493d-b41f-55fdcba91d83
 """
-	draw_diffuse_angles(sample_point, H, sky_height, sky_height_d, point_pos_m, interrow, inner_box)
+	draw_diffuse_angles_3d(sample_point, H, az, colormap = :vik)
 
-Draw the lines that define the angles at which the sample point sees the sky. Note that the lines appear below the crop, but it is just a matter of perspective because they point to directions that we don't see in 2D (towards us or away from us).
+Draw the arrows that define the angles at which the sample point sees the sky. Note that the lines are drawn in 2D but computed in the 3D space.
+
+#### Arguments 
+
+- `sample_point`: sample point position
+- `H`: Plant height angle
+- `az`: azimuthal angle
+- `a_length`: length of the arrows (in drawing units)
+- `colormap = :vik`: colormap for the arrows
+
+
+#### Notes
 
 Used in the computation of the diffuse light interception where each angle that sees sky cumulates a proportion of the sky viewed. The function is applied one side after the other (right and left).
 """
-function draw_diffuse_angles(sample_point, H, sky_height, sky_height_d, point_pos_m, interrow, inner_box)
-		@layer begin
-			
-			P_H_m = P_from_θ.(H, sky_height, point_pos_m)
-			P_H_d = P_drawing.(P_H_m, interrow, sample_point[2] + sky_height_d, inner_box[2][1], inner_box[4][1])				
-	
-			for i in P_H_d
-				line(sample_point,i, :stroke)
-			end
-		end
-end
-
-# ╔═╡ fe676fa3-bc50-493d-b41f-55fdcba91d83
-function draw_diffuse_angles_3d(sample_point, H, az)
+function draw_diffuse_angles_3d(sample_point, H, az, a_length = 100, colormap = colorschemes[:vik])
 	center_point = Point3D(sample_point[1], sample_point[2], 0)
-	end_line = Point3D(sample_point[1] + 100, sample_point[2], 0)
+	end_line = Point3D(sample_point[1] + a_length, sample_point[2], 0)
 	end_line_points = fill(end_line, length(H))
 	for i in 1:length(H)
 		@layer begin
+			# sethue(get(colorschemes[colormap], rescale(az[i], 0.0, π)))
 			end_line_point = rotateby(end_line, center_point, RotXYZ(0,az[i],H[i]))
+			sethue(get(colormap, rescale(end_line_point[3], -a_length, a_length)))
 			# pin(center_point,end_line_point)
 			arrow(Point(center_point[1],center_point[2]), Point(end_line_point[1], end_line_point[2]))
 			end_line_points[i] = end_line_point
@@ -996,7 +999,7 @@ begin
     x0 = inner_box[2][1]
     y0 = inner_box[2][2]
     inner_box_width = inner_box[3][1] - inner_box[1][1]
-    inner_box_length = inner_box[3][2] - inner_box[1][2]
+    inner_box_length = inner_box[1][2] - inner_box[3][2]
 
 	# Show base height:	
 	@layer begin
@@ -1010,7 +1013,7 @@ begin
 	    toextension   = [45, 5],
 	    textrotation  = π/2,
 	    textgap       = 20,
-	    format        = (d) -> string("H0:", round(height, digits=1)))
+	    format        = (d) -> string("H0:", round(h0, digits=1)))
 	end
 	
 	# Show plant height:	
@@ -1083,13 +1086,13 @@ begin
 
     if display_text
         @layer begin
-            sethue("black")
+            sethue("grey")
             setopacity(1)
             scale(1, -1) # to set the y axis up
-            setdash("solid")
+            setdash("dot")
             label(
                 "Row center", :S, Point(bottom_center[1], -bottom_center[2]),
-                offset=25, leader=true, leaderoffsets=[0.5, 0.9]
+                offset=40, leader=true, leaderoffsets=[0.5, 0.9]
             )
         end
     end
@@ -1165,12 +1168,13 @@ begin
 	P1_d, P2_d = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
 
     text_point = midpoint(P1_d, P2_d)
+
+	# Add kdir text:
     if display_text
 		@layer begin
 			sethue("grey")
 			setopacity(1)
 			scale(1, -1)
-			# translate(-(x0 * 2 + inner_box_width), 0)  # translate back
 			dimension(Point(P1_d[1], -P1_d[2]), Point(P2_d[1], -P2_d[2]),
 			offset        = 15,
 			fromextension = [15, 5],
@@ -1216,14 +1220,14 @@ begin
 	if diffuse_angles
 		@layer begin
 			setdash("solid")
-			setopacity(0.5)
+			setopacity(1)
 			sethue("red")
 			setline(1)
 			# RHS: 
-			center_point,end_line_points = draw_diffuse_angles_3d(sample_point, H1, π/2 .- az1)
+			center_point,end_line_points_right = draw_diffuse_angles_3d(sample_point, H1, π/2 .- az1, inner_box_length * 0.3, colormap)
 			# LHS:
 			sethue("green")
-			center_point,end_line_points = draw_diffuse_angles_3d(sample_point, π/2 .- H2, - π/2 .- az2)
+			center_point,end_line_points_left = draw_diffuse_angles_3d(sample_point, π/2 .- H2, - π/2 .- az2, 100, colormap)
 		end
 	end
 
@@ -1282,10 +1286,10 @@ begin
 
     if display_text
         @layer begin
-            sethue("black")
+            sethue("grey")
             setopacity(1)
             scale(1, -1) # to set the y axis up
-            setdash("solid")
+            setdash("dot")
             label(
                 "Sample point", :S, Point(sample_point[1], -sample_point[2]),
                 offset=25, leader=true, leaderoffsets=[0.5, 0.9]
@@ -1300,6 +1304,8 @@ end
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 Luxor = "ae8d54c2-7ccd-5906-9d76-62fc9837b5bc"
@@ -1309,6 +1315,8 @@ Thebes = "8b424ff8-82f5-59a4-86a6-de3761897198"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [compat]
+ColorSchemes = "~3.18.0"
+Colors = "~0.12.8"
 DataFrames = "~1.3.3"
 HypertextLiteral = "~0.9.3"
 Luxor = "~3.2.0"
@@ -1375,11 +1383,23 @@ git-tree-sha1 = "bf98fa45a0a4cee295de98d4c1462be26345b9a1"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
 version = "0.1.2"
 
+[[deps.ColorSchemes]]
+deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "Random"]
+git-tree-sha1 = "7297381ccb5df764549818d9a7d57e45f1057d30"
+uuid = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+version = "3.18.0"
+
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
 git-tree-sha1 = "024fe24d83e4a5bf5fc80501a314ce0d1aa35597"
 uuid = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
 version = "0.11.0"
+
+[[deps.ColorVectorSpace]]
+deps = ["ColorTypes", "FixedPointNumbers", "LinearAlgebra", "SpecialFunctions", "Statistics", "TensorCore"]
+git-tree-sha1 = "3f1f500312161f1ae067abe07d13b40f78f32e07"
+uuid = "c3611d14-8923-5661-9e6a-0046d554d3a4"
+version = "0.9.8"
 
 [[deps.Colors]]
 deps = ["ColorTypes", "FixedPointNumbers", "Reexport"]
@@ -1948,6 +1968,12 @@ version = "1.7.0"
 deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 
+[[deps.TensorCore]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "1feb45f88d133a655e001435632f019a9a1bcdb6"
+uuid = "62fd8b95-f654-4bbd-a8a5-9c27f68ccd50"
+version = "0.1.1"
+
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
@@ -2112,7 +2138,7 @@ version = "3.5.0+0"
 # ╟─fbe6d054-56ff-4201-8d55-f5afcda7ec52
 # ╟─09a77c7f-409d-4083-8267-d52ba0346c9c
 # ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
-# ╠═6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
+# ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
@@ -2121,8 +2147,7 @@ version = "3.5.0+0"
 # ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─030d4bd1-b596-4590-b1c5-d53bdc656c7f
 # ╟─172d2086-efb1-4805-b75e-7801072347f4
-# ╟─d07ff0dc-40d5-4e03-84d3-115a891d4530
-# ╠═fe676fa3-bc50-493d-b41f-55fdcba91d83
+# ╟─fe676fa3-bc50-493d-b41f-55fdcba91d83
 # ╟─d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
