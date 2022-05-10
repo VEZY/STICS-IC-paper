@@ -213,22 +213,23 @@ function kdif(x, h0, width, ir, e, shape)
 
 		# When the point is under the LHS plant, we also have to check which canopy is shading first, the LHS or RHS, depending on the configuration:
 		if x >= limite
-			if hcrit_right < htab[i]
-				# This ray receives light from the sky
-				kgdiffus = kgdiffus + SOCtab[i]
-				push!(Hcrit1, deg2rad(htab[i])) # angles above the canopy (pointing to the sky)
-				push!(az1, deg2rad(aztab[i])) # azimuthal angle of the ray
-			end
+			hcrit_left = 180.0
 		else
-			# In this case it may happen that hcrit_right < hcrit_left, which means the point sees nothing
+			# In some cases when the point is under the LHS canopy, it may happen that hcrit_right < hcrit_left, which means the point sees nothing
 			# because the top of the righ-hand side plant is above the view angle of the point (i.e.
 			# it is completely shaded.
-			if hcrit_right < htab[i] < hcrit_left
-				# This ray receives light from the sky
-				kgdiffus = kgdiffus + SOCtab[i]
-				push!(Hcrit1, deg2rad(htab[i])) # angles above the canopy (pointing to the sky)
-				push!(az1, deg2rad(aztab[i])) # azimuthal angle of the ray
+			if  hcrit_right > hcrit_left
+				hcrit_left = 0.0
+				# NB: In this case we put hcrit_left = 0.0 to say to the code below to not keep this angle (htab[i] is always > 0.0 so htab[i] < hcrit_left will be false)
 			end
+		end
+
+		
+		if hcrit_right < htab[i] < hcrit_left
+			# This ray receives light from the sky
+			kgdiffus = kgdiffus + SOCtab[i]
+			push!(Hcrit1, deg2rad(htab[i])) # angles above the canopy (pointing to the sky)
+			push!(az1, deg2rad(aztab[i])) # azimuthal angle of the ray
 		end
 
     end
@@ -1178,7 +1179,7 @@ begin
     text_point = midpoint(P1_d, P2_d)
 
 	# Add kdir text:
-    if display_text
+    if display_text && kgdirect > 6.0e-10
 		@layer begin
 			sethue("grey")
 			setopacity(1)
@@ -1308,6 +1309,9 @@ begin
     finish()
     preview()
 end
+
+# ╔═╡ bdea3f4e-fbba-40e9-a95d-138a7c95a4e9
+kgdirect
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2134,6 +2138,7 @@ version = "3.5.0+0"
 # ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
+# ╠═bdea3f4e-fbba-40e9-a95d-138a7c95a4e9
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
