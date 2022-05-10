@@ -120,7 +120,7 @@ function get_G(x, shape, limite, h0, e, width, ir)
         if x > limite
             G2 = (h0 + e) / (x - limite)
         elseif x < limite
-            G2 = (h0 + e) / (x - limite)
+			G2 = (h0 + e) / (-x + limite)
         elseif x == limite
             G2 = 0.0
         end
@@ -392,13 +392,7 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
 
     limite = width / 2
 
-    if (e > 0.0)
-        # If we use a triangle pointing up, we need limite2
-        limite2 = width / 2 * (h0 / e + 1)
-        # limite2 is the limit in the point x position above which the point starts to see
-        # the top of the canopy. Below that it only sees the bottom of the canopy, which blocks
-        # its view.
-    else
+    if (e <= 0.0)
         shape = :rectangle
     end
 
@@ -2135,8 +2129,8 @@ version = "3.5.0+0"
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
 # ╟─58ec9faa-cbf1-4e46-b4bb-420586ac7dba
 # ╟─0385990f-397e-46f8-93d7-578c8ead2be3
-# ╟─fbe6d054-56ff-4201-8d55-f5afcda7ec52
-# ╟─09a77c7f-409d-4083-8267-d52ba0346c9c
+# ╠═fbe6d054-56ff-4201-8d55-f5afcda7ec52
+# ╠═09a77c7f-409d-4083-8267-d52ba0346c9c
 # ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
 # ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
