@@ -203,27 +203,41 @@ function kdif(x, h0, width, ir, e, shape)
     # For the right-hand side:
 	G1, G2 = get_G(x, shape, limite, h0, e, width, ir)
     for i in 1:23
-		# hcrit is the ray that point to the top of the plant according to the azimuthal angle (= points to the plant at aztab = 0, and below when turning)
-        # hcrit = 90 - atan(G * sin(aztab[i] - 90 / 180 * π)) / π * 180
-		hcrit = atan(G1 * sin(aztab[i] / 180 * π)) / π * 180
+		# hcrit_right is the ray that point to the top of the RHS plant according to the azimuthal angle (= points to the plant at aztab = 0, and below when turning)
+        hcrit_right = atan(G1 * sin(aztab[i] / 180 * π)) / π * 180
+		# hcrit_left is the same but point to the LHS plant
+		hcrit_left = atan(G2 * sin(aztab[i] / 180 * π)) / π * 180
 
-		# push!(Hcrit1, deg2rad(hcrit)) # angles for top of the plant (RHS)
-        if hcrit < htab[i]
-			# This ray receives light from the sky
-            kgdiffus = kgdiffus + SOCtab[i]
-			push!(Hcrit1, deg2rad(htab[i])) # angles above the canopy (pointing to the sky)
-			push!(az1, deg2rad(aztab[i])) # azimuthal angle of the ray
-        end
+ 		# θ1 = -θcrit(lat, j, G1, alpha) # θ1 is negative because it runs clockwise
+		# θ2 = θcrit(lat, j, G2, alpha) # θ2 is positive, it is counter-clockwise
+
+		# When the point is under the LHS plant, we also have to check which canopy is shading first, the LHS or RHS, depending on the configuration:
+		if x >= limite
+			if hcrit_right < htab[i]
+				# This ray receives light from the sky
+				kgdiffus = kgdiffus + SOCtab[i]
+				push!(Hcrit1, deg2rad(htab[i])) # angles above the canopy (pointing to the sky)
+				push!(az1, deg2rad(aztab[i])) # azimuthal angle of the ray
+			end
+		else
+			# In this case it may happen that hcrit_right < hcrit_left, which means the point sees nothing
+			# because the top of the righ-hand side plant is above the view angle of the point (i.e.
+			# it is completely shaded.
+			if hcrit_right < htab[i] < hcrit_left
+				# This ray receives light from the sky
+				kgdiffus = kgdiffus + SOCtab[i]
+				push!(Hcrit1, deg2rad(htab[i])) # angles above the canopy (pointing to the sky)
+				push!(az1, deg2rad(aztab[i])) # azimuthal angle of the ray
+			end
+		end
+
     end
 
     # For the left-hand side:
     # If the point is not under the plant canopy (else it is only transmitted light):
     if x > limite
         for i in 1:23
-            # hcrit = atan(G2 * sin(aztab[i]/ 180 * π)) / π * 180 - 180
 			hcrit = atan(G2 * sin(aztab[i] / 180 * π)) / π * 180
-	
-			# push!(Hcrit2, -deg2rad(hcrit)) # angles for top of the plant (LHS)
             if (hcrit < htab[i])
                 kgdiffus = kgdiffus + SOCtab[i]
 				push!(Hcrit2, π/2 - deg2rad(htab[i])) # angles above the canopy (pointing to the sky
@@ -1100,28 +1114,28 @@ begin
 
     # Compute diffuse light:
     # Diffuse light: Drawing the right triangle between the vertical and θ1
-    sethue("white")
-    setopacity(0.2)
-    poly(
-        [
-            Point(sample_point[1], p[2][2]),
-            sample_point,
-            Point(inner_box[4][1] - d_width / 2, inner_box[4][2])
-        ],
-        :fill,
-        close=true
-    )
+    # sethue("red")
+    # setopacity(0.2)
+    # poly(
+    #     [
+    #         Point(sample_point[1], p[2][2]),
+    #         sample_point,
+    #         Point(inner_box[4][1] - d_width / 2, inner_box[4][2])
+    #     ],
+    #     :fill,
+    #     close=true
+    # )
 
-    # Diffuse light: Drawing the left triangle between the vertical and θ2
-    poly(
-        [
-            p[2],
-            sample_point,
-            Point(sample_point[1], p[2][2])
-        ],
-        :fill,
-        close=true
-    )
+    # # Diffuse light: Drawing the left triangle between the vertical and θ2
+    # poly(
+    #     [
+    #         p[2],
+    #         sample_point,
+    #         Point(sample_point[1], p[2][2])
+    #     ],
+    #     :fill,
+    #     close=true
+    # )
 
     # Compute direct light:
     light_ray_height = h0 + height
@@ -2129,10 +2143,10 @@ version = "3.5.0+0"
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
 # ╟─58ec9faa-cbf1-4e46-b4bb-420586ac7dba
 # ╟─0385990f-397e-46f8-93d7-578c8ead2be3
-# ╠═fbe6d054-56ff-4201-8d55-f5afcda7ec52
-# ╠═09a77c7f-409d-4083-8267-d52ba0346c9c
+# ╟─fbe6d054-56ff-4201-8d55-f5afcda7ec52
+# ╟─09a77c7f-409d-4083-8267-d52ba0346c9c
 # ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
-# ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
+# ╠═6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
