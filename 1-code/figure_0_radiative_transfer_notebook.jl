@@ -50,6 +50,9 @@ begin
 	npoints = 200
 	alpha = deg2rad(0) # Crop row direction relative to north
 	light_from_sky = false # if false the light stops at the inner box, else at the sky
+	rg = 20 # Global radiation from the atmosphere, in MJ m-2 day-1
+	k = 0.8 # Light extinction coefficient
+	lai = 2.0 # Leaf Area Index in m2[leaves] m-2[soil] 
 	display_text = true # display names and values?
 	display_icosahedron = false # display the truncated icosahedron that shows diffuse directions
 	n_sample_points = 200
@@ -521,17 +524,16 @@ function r_transmitted(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou
         xprec = x
 
         # Diffuse radiation:
-        kgdiffus, H = kdif(x, h0, width, ir, height)
-
-        # Direct radiation
-        kgdirect, θ1, θ2 = kdir(lat, j, width, x, ir, shape, h0, alpha, height)
+        kgdiffus, Hcrit1, Hcrit2, az1, az2 = kdif(x, h0, width, ir, height - h0, shape)
+		# Direct radiation
+        kgdirect, θ1, θ2 = kdir(lat, j, width, x, ir, shape, h0, alpha, height- h0)
 
         rdroit = kgdiffus * rdif + kgdirect * rdirect
         rtransmis[i] = (1.0 - rdroit) * (exp(-P_ktrou * (lai + eai)))
         rtransmis[i] = rtransmis[i] + rdroit
     end
 
-    # Moyennes � l'ombre et au soleil
+    # Average for shaded and sunlit
     rombre = 0.0
     rsoleil = 0.0
 
@@ -581,7 +583,8 @@ Computes the transmitted radiation to the plane below the plant.
 - `eai`: ears area index, or the surface of any photosynthetic organs (m2 m-2)
 - `height`: total plant height
 """
-function transrad(rg, width, P_latitude, P_parsurrg, j, ir, shape, h0, alpha, rdif, P_ktrou, lai, eai, height)
+function transrad(rg, width, P_latitude, P_parsurrg, j, ir, shape, h0, alpha, P_ktrou, lai, eai, height)
+	
     rdif = r_diffuse(rg, P_latitude, j)
     rombre, rsoleil = r_transmitted(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou, lai, eai, height)
 
@@ -607,7 +610,7 @@ function transrad(rg, width, P_latitude, P_parsurrg, j, ir, shape, h0, alpha, rd
         raint = 0.0
     end
 
-    return raint
+    return raint, rombre, rsoleil, surfAO, surfAS
 end
 
 # ╔═╡ 4ab56f65-3314-4dc4-9eb1-59f68058e435
@@ -984,23 +987,27 @@ begin
     scale(1, -1) # to set the y axis up
     translate(0, -t.height)
 
-    center = Point(t.width * 0.5, t.height * 0.525)
+    center = Point(t.width * 0.5, t.height * 0.55)
 	
     # Drawing the big box inside the plot that delimits the scene boundary:
     outer_box_rel_width = 1.0 # Width of the outter box relative to figure width
-    outer_box_rel_height = 0.75 # Height of the outter box relative to figure height
+    outer_box_rel_height = 0.70 # Height of the outter box relative to figure height
     outer_box_width = outer_box_rel_width * t.width
     outer_box_height = outer_box_rel_height * t.height
     outer_box = box(center, outer_box_width, outer_box_height, :none)
 
+	# Compute radiation: 
+	raint, rombre, rsoleil, surfAO, surfAS = transrad(rg, width, params["latitude"], 0.48, j, interrow, shape, h0, alpha, k, lai, 0.0, height)
+
+	
 	# Writting bottom text:
 	@layer begin
-		fontsize(18)
+		fontsize(16)
 		fontface("Calibri Bold")
 		sethue("black")
 		setopacity(0.8)
 		scale(1,-1)
-		text("Latitude $(params["latitude"])°, day $j, sample point $i_sample_point/200.", Point((10 + outer_box[1][1]) * 1.3, -10))
+		text("Latitude $(params["latitude"])°, day $j, sample point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))", Point((10 + outer_box[1][1]) * 1.3, -5))
 	end
 	
     # Rescaling the crop dimensions to match the drawing coordinates:
@@ -1023,6 +1030,13 @@ begin
     inner_box_width = inner_box[3][1] - inner_box[1][1]
     inner_box_length = inner_box[1][2] - inner_box[3][2]
 
+	# Draw the center line
+    bottom_center = midpoint(inner_box[2], inner_box[3])
+    top_center = midpoint(inner_box[1], inner_box[4])
+    sethue("black")
+    setdash("dot")
+    line(bottom_center, top_center, :stroke)
+	
 	# Show base height:	
 	@layer begin
 		sethue("grey")
@@ -1075,13 +1089,38 @@ begin
 		setdash("dot")
 		scale(-1,1)
 		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
-		dimension(outer_box[2], Point(inner_box[2][1]+d_width/2,inner_box[2][2]),
+		dimension(outer_box[2], Point(x0+d_width/2,y0),
 	    offset        = -25,
 	    fromextension = [5, d_h0 + d_height + 25],
 	    toextension   = [5, 25],
 	    textrotation  = π/2,
 	    textgap       = 40,
 	    format        = (d) -> string("Width:", round(width, digits=1)))
+	end
+
+	# Show shaded and sunlit:	
+	@layer begin
+		sethue("grey")
+		setopacity(1)
+		setdash("dot")
+		scale(-1,1)
+		translate(-(x0 * 2), 0)  # translate back
+		dimension(Point(inner_box[2][1]-d_width/2, inner_box[2][2]), inner_box[2],
+	    offset        = -60,
+	    fromextension = [5, 60],
+	    toextension   = [5, 60],
+	    textrotation  = π/2,
+	    textgap       = 40,
+	    format        = (d) -> string("Shaded:", round(surfAO, digits=1)))
+
+
+		dimension(Point(bottom_center[1]- inner_box_width, bottom_center[2]), Point(inner_box[2][1]-d_width/2, inner_box[2][2]),
+	    offset        = -60,
+	    fromextension = [5, 10],
+	    toextension   = [5, 30],
+	    textrotation  = π/2,
+	    textgap       = 40,
+	    format        = (d) -> string("Sunlit:", round(surfAS, digits=1)))
 	end
 	
 	# Drawing the left-hand side crop:
@@ -1095,7 +1134,7 @@ begin
     # Outter right side of the right-hand plant
     @layer begin
         # scale(-1, 1)
-        setopacity(0.1)
+        setopacity(0.15)
         sethue("green")
         setdash("dot")
         translate(inner_box_width, 0)
@@ -1107,20 +1146,12 @@ begin
         scale(-1, 1) # mirror the scene
         translate(-(x0 * 2 + inner_box_width), 0)  # translate back
         poly(p, :fill, close=true) # Inner left side of the LHS plant
-
-        setopacity(0.1)
+        setopacity(0.15)
         sethue("green")
         setdash("dot")
         translate(inner_box_width, 0)  # translate back
         poly(p, :fill, close=true) # Outter left side of the LHS plant
     end
-
-    # Draw the center line
-    bottom_center = midpoint(inner_box[2], inner_box[3])
-    top_center = midpoint(inner_box[1], inner_box[4])
-    sethue("black")
-    setdash("dot")
-    line(bottom_center, top_center, :stroke)
 
     if display_text
         @layer begin
@@ -1130,7 +1161,7 @@ begin
             setdash("dot")
             label(
                 "Row center", :S, Point(bottom_center[1], -bottom_center[2]),
-                offset=40, leader=true, leaderoffsets=[0.5, 0.9]
+                offset=40, leader=true, leaderoffsets=[0.1, 0.95]
             )
         end
     end
@@ -1313,9 +1344,6 @@ begin
     finish()
     preview()
 end
-
-# ╔═╡ e5eb798d-2717-437a-8a3d-71449ddfc0bb
-outer_box
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2142,20 +2170,19 @@ version = "3.5.0+0"
 # ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
-# ╠═e5eb798d-2717-437a-8a3d-71449ddfc0bb
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
-# ╟─ab594776-ea39-48f6-9218-78c5eed58916
+# ╠═ab594776-ea39-48f6-9218-78c5eed58916
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
 # ╟─58ec9faa-cbf1-4e46-b4bb-420586ac7dba
-# ╟─0385990f-397e-46f8-93d7-578c8ead2be3
+# ╠═0385990f-397e-46f8-93d7-578c8ead2be3
 # ╟─fbe6d054-56ff-4201-8d55-f5afcda7ec52
 # ╟─09a77c7f-409d-4083-8267-d52ba0346c9c
 # ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
-# ╠═6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
+# ╟─6d701d6c-daa5-4bf0-9ee2-cb76dfecf510
 # ╟─7f777012-1203-427f-86aa-78d502fefaab
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
