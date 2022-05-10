@@ -1030,9 +1030,9 @@ begin
 		scale(-1,1)
 		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
 		dimension(inner_box[2], Point(inner_box[2][1],inner_box[2][2] + d_h0),
-	    offset        = 45,
-	    fromextension = [45, 5],
-	    toextension   = [45, 5],
+	    offset        = 25,
+	    fromextension = [25, 5],
+	    toextension   = [25, 5],
 	    textrotation  = π/2,
 	    textgap       = 20,
 	    format        = (d) -> string("H0:", round(h0, digits=1)))
@@ -1045,9 +1045,9 @@ begin
 		scale(-1,1)
 		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
 		dimension(Point(inner_box[2][1],inner_box[2][2]+d_h0), inner_box[1],
-	    offset        = 45,
-	    fromextension = [45, 5],
-	    toextension   = [45, 5],
+	    offset        = 25,
+	    fromextension = [25, 5],
+	    toextension   = [25, 5],
 	    textrotation  = π/2,
 	    textgap       = 40,
 	    format        = (d) -> string("Height:", round(height, digits=1)))
@@ -1066,6 +1066,22 @@ begin
 	    textrotation  = π/2,
 	    textgap       = 40,
 	    format        = (d) -> string("Interrow:", round(interrow, digits=1)))
+	end
+
+	# Show crop width:	
+	@layer begin
+		sethue("grey")
+		setopacity(1)
+		setdash("dot")
+		scale(-1,1)
+		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+		dimension(outer_box[2], Point(inner_box[2][1]+d_width/2,inner_box[2][2]),
+	    offset        = -25,
+	    fromextension = [5, d_h0 + d_height + 25],
+	    toextension   = [5, 25],
+	    textrotation  = π/2,
+	    textgap       = 40,
+	    format        = (d) -> string("Width:", round(width, digits=1)))
 	end
 	
 	# Drawing the left-hand side crop:
