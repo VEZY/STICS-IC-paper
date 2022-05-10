@@ -45,7 +45,7 @@ md"""
 
 # ╔═╡ 311611bd-89f9-4e34-84cb-11924e8efc2d
 begin
-	image_dim = (800, 400)
+	image_dim = (800, 500)
 	h0 = 0.2
 	npoints = 200
 	alpha = deg2rad(0) # Crop row direction relative to north
@@ -976,20 +976,33 @@ begin
 	# Beginning of the drawing:
 	Drawing(image_dim[1], image_dim[2], :png)
 	t = currentdrawing()
+	# fontface("Calibri Bold")
+	fontsize(11)
+
     background("white")
     sethue("black")
     scale(1, -1) # to set the y axis up
     translate(0, -t.height)
 
-    center = Point(t.width * 0.5, t.height * 0.5)
-
+    center = Point(t.width * 0.5, t.height * 0.525)
+	
     # Drawing the big box inside the plot that delimits the scene boundary:
-    outer_box_rel_width = 0.8 # Width of the outter box relative to figure width
+    outer_box_rel_width = 1.0 # Width of the outter box relative to figure width
     outer_box_rel_height = 0.75 # Height of the outter box relative to figure height
     outer_box_width = outer_box_rel_width * t.width
     outer_box_height = outer_box_rel_height * t.height
     outer_box = box(center, outer_box_width, outer_box_height, :none)
 
+	# Writting bottom text:
+	@layer begin
+		fontsize(18)
+		fontface("Calibri Bold")
+		sethue("black")
+		setopacity(0.8)
+		scale(1,-1)
+		text("Latitude $(params["latitude"])°, day $j, sample point $i_sample_point/200.", Point((10 + outer_box[1][1]) * 1.3, -10))
+	end
+	
     # Rescaling the crop dimensions to match the drawing coordinates:
     d_width = width * outer_box_width / (interrow + width)
     # NB: interrow + width because the outer box include plant half-width for both plants
@@ -1284,6 +1297,9 @@ begin
     finish()
     preview()
 end
+
+# ╔═╡ e5eb798d-2717-437a-8a3d-71449ddfc0bb
+outer_box
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2110,6 +2126,7 @@ version = "3.5.0+0"
 # ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
+# ╠═e5eb798d-2717-437a-8a3d-71449ddfc0bb
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
