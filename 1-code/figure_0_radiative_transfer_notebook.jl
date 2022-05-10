@@ -911,11 +911,11 @@ begin
 params_ = let 
 		params_ = Any[
 			Slider(param.second[1];default = param.second[2],show_value=true) for param in [
-				"latitude" => (-90:1:90, 0.0),
+				"latitude" => (-90:1:90, 44.0),
 				"day" => (1:365, 1),
-				"width" => (0.05:0.05:1.0,0.2),
+				"width" => (0.05:0.05:1.0,0.3),
 				"interrow" => (0.05:0.05:2.0,1),
-				"height" => (0.05:0.05:1.0,0.8),
+				"height" => (0.05:0.05:1.0,0.5),
 				"sample_point" => (1:199.0,100),
 			]
 		]
@@ -927,7 +927,7 @@ params_ = let
 
 		push!(
 			params_,
-			CheckBox()
+			CheckBox(default=true)
 		)
 	end
 	
@@ -1113,31 +1113,6 @@ begin
     all_sample_points = Point.(all_point_pos, y0)
     sample_point = all_sample_points[i_sample_point] # Point coordinates
 
-    # Compute diffuse light:
-    # Diffuse light: Drawing the right triangle between the vertical and θ1
-    # sethue("red")
-    # setopacity(0.2)
-    # poly(
-    #     [
-    #         Point(sample_point[1], p[2][2]),
-    #         sample_point,
-    #         Point(inner_box[4][1] - d_width / 2, inner_box[4][2])
-    #     ],
-    #     :fill,
-    #     close=true
-    # )
-
-    # # Diffuse light: Drawing the left triangle between the vertical and θ2
-    # poly(
-    #     [
-    #         p[2],
-    #         sample_point,
-    #         Point(sample_point[1], p[2][2])
-    #     ],
-    #     :fill,
-    #     close=true
-    # )
-
     # Compute direct light:
     light_ray_height = h0 + height
     d_light_ray_height = d_height + d_h0
@@ -1309,9 +1284,6 @@ begin
     finish()
     preview()
 end
-
-# ╔═╡ bdea3f4e-fbba-40e9-a95d-138a7c95a4e9
-kgdirect
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2138,7 +2110,6 @@ version = "3.5.0+0"
 # ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
-# ╠═bdea3f4e-fbba-40e9-a95d-138a7c95a4e9
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
