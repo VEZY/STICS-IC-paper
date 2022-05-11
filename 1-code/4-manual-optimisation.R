@@ -22,13 +22,13 @@ workspace_usms =
     "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2010"
   )
 
-i = 6
+i = 2
 javastics_workspace_path = normalizePath(file.path("0-data/usms-optim-radiative",names(workspace_usms)[i]), winslash = "/")
 stics_inputs_path = file.path(javastics_workspace_path, "manual_optimization")
 usms = workspace_usms[[i]]
 
 # var_name = "lai_n"
-var_name = c("lai_n", "masec_n", "mafruit", "imats", "QNplante")
+var_name = c("lai_n", "masec_n", "mafruit", "CNgrain", "QNplante")
 # var_name = c("vitircarbT", "lai_n")
 # var_name = c("mafruit")
 obs_list = get_obs(javastics_workspace_path, usm = usms)
@@ -79,7 +79,7 @@ res_opti = stics_wrapper(
     "durvieF" = 290,
     # "nbgrmin" = 1540, "cgrain" = 0.138, "croirac" = 0.2,
     # "nbgrmin" = 2000,
-    "Vmax2" = 0.0039, #"inngrain2" = 1.3,
+    "Vmax2" = 0.0039, "inngrain2" = 1.3,
     "vitircarbT"= 0.00082
     # , "innsen" = 0.2
   ),

@@ -1,5 +1,6 @@
-# Purpose: simulate contrasted intercrop systems to show the vaildity domain of
-# the model.
+# Purpose: simulate contrasted intercrop systems to show the validity domain of
+# the model. This figure shows the results at their most important steps only,
+# e.g. maximum LAI, biomass at harvest...
 # Date: 27/10/2021
 
 # Install the packages (to do only once) ----------------------------------
@@ -63,12 +64,10 @@ link_IC_SC =
 
 # Define the variables to simulate ----------------------------------------
 
-sim_variables = c("hauteur","lai(n)","masec(n)","QNplante","Qfix")
-# SticsRFiles::get_var_info("Qfix")
+sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","iflos","imats", "hauteur", "CNgrain")
 
 # Run the IC simulations -----------------------------------------------------
 
-# usms = SticsRFiles::get_usms_list(usm_path = file.path(workspace_wheat,"usms.xml"))
 mapply(
   function(x,y){
     SticsRFiles::gen_varmod(x, sim_variables)
@@ -111,9 +110,25 @@ names(sim_sc) = unlist(workspace_usms_sc)
 
 # Compute new variables ---------------------------------------------------
 
-# Add NDFA to sim:
+# Add NDFA to sim + put all stages at same value along the whole crop for plotting +
+# make their value relative to ilev:
 sim = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
+  
+  x =
+    x%>%
+    group_by(Plant)%>%
+    mutate(
+      iflos = unique(as.integer(.data$iflos))[2] %% 365,
+      imats = unique(as.integer(.data$imats))[2]  %% 365,
+      # We only want the maximum value for masec_n and QNplante and hauteur (value at harvest):
+      masec_n = max(.data$masec_n, na.rm = TRUE),
+      QNplante = max(.data$QNplante, na.rm = TRUE),
+      hauteur = max(.data$hauteur, na.rm = TRUE),
+      # Same for LAI, we want the maximum LAI:
+      lai_n = max(.data$lai_n, na.rm = TRUE),
+      LER = ifelse(.data$mafruit == max(.data$mafruit), max(.data$mafruit) / max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)]),NA)
+    )
   
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
@@ -139,7 +154,90 @@ names(obs_sc) = unlist(workspace_usms_sc)
 # Add NDFA to obs:
 obs = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
-
+  
+  x =
+    x%>%
+    group_by(Plant)%>%
+    mutate(
+      LER =
+        max(.data$mafruit, na.rm = TRUE) /
+        max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)],na.rm = TRUE)
+    )
+  
+  if(!is.null(x$iflos)){
+    x =
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        iflos = .data$iflos %% 365
+      )
+  }
+  
+  if(!is.null(x$imats)){
+    x =
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        imats = .data$imats %% 365
+      )
+  }
+  
+  if(!is.null(x$masec_n)){
+    # We only want the maximum value for masec_n (biomass at harvest):
+    x =
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        masec_n = ifelse(
+          .data$masec_n == max(.data$masec_n, na.rm = TRUE),
+          .data$masec_n,
+          NA
+        )
+      )
+  }
+  
+  if(!is.null(x$hauteur)){
+    # We only want the maximum value for QNplante (N at harvest):
+    x =
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        hauteur = ifelse(
+          .data$hauteur == max(.data$hauteur, na.rm = TRUE),
+          .data$hauteur,
+          NA
+        )
+      )
+  }
+  
+  if(!is.null(x$QNplante)){
+    # We only want the maximum value for QNplante (N at harvest):
+    x =
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        QNplante = ifelse(
+          .data$QNplante == max(.data$QNplante, na.rm = TRUE),
+          .data$QNplante,
+          NA
+        )
+      )
+  }
+  
+  if(!is.null(x$lai_n)){
+    # Same for LAI, we want the maximum LAI:
+    x =
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        lai_n = ifelse(
+          .data$lai_n == max(.data$lai_n, na.rm = TRUE),
+          .data$lai_n,
+          NA
+        )
+      )
+  }
+  
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
@@ -147,44 +245,44 @@ obs = mapply(function(x,usms_sc){
   }
 }, obs, link_IC_SC[names(obs)], SIMPLIFY = FALSE)
 
-obs = lapply(obs, function(x){
-  x[,colnames(x) %in% c(
-    "Date", "Dominance","Plant",SticsRFiles:::var_to_col_names(sim_variables), "NDFA")]
-})
-
 # Make the plots:
 plots = plot(sim, obs = obs, type = "scatter", shape_sit = "txt")
-# plots = plot(sim,obs=obs, type = "scatter") # dynamic plots just in case
+# plots = plot(sim,obs=obs) # dynamic plots just in case
 
 # Statistics --------------------------------------------------------------
 
 stats =
   summary(sim, obs = obs, stats = c("MAPE", "EF", "RMSE", "nRMSE", "Bias"))%>%
   select(-group, -situation)%>%
-  # filter(variable != "Qfix")%>%
+  filter(variable != "Qfix")%>%
   mutate(across(is.numeric, ~round(.x, 2)))%>%
   mutate(
     variable =
       recode(
         variable,
-        "lai_n" = "LAI~(m2~m^{-2})",
-        "masec_n" = "Agb~(t~ha^{-1})",
-        "Qfix" = "N~Fix.~(kg~ha^{-1})",
+        "lai_n" = "Max.~LAI~(m2~m^{-2})",
+        "masec_n" = "Harvested~Agb~(t~ha^{-1})",
+        "mafruit" = "Gr.~yield~(t~ha^{-1})",
+        # "Qfix" = "N~Fix.~(kg~ha^{-1})",
+        "CNgrain" = "N~grain~('%')",
         "QNplante" = "N~acc.~(kg~ha^{-1})",
-        "hauteur" = "Height~(m)",
-        "NDFA" = "NDFA~('%')"
+        "imats" = "D.~Matur.~(julian~day)",
+        "iflos" = "D.~Flowe.~(julian~day)",
+        "hauteur" = "Max.~height~(m)",
+        "NDFA" = "NDFA~('%')",
+        "LER" = "Partial~LER"
       )
   )%>%
   arrange(variable)
 stats
 
-write.csv(stats, "2-outputs/stats/stats_constrasted_systems_all.csv")
+write.csv(stats, "2-outputs/stats/stats_constrasted_systems.csv")
 
 # Plot --------------------------------------------------------------------
 
 df_ic =
   plots$all_situations$data%>%
-  # filter(variable != "Qfix")%>%
+  filter(variable != "Qfix")%>%
   mutate(
     Plant = recode(Plant,
                    "poi" = "Pea",
@@ -202,12 +300,17 @@ df_ic =
                          "Fababean_Wheat_IC_2007" = "Fababean-Wheat"
     ),
     variable = recode(variable,
-                      "lai_n" = "LAI~(m2~m^{-2})",
-                      "masec_n" = "Agb~(t~ha^{-1})",
-                      "Qfix" = "N~Fix.~(kg~ha^{-1})",
+                      "lai_n" = "Max.~LAI~(m2~m^{-2})",
+                      "masec_n" = "Harvested~Agb~(t~ha^{-1})",
+                      "mafruit" = "Gr.~yield~(t~ha^{-1})",
+                      # "Qfix" = "N~Fix.~(kg~ha^{-1})",
+                      "CNgrain" = "N~grain~('%')",
                       "QNplante" = "N~acc.~(kg~ha^{-1})",
-                      "hauteur" = "Height~(m)",
-                      "NDFA" = "NDFA~('%')"
+                      "imats" = "D.~Matur.~(julian~day)",
+                      "iflos" = "D.~Flowe.~(julian~day)",
+                      "hauteur" = "Max.~height~(m)",
+                      "NDFA" = "NDFA~('%')",
+                      "LER" = "Partial~LER"
     )
   )%>%
   arrange(variable)
@@ -308,10 +411,10 @@ if(presentation){
 }
 
 if(!presentation){
-  ggsave(filename = "Fig.3_contrasted_systems_all.png", path = "2-outputs/plots",
-         width = 16, height = 14, units = "cm")
+  ggsave(filename = "Fig.4_contrasted_systems_2.png", path = "2-outputs/plots",
+         width = 16, height = 18, units = "cm")
 }else{
-  ggsave(filename = "Fig.3_contrasted_systems_all.png", path = "2-outputs/plots/presentation",
+  ggsave(filename = "Fig.4_contrasted_systems_2.png", path = "2-outputs/plots/presentation",
          width = 24, height = 14, units = "cm")
 }
 
