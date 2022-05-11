@@ -42,26 +42,26 @@ plant_files_beer = normalizePath(list.files(file.path("0-data/usms-optim-beer",n
 # Activate Radiative transfer, and put the optimized extin value from beer optim:
 for(i in 1:length(plant_files)){
   extin = unlist(get_param_xml(
-    xml_file = file.path(
+    file = file.path(
       "0-data/usms-optim-beer",
       basename(dirname(dirname(plant_files[i]))),
       "plant",
       basename(plant_files[i])
     ),
-    param_name = "extin"
+    param = "extin"
   ))
   
   set_param_xml(
-    xml_file = plant_files[i],
-    param_name = "extin",
-    param_value = extin,
+    file = plant_files[i],
+    param = "extin",
+    values = extin,
     overwrite = TRUE
   )
   
   set_param_xml(
-    xml_file = plant_files[i],
-    param_name = "codetransrad",
-    param_value = 2,
+    file = plant_files[i],
+    param = "codetransrad",
+    values = 2,
     overwrite = TRUE
   )
 }
@@ -115,6 +115,8 @@ dynamic_plots =
     res_orig,
     res_opti)
 
+dynamic_plots$`Auzeville-Pea-2012-SC.SC_Pea_2012-2013_N1`
+dynamic_plots$`Auzeville-Wheat-2012-SC.SC_Wheat_2012-2013_N1`
 dynamic_plots$`Angers-SC-Pea.SC_Pea_Angers_2003_N0`
 dynamic_plots$`Angers-SC-Barley.SC_Barley_Angers_2003_N1`
 dynamic_plots$`Auzeville_wfb-Fababean-SC.Fababean_SC_2007`
@@ -126,6 +128,7 @@ workspace_usms_IC =
   list(
     "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
     "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
+    "Auzeville-IC-2012" = c(p = "Auzeville-Wheat-2012-SC", a = "Auzeville-Pea-2012-SC"),
     "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC"),
     "Auzeville_wfb-Fababean-Wheat-IC" = c(p = "Auzeville_wfb-Fababean-SC", a = "Auzeville_wfb-Wheat-SC")
   )
@@ -147,14 +150,14 @@ mapply(
 
       set_param_xml(
         param_newform_ic,
-        param_name = ifelse(dominance == "p", "haut_dev_x01", "haut_dev_x02"),
-        param_value = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_x01")),
+        param = ifelse(dominance == "p", "haut_dev_x01", "haut_dev_x02"),
+        values = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_x01")),
         overwrite = TRUE
       )
       set_param_xml(
         param_newform_ic,
-        param_name = ifelse(dominance == "p", "haut_dev_k1", "haut_dev_k2"),
-        param_value = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_k1")),
+        param = ifelse(dominance == "p", "haut_dev_k1", "haut_dev_k2"),
+        values = unlist(get_param_xml(param_newform_optim, param_name = "haut_dev_k1")),
         overwrite = TRUE
       )
     }, y, names(y))

@@ -26,7 +26,7 @@ workspace_usms =
   list(
     "Angers-IC-Pea_Barley" = "IC_PeaBarley_Angers_2003_N0_D50-50", # replace by N1?
     "Auzeville-IC" = "IC_Wheat_Pea_2005-2006_N0",
-    "Auzeville-IC-mixed" = "IC_Wheat_Pea_2012-2013_N0",
+    "Auzeville-IC-2012" = "IC_Wheat_Pea_2012-2013_N1",
     "1Tprecoce2Stardif2012" = "1Tprecoce2Stardif2012",
     "Auzeville_wfb-Fababean-Wheat-IC" = "Fababean_Wheat_IC_2007"
   )
@@ -37,6 +37,8 @@ workspace_usms_sc =
     "Angers-SC-Pea" = "SC_Pea_Angers_2003_N0",
     "Auzeville-Pea-SC" = "SC_Pea_2005-2006_N0",
     "Auzeville-Wheat-SC" = "SC_Wheat_2005-2006_N0",
+    "Auzeville-Pea-2012-SC" = "SC_Pea_2012-2013_N1",
+    "Auzeville-Wheat-2012-SC" = "SC_Wheat_2012-2013_N1",
     "sojaTardif2012-SC" = "SojaTardif-SC2012",
     "tourPrecoce2012-SC" = "TournPrecoce-SC2012",
     "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2007",
@@ -51,6 +53,7 @@ link_IC_SC =
   list(
     "IC_PeaBarley_Angers_2003_N0_D50-50" = c(p = "SC_Pea_Angers_2003_N0", a = "SC_Barley_Angers_2003_N0"),
     "IC_Wheat_Pea_2005-2006_N0" = c(p = "SC_Wheat_2005-2006_N0", a = "SC_Pea_2005-2006_N0"),
+    "IC_Wheat_Pea_2012-2013_N1" = c(p = "SC_Wheat_2012-2013_N1", a = "SC_Pea_2012-2013_N1"),
     "1Tprecoce2Stardif2012" = c(p = "TournPrecoce-SC2012", a = "SojaTardif-SC2012"),
     "Fababean_Wheat_IC_2007" = c(p = "Fababean_SC_2007", a = "Wheat_SC_2007")
   )
@@ -115,11 +118,11 @@ names(sim_sc) = unlist(workspace_usms_sc)
 
 # Compute new variables ---------------------------------------------------
 
-# Add NDFA to sim + put all stages at same value along the whole crop for plotting + 
+# Add NDFA to sim + put all stages at same value along the whole crop for plotting +
 # make their value relative to ilev:
 sim = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
-  
+
   x =
     x%>%
     group_by(Plant)%>%
@@ -168,22 +171,22 @@ obs = mapply(function(x,usms_sc){
     x%>%
     group_by(Plant)%>%
     mutate(
-      LER = 
-        max(.data$mafruit, na.rm = TRUE) / 
+      LER =
+        max(.data$mafruit, na.rm = TRUE) /
         max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)],na.rm = TRUE)
     )
-  
+
   if(!is.null(x$iflos)){
-    x = 
+    x =
       x%>%
       group_by(Plant)%>%
       mutate(
         iflos = .data$iflos %% 365
       )
   }
-  
+
   if(!is.null(x$imats)){
-    x = 
+    x =
       x%>%
       group_by(Plant)%>%
       mutate(
@@ -194,33 +197,33 @@ obs = mapply(function(x,usms_sc){
   if(!is.null(x$masec_n)){
     # We only want the maximum value for masec_n (biomass at harvest):
     # x$masec_n[x$masec_n != max(x$masec_n, na.rm = TRUE)] = NA
-    x = 
+    x =
       x%>%
       group_by(Plant)%>%
       mutate(
         masec_n = ifelse(
-          .data$masec_n == max(.data$masec_n, na.rm = TRUE), 
+          .data$masec_n == max(.data$masec_n, na.rm = TRUE),
           .data$masec_n,
           NA
         )
       )
   }
-  
+
   if(!is.null(x$lai_n)){
     # Same for LAI, we want the maximum LAI:
     # x$lai_n[x$lai_n != max(x$lai_n, na.rm = TRUE)] = NA
-    x = 
+    x =
       x%>%
       group_by(Plant)%>%
       mutate(
         lai_n = ifelse(
-          .data$lai_n == max(.data$lai_n, na.rm = TRUE), 
+          .data$lai_n == max(.data$lai_n, na.rm = TRUE),
           .data$lai_n,
           NA
         )
       )
   }
-  
+
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
@@ -234,13 +237,13 @@ plots = plot(sim, obs = obs, type = "scatter", shape_sit = "txt")
 
 # Statistics --------------------------------------------------------------
 
-stats = 
-  summary(sim, obs = obs, stat = c("MAPE", "EF", "RMSE", "nRMSE", "Bias"))%>%
+stats =
+  summary(sim, obs = obs, stats = c("MAPE", "EF", "RMSE", "nRMSE", "Bias"))%>%
   select(-group, -situation)%>%
   filter(variable != "Qfix")%>%
   mutate(across(is.numeric, ~round(.x, 2)))%>%
   mutate(
-    variable = 
+    variable =
       recode(
         variable,
         "lai_n" = "Max.~LAI~(m2~m^{-2})",
@@ -279,7 +282,8 @@ df_ic =
     ),
     Association = recode(Sit_Name,
                          "IC_PeaBarley_Angers_2003_N0_D50-50" = "Pea-Barley",
-                         "IC_Wheat_Pea_2005-2006_N0"  = "Wheat-Pea",
+                         "IC_Wheat_Pea_2005-2006_N0"  = "Wheat-Pea (alt.)",
+                         "IC_Wheat_Pea_2012-2013_N1"  = "Wheat-Pea (mix.)",
                          "1Tprecoce2Stardif2012" = "Sunflower-Soybean",
                          "Fababean_Wheat_IC_2007" = "Fababean-Wheat"
     ),
@@ -301,7 +305,7 @@ df_ic =
   )%>%
   arrange(variable)
 
-fig_num = 
+fig_num =
   df_ic%>%
   group_by(variable)%>%
   summarise(
@@ -323,7 +327,7 @@ if(presentation){
   text_color = "black"
 }
 
-p = 
+p =
   ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association))+
   geom_point(aes(y = Simulated), size = 1.5, fill = "transparent", stroke = 1.5)+
   geom_point(aes(y = Simulated, fill = Plant), size = 1.5, alpha = 0.5, stroke = 1)+
@@ -339,7 +343,7 @@ p =
   geom_label(
     x = -Inf,
     aes(
-      y = y - (y - ymin) * 0.31, 
+      y = y - (y - ymin) * 0.31,
       label = paste0("EF:",EF,"\nnRMSE:",nRMSE,"\nRMSE:",RMSE,"\nBias:",Bias)
     ),
     data = stats%>%mutate(y = fig_num$y, ymin = fig_num$ymin), hjust=0, size = 2.6,
@@ -353,7 +357,7 @@ p =
              labeller = label_parsed,
              shrink = TRUE)+
   labs(colour = "Plant species:",
-       shape = "Association:",
+       shape = "Asso.:",
        fill = "Plant species:")+
   theme_minimal()+
   geom_abline()+
@@ -362,7 +366,8 @@ p =
   scale_shape_manual(
     values = c(
       "Pea-Barley" = 21,
-      "Wheat-Pea" = 22,
+      "Wheat-Pea (mix.)" = 22,
+      "Wheat-Pea (alt.)" = 25,
       "Sunflower-Soybean" = 23,
       "Fababean-Wheat" = 24
     )
@@ -370,15 +375,21 @@ p =
   theme(
     legend.position = 'bottom',
     legend.box = 'vertical',
+    legend.spacing.y = unit(.005, "cm"),
+    legend.spacing.x = unit(.0005, "cm"),
+    # legend.title = element_text(size = 8),
+    legend.text = element_text(size = 8),
     strip.text.y = element_text(size = 8),
     axis.title.x = element_text(face = "bold", size = 12),
     axis.title.y = element_text(face = "bold", size = 12)
   )+
   guides(color = guide_legend(nrow = 1, byrow = TRUE))
 
+p
+
 if(presentation){
-  p = 
-    p + 
+  p =
+    p +
     theme(
       axis.title = element_text(color="white"),
       axis.text = element_text(color="white"),

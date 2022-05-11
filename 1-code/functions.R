@@ -185,8 +185,8 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
       usms = workspace_usms[[i]]
       
       var_name = parameters_vars[[j]]$vars
-      obs_list = get_obs(javastics_workspace_path, usm_name = usms)
-      obs_list = filter_obs(obs_list, var_names= var_name, include=TRUE)
+      obs_list = get_obs(javastics_workspace_path, usm = usms)
+      obs_list = filter_obs(obs_list, var= var_name, include=TRUE)
       
       # Remove the usms with no observations:
       obs_list = lapply(obs_list, function(x){
@@ -208,10 +208,10 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
       dir.create(stics_inputs_path, showWarnings = FALSE)
       
       gen_usms_xml2txt(
-        javastics_path = javastics_path,
-        workspace_path = javastics_workspace_path,
-        target_path = stics_inputs_path,
-        usms_list = usms,
+        javastics = javastics_path,
+        workspace = javastics_workspace_path,
+        out_dir = stics_inputs_path,
+        usm = usms,
         verbose = TRUE
       )
       

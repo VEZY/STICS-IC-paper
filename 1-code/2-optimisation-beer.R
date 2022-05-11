@@ -69,9 +69,9 @@ write.csv(df, "2-outputs/optimization/optim_results_beer.csv", row.names = FALSE
 # Activate Beer's law:
 lapply(list.files(file.path(workspaces_opti,"plant"), full.names = TRUE), function(x){
   set_param_xml(
-    xml_file = x,
-    param_name = "codetransrad",
-    param_value = 1,
+    file = x,
+    param = "codetransrad",
+    values = 1,
     overwrite = TRUE
   )
 })
@@ -81,6 +81,7 @@ workspace_usms_IC =
   list(
     "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
     "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
+    "Auzeville-IC-2012" = c(p = "Auzeville-Wheat-2012-SC", a = "Auzeville-Pea-2012-SC"),
     "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC"),
     "Auzeville_wfb-Fababean-Wheat-IC" = c(p = "Auzeville_wfb-Fababean-SC", a = "Auzeville_wfb-Wheat-SC")
   )
@@ -114,19 +115,22 @@ workspace_usms_IC =
   list(
     "Angers-IC-Pea_Barley" = "IC_PeaBarley_Angers_2003_N0_D50-50", # replace by N1?
     "Auzeville-IC" = "IC_Wheat_Pea_2005-2006_N0",
+    "Auzeville-IC-2012" = "IC_Wheat_Pea_2012-2013_N1",
     "1Tprecoce2Stardif2012" = "1Tprecoce2Stardif2012",
     "Auzeville_wfb-Fababean-Wheat-IC" = "Fababean_Wheat_IC_2007"
   )
 
-res_orig_beer = run_simulation(workspaces = normalizePath(file.path("0-data/usms",names(workspace_usms_IC)), winslash = "/"),
-                          variables = sim_variables,
-                          javastics = javastics_path,
-                          usms = workspace_usms_IC
+res_orig_beer = run_simulation(
+  workspaces = normalizePath(file.path("0-data/usms",names(workspace_usms_IC)), winslash = "/"),
+  variables = sim_variables,
+  javastics = javastics_path,
+  usms = workspace_usms_IC
 )
-res_opti_beer = run_simulation(workspaces = normalizePath(file.path(worspaces_path,names(workspace_usms_IC)), winslash = "/"),
-                          variables = sim_variables,
-                          javastics = javastics_path,
-                          usms = workspace_usms_IC
+res_opti_beer = run_simulation(
+  workspaces = normalizePath(file.path(worspaces_path,names(workspace_usms_IC)), winslash = "/"),
+  variables = sim_variables,
+  javastics = javastics_path,
+  usms = workspace_usms_IC
 )
 # res_orig_beer = import_simulations(workspaces = workspaces_orig, variables = sim_variables)
 # res_opti_beer = import_simulations(workspaces = workspaces_opti, variables = sim_variables)
@@ -146,7 +150,8 @@ dynamic_plots =
     },
     res_orig_beer,
     res_opti_beer)
-dynamic_plots
+
+dynamic_plots$`Auzeville-IC-2012.IC_Wheat_Pea_2012-2013_N1`
 
 mapply(function(x,y){
   ggplot2::ggsave(

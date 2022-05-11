@@ -16,11 +16,6 @@
             <ftec>SC_Pea_2012-2013_N0_tec.xml</ftec>
             <flai>defaut.lai</flai>
         </plante>
-        <plante dominance="2">
-            <fplt>Pea_Eric_plt.xml</fplt>
-            <ftec>null_tec.xml</ftec>
-            <flai>defaut.lai</flai>
-        </plante>
     </usm>
     <usm nom="SC_Pea_2012-2013_N1">
         <datedebut>269</datedebut>
@@ -36,11 +31,6 @@
         <plante dominance="1">
             <fplt>Pea_Eric_plt.xml</fplt>
             <ftec>SC_Pea_2012-2013_N1_tec.xml</ftec>
-            <flai>defaut.lai</flai>
-        </plante>
-        <plante dominance="2">
-            <fplt>Pea_Eric_plt.xml</fplt>
-            <ftec>null_tec.xml</ftec>
             <flai>defaut.lai</flai>
         </plante>
     </usm>
