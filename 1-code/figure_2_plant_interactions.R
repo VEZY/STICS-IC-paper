@@ -44,9 +44,9 @@ lapply(workspaces, function(x) SticsRFiles::gen_varmod(x, sim_variables))
 
 
 mapply(function(x,y){
-  SticsOnR::run_javastics(javastics = javastics, 
+  SticsOnR::run_javastics(javastics = javastics,
                           workspace = normalizePath(x, winslash = "/"),
-                          stics_exe = "Stics_IC_v13-01-2022.exe",
+                          stics_exe = "Stics_IC_v13-05-2022.exe",
                           usms_list = y)
 },workspaces,usms)
 
@@ -59,13 +59,13 @@ sim = lapply(sim, function(x){
   if(!is.null(x$Qfix)){
     x = x%>%mutate(NDFA = Qfix / QNplante)
   }
-  
+
   if(!is.null(x$ep) & !is.null(x$dltams_n)){
     # ep in mm day-1
     x = x%>%mutate(wue = dltams_n / ep)%>%select(-ep,-dltams_n)
     x$wue[x$lai <= 0.01] = NA
   }
-  
+
   return(x)
 })
 
@@ -81,11 +81,11 @@ names(obs) = usms
 
 # Add NDFA to obs:
 obs = lapply(obs, function(x){
-  
+
   if(!is.null(x$Qfix)){
     x = x%>%mutate(NDFA = Qfix / QNplante)
   }
-  
+
   if(!is.null(x$inns)){
     x = x%>%select(-inns)
   }
@@ -121,12 +121,12 @@ SC_sum =
 
 df = bind_rows(IC_sum,SC_sum)%>%filter(variable != "Qfix" && variable != "fapar")
 
-numbering = 
+numbering =
   df%>%
   group_by(variable)%>%
   summarize(Plant = unique(Plant), y = max(Simulated))%>%
   group_by(Plant)%>%
-  mutate(variable = 
+  mutate(variable =
            recode(
              .data$variable,
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
@@ -144,7 +144,7 @@ numbering =
   mutate(
     plot_index = order(variable),
     plot_nb = ifelse(
-      Plant == "bold(Pea)", 
+      Plant == "bold(Pea)",
       paste(plot_index, "a", sep = "."),
       paste(plot_index, "b", sep = ".")
     )
@@ -162,9 +162,9 @@ if(presentation){
   text_color = "black"
 }
 
-p = 
+p =
   df%>%
-  mutate(variable = 
+  mutate(variable =
            recode(
              variable,
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
@@ -209,8 +209,8 @@ p =
   )
 
 if(presentation){
-  p = 
-    p + 
+  p =
+    p +
     theme(
       axis.title = element_text(color="white"),
       axis.text = element_text(color="white"),
@@ -232,7 +232,7 @@ if(!presentation){
 
 # Statistics --------------------------------------------------------------
 
-stats = 
+stats =
   df%>%
   group_by(Plant,System,variable)%>%
   # mutate(diff = Simulated - )%>%
@@ -255,7 +255,7 @@ stat_diff =
   pivot_wider(stats, names_from = Plant, values_from = c(diff_sim,diff_obs))%>%
   select(variable, diff_obs_Pea, diff_sim_Pea, diff_obs_Wheat, diff_sim_Wheat)%>%
   mutate(across(is.numeric, ~round(.x, 0)))%>%
-  mutate(variable = 
+  mutate(variable =
            recode(
              variable,
              "lai_n" = "LAI (m2 m-2)",

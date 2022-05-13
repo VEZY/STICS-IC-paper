@@ -37,7 +37,7 @@ to_sum = c("lai_n","masec_n","abso_n","mafruit","QNplante", "fapar")
 # Run the simulations -----------------------------------------------------
 
 # usms = SticsRFiles::get_usms_list(file = file.path(workspace,"usms.xml"))
-usms = 
+usms =
   list(
     "Auzeville-Pea-SC" = c(sc = "SC_Pea_2005-2006_N0", ic = "IC_Pea_Pea_2005-2006_N0"),
     "Auzeville-Wheat-SC" = c(sc = "SC_Wheat_2005-2006_N0", ic = "IC_Wheat_Wheat_2005-2006_N0"),
@@ -64,18 +64,18 @@ res_scat = mapply(function(x,y){
   SticsRFiles::gen_varmod(workspace, sim_variables)
   SticsOnR::run_javastics(
     javastics = javastics, workspace = workspace,
-    stics_exe = "Stics_IC_v13-01-2022.exe",
+    stics_exe = "Stics_IC_v13-05-2022.exe",
     usms_list = x
   )
   # Get the results
   sim = get_sim(workspace = workspace, usm = x)
-  
+
   # Get the observations
   obs = get_obs(workspace =  workspace, usm = x)
   # Pre-make the plot with {CroPlotR}
   plots = plot(sim,obs=obs)
-  # Compute the sum (or average) of variables for both intercrops to match the sole crop  
-  
+  # Compute the sum (or average) of variables for both intercrops to match the sole crop
+
   df_ic =
     plots[[grep("(IC_|-IC)", names(plots))]]$data%>%
     group_by(.data$Date,.data$variable)%>%
@@ -85,17 +85,17 @@ res_scat = mapply(function(x,y){
       Simulated = ifelse(.data$variable %in% to_sum, Simulated_sum, Simulated_mean)
     )%>%
     select(-Simulated_sum,-Simulated_mean)
-  
+
   df_sc = plots[[grep("(SC_|-SC)", names(plots))]]$data%>%select(-Sit_Name)
-  
-  df = 
+
+  df =
     left_join(
       df_sc,
-      df_ic, 
-      by = c("Date","variable"), 
+      df_ic,
+      by = c("Date","variable"),
       suffix = c("_sc", "_ic")
     )
-  
+
   return(df)
 }, usms, names(usms), SIMPLIFY = FALSE)
 
@@ -106,10 +106,10 @@ ggplot(df, aes(x = Simulated_sc , y = Simulated_ic, color = Crop))+
   geom_abline()+
   geom_point()+
   facet_wrap(
-    variable~., 
-    scales = "free", 
-    labeller = label_parsed, 
-    strip.position = "left", 
+    variable~.,
+    scales = "free",
+    labeller = label_parsed,
+    strip.position = "left",
     ncol = 2
   )+
   ggtitle(NULL) +
@@ -117,13 +117,13 @@ ggplot(df, aes(x = Simulated_sc , y = Simulated_ic, color = Crop))+
   theme_minimal() +
   # scale_colour_manual(values= c("Self Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
   theme(
-    legend.direction = "horizontal", 
-    legend.position = 'bottom', 
+    legend.direction = "horizontal",
+    legend.position = 'bottom',
     strip.placement.y = "outside"
   )
 
 # Line plot:
-p = 
+p =
   df%>%
   mutate(
     Crop = recode(
@@ -133,7 +133,7 @@ p =
       "Angers-SC-Barley" = "bold(Barley)",
       "Auzeville_wfb-Fababean-SC" = "bold(Fababean)",
       "sojaTardif2012-SC" = "bold(Soybean)",
-      "tourPrecoce2012-SC" = "bold(Sunflower)" 
+      "tourPrecoce2012-SC" = "bold(Sunflower)"
     ),
     variable = recode(
       .data$variable,
@@ -156,7 +156,7 @@ p =
   facet_grid(
     vars(variable),
     vars(Crop),
-    scales = "free", 
+    scales = "free",
     labeller = label_parsed
   )+
   scale_y_continuous(n.breaks = 5, minor_breaks = NULL)+

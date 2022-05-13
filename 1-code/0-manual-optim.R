@@ -72,7 +72,7 @@ SticsOnR::run_javastics(
   javastics = javastics,
   workspace = workspace_pea_barley,
   # stics_exe = "Stics_IC_v07-01-2022.exe",
-  stics_exe = "Stics_IC_v13-01-2022.exe",
+  stics_exe = "Stics_IC_v13-05-2022.exe",
   # stics_exe = "D:/OneDrive - cirad.fr/Travail_Postdoc/STICS/Stics_v850_r1528_branche_Intercrop/stics/Debug/Stics.exe",
   usms_list = usms
 )
@@ -85,7 +85,7 @@ plot(regular = sim_regular, obs = obs)
 
 SticsOnR::run_javastics(javastics_path = javastics, workspace_path = workspace_pea_barley,
                         # stics_exe = "Stics_IC_v07-01-2022.exe",
-                        stics_exe = "Stics_IC_v13-01-2022.exe",
+                        stics_exe = "Stics_IC_v13-05-2022.exe",
                         # stics_exe = "D:/OneDrive - cirad.fr/Travail_Postdoc/STICS/Stics_v850_r1528_branche_Intercrop/stics/Debug/Stics.exe",
                         usms_list = usms)
 
@@ -99,7 +99,7 @@ plot(regular = sim_regular, sim_new = sim_new, obs = obs)
 #               # param_name = "inngrain2", param_value = 1.5, overwrite = TRUE)
 #               param_name = "stdnofno", param_value = 1500, overwrite = TRUE)
 # SticsOnR::run_javastics(javastics_path = javastics, workspace_path = workspace_pea_barley,
-#                         # stics_exe = "Stics_IC_v13-01-2022.exe",
+#                         # stics_exe = "Stics_IC_v13-05-2022.exe",
 #                         stics_exe = "D:/OneDrive - cirad.fr/Travail_Postdoc/STICS/Stics_v850_r1528_branche_Intercrop/stics/Debug/Stics.exe",
 #                         usms_list = usms)
 # sim_new = get_sim(workspace = workspace_pea_barley,

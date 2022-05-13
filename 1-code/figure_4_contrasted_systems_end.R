@@ -73,7 +73,7 @@ mapply(
     SticsRFiles::gen_varmod(x, sim_variables)
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
-                            stics_exe = "Stics_IC_v13-01-2022.exe",
+                            stics_exe = "Stics_IC_v13-05-2022.exe",
                             usms_list = y)
   },
   worskpaces_paths,
@@ -94,7 +94,7 @@ mapply(
     SticsRFiles::gen_varmod(x, sim_variables)
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
-                            stics_exe = "Stics_IC_v13-01-2022.exe",
+                            stics_exe = "Stics_IC_v13-05-2022.exe",
                             usms_list = y)
   },
   worskpaces_paths_sc,
@@ -114,7 +114,7 @@ names(sim_sc) = unlist(workspace_usms_sc)
 # make their value relative to ilev:
 sim = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
-  
+
   x =
     x%>%
     group_by(Plant)%>%
@@ -129,7 +129,7 @@ sim = mapply(function(x,usms_sc){
       lai_n = max(.data$lai_n, na.rm = TRUE),
       LER = ifelse(.data$mafruit == max(.data$mafruit), max(.data$mafruit) / max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)]),NA)
     )
-  
+
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
@@ -154,7 +154,7 @@ names(obs_sc) = unlist(workspace_usms_sc)
 # Add NDFA to obs:
 obs = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
-  
+
   x =
     x%>%
     group_by(Plant)%>%
@@ -163,7 +163,7 @@ obs = mapply(function(x,usms_sc){
         max(.data$mafruit, na.rm = TRUE) /
         max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)],na.rm = TRUE)
     )
-  
+
   if(!is.null(x$iflos)){
     x =
       x%>%
@@ -172,7 +172,7 @@ obs = mapply(function(x,usms_sc){
         iflos = .data$iflos %% 365
       )
   }
-  
+
   if(!is.null(x$imats)){
     x =
       x%>%
@@ -181,7 +181,7 @@ obs = mapply(function(x,usms_sc){
         imats = .data$imats %% 365
       )
   }
-  
+
   if(!is.null(x$masec_n)){
     # We only want the maximum value for masec_n (biomass at harvest):
     x =
@@ -195,7 +195,7 @@ obs = mapply(function(x,usms_sc){
         )
       )
   }
-  
+
   if(!is.null(x$hauteur)){
     # We only want the maximum value for QNplante (N at harvest):
     x =
@@ -209,7 +209,7 @@ obs = mapply(function(x,usms_sc){
         )
       )
   }
-  
+
   if(!is.null(x$QNplante)){
     # We only want the maximum value for QNplante (N at harvest):
     x =
@@ -223,7 +223,7 @@ obs = mapply(function(x,usms_sc){
         )
       )
   }
-  
+
   if(!is.null(x$lai_n)){
     # Same for LAI, we want the maximum LAI:
     x =
@@ -237,7 +237,7 @@ obs = mapply(function(x,usms_sc){
         )
       )
   }
-  
+
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
@@ -417,4 +417,3 @@ if(!presentation){
   ggsave(filename = "Fig.4_contrasted_systems_2.png", path = "2-outputs/plots/presentation",
          width = 24, height = 14, units = "cm")
 }
-

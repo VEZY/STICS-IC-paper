@@ -49,7 +49,7 @@ model_options =
     javastics = javastics_path,
     workspace = stics_inputs_path,
     parallel = FALSE, # Because we have only one usm per workspace so no need
-    stics_exe = "Stics_IC_v13-01-2022.exe"
+    stics_exe = "Stics_IC_v13-05-2022.exe"
   )
 
 get_param_txt(file.path(stics_inputs_path,usms), "cgrain") # 5e-04
@@ -73,7 +73,7 @@ res_opti = stics_wrapper(
     # "dlaimaxbrut" = 0.00021,
     "ktrou" = 0.9,
     "stamflax" = 320,
-    "efcroijuv" = 3.5, 
+    "efcroijuv" = 3.5,
     "efcroirepro" = 4.3,
     "efcroiveg" = 3.5,
     "durvieF" = 290,
@@ -131,14 +131,10 @@ res_rad_new = run_simulation(
 
 
 plot(
-  # beer = res_beer$`Auzeville-IC-2012`$sim, 
-  rad = res_rad$`Auzeville-IC-2012`$sim, 
-  rad_new = res_rad_new$`Auzeville-IC-2012`$sim, 
-  obs = res_opti_beer$`Auzeville-IC-2012`$obs, 
+  # beer = res_beer$`Auzeville-IC-2012`$sim,
+  rad = res_rad$`Auzeville-IC-2012`$sim,
+  rad_new = res_rad_new$`Auzeville-IC-2012`$sim,
+  obs = res_opti_beer$`Auzeville-IC-2012`$obs,
   type = "dynamic", verbose = FALSE,
   var = SticsRFiles:::var_to_col_names(var_name2)
 )
-
-
-
-

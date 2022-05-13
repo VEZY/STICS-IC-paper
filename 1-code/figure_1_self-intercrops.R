@@ -43,7 +43,7 @@ SticsRFiles::gen_varmod(workspace, sim_variables)
 
 SticsOnR::run_javastics(
   javastics_path = javastics, workspace_path = workspace,
-  stics_exe = "Stics_IC_v13-01-2022.exe",
+  stics_exe = "Stics_IC_v13-05-2022.exe",
   usms_list = usms
 )
 
@@ -56,7 +56,7 @@ obs = get_obs(workspace =  workspace, usm = usms)
 # Pre-make the plot with {CroPlotR}
 plots = plot(sim,obs=obs)
 
-# Compute the sum (or average) of variables for both intercrops to match the sole crop  
+# Compute the sum (or average) of variables for both intercrops to match the sole crop
 IC_sum =
   plots$`IC_Pea_Pea_2005-2006_N0`$data%>%
   group_by(.data$Date,.data$variable)%>%
@@ -69,11 +69,11 @@ IC_sum =
 
 # Statistics --------------------------------------------------------------
 
-stats = 
+stats =
   left_join(
-    plots$`SC_Pea_2005-2006_N0`$data, 
-    IC_sum, 
-    by = c("Date","variable"), 
+    plots$`SC_Pea_2005-2006_N0`$data,
+    IC_sum,
+    by = c("Date","variable"),
     suffix = c("_sc", "_ic")
   )%>%
   group_by(variable)%>%
@@ -90,7 +90,7 @@ stats =
     Date = mean(Date),
     bias = Bias(sim = Simulated_ic, obs = Simulated_sc),
     rel_max_error = unique(error / Simulated_sc * 100))%>%
-  mutate(variable = 
+  mutate(variable =
            recode(
              .data$variable,
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
@@ -116,11 +116,11 @@ if(presentation){
   text_color = "black"
 }
 
-p = 
+p =
   plots$`SC_Pea_2005-2006_N0`$data%>%
   mutate(System = "Sole crop")%>%
   bind_rows(.,IC_sum)%>%
-  mutate(variable = 
+  mutate(variable =
            recode(
              .data$variable,
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
@@ -155,13 +155,13 @@ p =
   geom_label(
     x = as.POSIXct("2005-10-15 UTC", tz = "UTC"),
     aes(y = y, label = paste("Max. diff. (%):",format(rel_max_error, scientific = FALSE, digits = 2))),
-    data = stats, hjust=0, 
+    data = stats, hjust=0,
     fill = if(presentation){"#2F2F31"}else{"transparent"},
     label.size = NA, size = 3.1,
     parse = FALSE, color = text_color
   )+
   geom_linerange(
-    aes(x = Date, ymin = Simulated_ic, ymax = Simulated_sc), 
+    aes(x = Date, ymin = Simulated_ic, ymax = Simulated_sc),
     data = stats, lwd = 1.3, color = 2, inherit.aes = FALSE
   ) +
   ggtitle(NULL) +
@@ -171,14 +171,14 @@ p =
   # scale_y_continuous(expand = expansion(mult = c(0.1, 0.1)))+ # expand the limits of the plots
   scale_colour_manual(values= c("Self Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
   theme(
-    legend.direction = "horizontal", 
-    legend.position = 'bottom', 
+    legend.direction = "horizontal",
+    legend.position = 'bottom',
     strip.placement.y = "outside"
   )
 
 if(presentation){
-  p = 
-    p + 
+  p =
+    p +
     theme(
       axis.title = element_text(color="white"),
       axis.text = element_text(color="white"),
@@ -204,7 +204,7 @@ if(!presentation){
 #   group_by(Dominance,Date,variable)%>%
 #   summarise(Simulated = ifelse(variable %in% to_sum,
 #                                Simulated*2,Simulated))
-# 
+#
 # plots$`SC_Pea_2005-2006_N0` +
 #   geom_line(aes(color = "Sole crop")) +
 #   geom_line(data = IC_2, lty = 2, aes(color = Dominance)) +

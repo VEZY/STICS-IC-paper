@@ -11,7 +11,7 @@ run_simulation = function(workspaces,variables,javastics,usms=NULL){
       SticsRFiles::gen_varmod(i, variables)
       # Run the simulations:
       SticsOnR::run_javastics(javastics = javastics, workspace = i,
-                              stics_exe = "Stics_IC_v13-01-2022.exe",
+                              stics_exe = "Stics_IC_v13-05-2022.exe",
                               usm = usms_i)
       # Get the results
       sim = get_sim(workspace = i, usm = usms_i, usms_file = file.path(i,"usms.xml"))
@@ -90,7 +90,7 @@ optim_height = function(workspace, usms){
   SticsRFiles::gen_varmod(workspace, sim_variables)
 
   run_javastics(javastics_path = javastics, workspace_path = workspace,
-                stics_exe = "Stics_IC_v13-01-2022.exe",
+                stics_exe = "Stics_IC_v13-05-2022.exe",
                 usms_list = usms)
 
 
@@ -163,31 +163,31 @@ optim_height = function(workspace, usms){
 }
 
 
-optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,javastics_path,stics_version = "Stics_IC_v13-01-2022.exe"){
+optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,javastics_path,stics_version = "Stics_IC_v13-05-2022.exe"){
 
   param_values = list()
-  
+
   # setup parallel backend to use many processors
   # cl = makeCluster(length(workspace_usms)+1) #not to overload your computer
   # registerDoParallel(cl)
   #
   # param_values = foreach(i = 1:length(workspace_usms), .packages = c("SticsRPacks")) %dopar% {
-  
+
   # This step is done twice to re-optimize some of the first variables based on the
   # values of the last parameters (some have interactions)
   for(i in 1:length(workspace_usms)){
     param_workspace_vals = c()
-    
+
     for (j in 1:length(parameters_vars)){
-      
+
       javastics_workspace_path = normalizePath(file.path(worspaces_path,names(workspace_usms)[i]), winslash = "/")
       stics_inputs_path = file.path(javastics_workspace_path,paste(parameters_vars[[j]]$params, collapse = "_"))
       usms = workspace_usms[[i]]
-      
+
       var_name = parameters_vars[[j]]$vars
       obs_list = get_obs(javastics_workspace_path, usm = usms)
       obs_list = filter_obs(obs_list, var= var_name, include=TRUE)
-      
+
       # Remove the usms with no observations:
       obs_list = lapply(obs_list, function(x){
         if(length(colnames(x)) == 2 && colnames(x) == c("Date","Plant")){
@@ -197,16 +197,16 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
         }
       })
       obs_list = obs_list[unlist(lapply(obs_list, function(x) !is.null(x)))]
-      
+
       if(length(obs_list) == 0){
         warning("Skipping optimisation of [", paste(parameters_vars[[j]]$params, collapse = ", "),
                 "] for workspace ", usms, ". No obs found for [",
                 paste(var_name, collapse = ", "), "].")
         next
       }
-      
+
       dir.create(stics_inputs_path, showWarnings = FALSE)
-      
+
       gen_usms_xml2txt(
         javastics = javastics_path,
         workspace = javastics_workspace_path,
@@ -214,7 +214,7 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
         usm = usms,
         verbose = TRUE
       )
-      
+
       # Set the model options (see '? stics_wrapper_options' for details)
       model_options =
         stics_wrapper_options(
@@ -223,13 +223,13 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
           parallel = FALSE, # Because we have only one usm per workspace so no need
           stics_exe = stics_version
         )
-      
+
       lb = parameters_vars[[j]]$params_lb
       ub = parameters_vars[[j]]$params_ub
       names(ub) = names(lb) = parameters_vars[[j]]$params
-      
+
       param_info = list(lb = lb, ub = ub)
-      
+
       optim_options = list()
       optim_options$nb_rep = 7
       optim_options$maxeval = 500 # Maximum number of evaluations of the minimized criteria
@@ -240,7 +240,7 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
       optim_options$path_results = dir_estim_results # path where to store the results (graph and Rdata)
       optim_options$ranseed = 1 # set random seed so that each execution give the same results
       # If you want randomization, don't set it.
-      
+
       res =
         estim_param(
           obs_list = obs_list,
@@ -267,7 +267,7 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
                   sim_yield$Date = tail(filter(x, !is.na(.data$mafruit))$Date, 1)
                   sim_yield
                 }, obs_list, model_results$sim_list, SIMPLIFY = FALSE)
-              
+
               list(error = model_results$error, sim_list = res)
             }
           }else{
@@ -292,16 +292,16 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
       # NB: the functions given to transform_sim and transform_obs helps us use
       # one value only for the phenology stages. This is applied to be independent
       # of the day it arrives, and only consider the day as the value
-      
+
       param_workspace_vals = c(param_workspace_vals, res$final_values)
-      
+
       plant_file = list.files(file.path(javastics_workspace_path,"plant"), full.names = TRUE)
-      
+
       if(length(plant_file) > 1){
         stop("There must be only one file in the plant folder: ",
              file.path(javastics_workspace_path,"plant"))
       }
-      
+
       for(params in parameters_vars[[j]]$params){
         if(params == "haut_dev_x01" | params == "haut_dev_k1"){
           xml_file = file.path(javastics_workspace_path,"param_newform.xml")
@@ -320,14 +320,14 @@ optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,jav
     # param_workspace_vals # Make it parallel (comment line above too)
   }
   # stopCluster(cl)
-  
+
   names(param_values) = names(workspace_usms)
   return(param_values)
 }
 
 
-#' Exctract paramaters from a pre-formated data.frame optimisation file 
-#' 
+#' Exctract paramaters from a pre-formated data.frame optimisation file
+#'
 #'
 #' @param df_optim The input data.frame of the same format as 0-data/calibration.csv
 #'
@@ -350,9 +350,9 @@ extract_parameters = function(df_optim){
 
 
 #' Summarize an optimisation process
-#' 
-#' Compare the values of the parameters in two workspaces, and tells if they 
-#' were optimized or not, and return their values. 
+#'
+#' Compare the values of the parameters in two workspaces, and tells if they
+#' were optimized or not, and return their values.
 #'
 #' @param workspaces_orig The workspace of origin
 #' @param workspaces_opti The optimized workspace
@@ -362,19 +362,19 @@ extract_parameters = function(df_optim){
 #' @export
 #'
 summarize_optimization = function(workspaces_orig, workspaces_opti,parameters_vars){
-  
+
   params = unique(unlist(lapply(parameters_vars, function(x) x$params)))
   plant_file_orig = list.files(file.path(workspaces_orig,"plant"), full.names = TRUE)
   plant_file_optim = list.files(file.path(workspaces_opti,"plant"), full.names = TRUE)
   param_orig = get_param_xml(file = plant_file_orig, param = params)
   param_optim = get_param_xml(file = plant_file_optim, param = params)
-  
+
   param_orig2 = get_param_xml(file = file.path(workspaces_orig,"param_newform.xml"),
                               param = params)
   param_optim2 = get_param_xml(file = file.path(workspaces_opti,"param_newform.xml"),
                                param = params)
   names(param_orig2) = names(param_optim2) = names(param_orig)
-  
+
   df = data.frame(plant = NA, parameter = params, original_value = NA, optimized_value = NA)
   df = df[rep(1:nrow(df), length(names(param_orig))),]
   df$plant = rep(names(param_orig), each = length(params))
@@ -386,7 +386,7 @@ summarize_optimization = function(workspaces_orig, workspaces_opti,parameters_va
       df[df$parameter == names(param_optim[[i]][j])  & df$plant == plant_i,4] =
         paste(param_optim[[i]][j], collapse = ", ")
     }
-    
+
     for(j in seq_along(param_orig2[[i]])){
       df[df$parameter == names(param_orig2[[i]][j]) & df$plant == plant_i,3] =
         paste(param_orig2[[i]][j], collapse = ", ")
@@ -394,8 +394,8 @@ summarize_optimization = function(workspaces_orig, workspaces_opti,parameters_va
         paste(param_optim2[[i]][j], collapse = ", ")
     }
   }
-  
+
   df$is_optimized = df$original_value != df$optimized_value
-  
+
   return(df)
 }

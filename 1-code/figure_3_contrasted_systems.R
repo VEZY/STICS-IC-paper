@@ -74,7 +74,7 @@ mapply(
     SticsRFiles::gen_varmod(x, sim_variables)
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
-                            stics_exe = "Stics_IC_v13-01-2022.exe",
+                            stics_exe = "Stics_IC_v13-05-2022.exe",
                             usms_list = y)
   },
   worskpaces_paths,
@@ -95,7 +95,7 @@ mapply(
     SticsRFiles::gen_varmod(x, sim_variables)
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
-                            stics_exe = "Stics_IC_v13-01-2022.exe",
+                            stics_exe = "Stics_IC_v13-05-2022.exe",
                             usms_list = y)
   },
   worskpaces_paths_sc,
@@ -114,7 +114,7 @@ names(sim_sc) = unlist(workspace_usms_sc)
 # Add NDFA to sim:
 sim = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
-  
+
   if(!is.null(x$Qfix)){
     return(x%>%mutate(NDFA = Qfix / QNplante))
   }else{
@@ -314,4 +314,3 @@ if(!presentation){
   ggsave(filename = "Fig.3_contrasted_systems_all.png", path = "2-outputs/plots/presentation",
          width = 24, height = 14, units = "cm")
 }
-
