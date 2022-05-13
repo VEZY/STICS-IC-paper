@@ -75,7 +75,7 @@ mapply(
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
                             stics_exe = "Stics_IC_v13-05-2022.exe",
-                            usms_list = y)
+                            usm = y)
   },
   worskpaces_paths,
   workspace_usms
@@ -280,8 +280,8 @@ p =
     )
   )+
   theme(
-    legend.position = 'bottom',
-    legend.box = 'vertical',
+    legend.position = "bottom",
+    legend.box = "vertical",
     legend.spacing.y = unit(.005, "cm"),
     legend.spacing.x = unit(.0005, "cm"),
     # legend.title = element_text(size = 8),

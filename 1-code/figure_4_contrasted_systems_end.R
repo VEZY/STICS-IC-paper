@@ -12,7 +12,7 @@
 library(ggplot2)
 library(dplyr)
 library(lubridate)
-library(SticsRPacks)
+library(SticsRPacks) # v0.5.0
 source("1-code/functions.R")
 
 # Define javaStics installation -------------------------------------------
@@ -74,7 +74,7 @@ mapply(
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
                             stics_exe = "Stics_IC_v13-05-2022.exe",
-                            usms_list = y)
+                            usm = y)
   },
   worskpaces_paths,
   workspace_usms
@@ -95,7 +95,7 @@ mapply(
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
                             stics_exe = "Stics_IC_v13-05-2022.exe",
-                            usms_list = y)
+                            usm = y)
   },
   worskpaces_paths_sc,
   workspace_usms_sc
