@@ -226,8 +226,7 @@ function r_transmitted(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou
         kgdirect, θ1, θ2 = kdir(lat, j, width, x, ir, shape, h0, alpha, height)
 
         rdroit = kgdiffus * rdif + kgdirect * rdirect
-        rtransmis[i] = (1.0 - rdroit) * (exp(-P_ktrou * (lai + eai)))
-        rtransmis[i] = rtransmis[i] + rdroit
+        rtransmis[i] = (1.0 - rdroit) * (exp(-P_ktrou * (lai + eai))) + rdroit
     end
 
     # Moyennes � l'ombre et au soleil
