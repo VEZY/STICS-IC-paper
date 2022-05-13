@@ -10,7 +10,8 @@
 
 # Import the packages -----------------------------------------------------
 
-library(tidyverse)
+library(ggplot2)
+library(dplyr)
 library(SticsRPacks)
 source("1-code/functions.R")
 

@@ -114,8 +114,6 @@ res_opti = stics_wrapper(
 # Compare the outputs before and after changing the values:
 plot(orig = res_orig$sim_list, optim = res_opti$sim_list, obs = obs_list)
 
-# /!\ Remember that stics_wrapper does not update the values of the parameter in 
-# the XML files, so you'll need to manually change them when you're happy.
 
 # Intercrop simulation ----------------------------------------------------
 

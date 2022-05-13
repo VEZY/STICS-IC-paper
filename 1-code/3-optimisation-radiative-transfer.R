@@ -1,16 +1,23 @@
 # Purpose: automatically optimize the main parameter values of the model for
-# contrasted situations.
-# Date: 12/11/2021
+# contrasted situations with the radiative transfer computation.
+# Date: 13/05/2022
 # Author: R. Vezy
 
-# devtools::install_github("SticsRPacks/SticsRPacks")
+# Install the packages (to do only once) ----------------------------------
+
+# remotes::install_github("SticsRPacks/SticsRPacks")
+
+# Import the packages -----------------------------------------------------
+
 library(SticsRPacks)
 library(foreach)
 library(doParallel)
 library(dplyr)
-source('1-code/functions.R')
+source("1-code/functions.R")
 
-# First step: copy all usms from 0-data/usms-optim-beer into 0-data/usms-optimized.
+# First step --------------------------------------------------------------
+
+# Copy all usms from 0-data/usms-optim-beer into 0-data/usms-optimized.
 # The usms are first optimized for the Beer-lambert law of extinction because
 # simulations with the radiative transfert option may fall back to the Beer
 # computation for some days if the difference in height between the crops is low
@@ -21,6 +28,7 @@ df_optim = read.csv("0-data/calibration.csv", sep = ";")
 javastics_path = normalizePath("0-javastics", winslash = "/")
 worspaces_path = normalizePath("0-data/usms-optim-radiative", winslash = "/")
 
+# workspace_usms is a list of workspace-name -> usm names for all sole crop USMs
 workspace_usms =
   list(
     "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0",
@@ -34,10 +42,19 @@ workspace_usms =
     "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2007",
     "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2007"
   )
-# workspace_usms is a list of workspace-name -> usm names
 
 plant_files = normalizePath(list.files(file.path(worspaces_path,names(workspace_usms), "plant"), full.names = TRUE))
 plant_files_beer = normalizePath(list.files(file.path("0-data/usms-optim-beer",names(workspace_usms), "plant"), full.names = TRUE))
+
+# workspace_usms_IC is a list of workspace-name -> usm names for all intercrop USMs
+workspace_usms_IC =
+  list(
+    "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
+    "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
+    "Auzeville-IC-2012" = c(p = "Auzeville-Wheat-2012-SC", a = "Auzeville-Pea-2012-SC"),
+    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC"),
+    "Auzeville_wfb-Fababean-Wheat-IC" = c(p = "Auzeville_wfb-Fababean-SC", a = "Auzeville_wfb-Wheat-SC")
+  )
 
 # Activate Radiative transfer, and put the optimized extin value from beer optim:
 for(i in 1:length(plant_files)){
@@ -66,7 +83,7 @@ for(i in 1:length(plant_files)){
   )
 }
 
-# Careful, this is very long (2/3 days):
+# /!\ Careful, this is very long (2/3 days): /!\ 
 parameters_vars = extract_parameters(df_optim)
 param_values = optimize_workspace(worspaces_path, workspace_usms, parameters_vars, javastics_path)
 
@@ -98,6 +115,7 @@ res_opti = run_simulation(workspaces = workspaces_opti,
                           javastics = javastics_path,
                           usms = workspace_usms
 )
+# If you already made the simulations you can import them (faster):
 # res_orig = import_simulations(workspaces = workspaces_orig, variables = sim_variables)
 # res_opti = import_simulations(workspaces = workspaces_opti, variables = sim_variables)
 
@@ -123,17 +141,6 @@ dynamic_plots$`Auzeville_wfb-Fababean-SC.Fababean_SC_2007`
 dynamic_plots$`Angers-SC-Barley.SC_Barley_Angers_2003_N0`
 
 # Update the xml files for intercrops -------------------------------------
-
-workspace_usms_IC =
-  list(
-    "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
-    "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
-    "Auzeville-IC-2012" = c(p = "Auzeville-Wheat-2012-SC", a = "Auzeville-Pea-2012-SC"),
-    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC"),
-    "Auzeville_wfb-Fababean-Wheat-IC" = c(p = "Auzeville_wfb-Fababean-SC", a = "Auzeville_wfb-Wheat-SC")
-  )
-
-# Activate Radiative transfer:
 
 mapply(
   function(x,y){

@@ -1,4 +1,12 @@
 # Purpose: optimize the parameters of crop height outside of STICS (much faster)
+# Date: 13/05/2022
+# Author: R. Vezy
+
+# Install the packages (to do only once) ----------------------------------
+
+# remotes::install_github("SticsRPacks/SticsRPacks")
+
+# Import the packages -----------------------------------------------------
 
 library(tidyverse)
 library(SticsRPacks)
@@ -12,7 +20,7 @@ workspaces = "0-data/usms"
   
 workspace_usms = 
   list(
-    "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0", # replace by N1?
+    "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0",
     "Angers-SC-Pea" = "SC_Pea_Angers_2003_N0",
     "Auzeville-Pea-SC" = "SC_Pea_2005-2006_N0",
     "Auzeville-Wheat-SC" = "SC_Wheat_2005-2006_N0",

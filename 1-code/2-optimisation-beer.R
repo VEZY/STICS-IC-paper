@@ -1,15 +1,23 @@
 # Purpose: automatically optimize the main parameter values of the model for
 # contrasted situations, using the beer's law of light extinction.
-# Date: 05/01/2022
+# Date: 13/05/2022
 # Author: R. Vezy
 
-# devtools::install_github("SticsRPacks/SticsRPacks")
+# Install the packages (to do only once) ----------------------------------
+
+# remotes::install_github("SticsRPacks/SticsRPacks")
+
+# Import the packages -----------------------------------------------------
+
 library(SticsRPacks)
 library(foreach)
 library(doParallel)
 library(dplyr)
 source("1-code/functions.R")
-# First step: copy all usms into a new folder were we will change the parameter values (and keep the original files).
+
+# First step --------------------------------------------------------------
+
+# Copy all USMs into a new folder were we will change the parameter values (and keep the original files).
 # The original folder is 0-data/usms, the destination folder is 0-data/usms-optim-beer
 
 # Set-up the optimization process:
@@ -22,6 +30,7 @@ df_optim$high_boundary[grep("extin", df_optim$Parameter)] = 1.9
 javastics_path = normalizePath("0-javastics", winslash = "/")
 worspaces_path = normalizePath("0-data/usms-optim-beer", winslash = "/")
 
+# workspace_usms is a list of workspace-name -> usm names for all sole crop USMs
 workspace_usms =
   list(
     "Angers-SC-Barley" = "SC_Barley_Angers_2003_N0",
@@ -35,9 +44,29 @@ workspace_usms =
     "Auzeville_wfb-Fababean-SC" = "Fababean_SC_2007",
     "Auzeville_wfb-Wheat-SC" = "Wheat_SC_2007"
   )
-# workspace_usms is a list of workspace-name -> usm names
 
 plant_files = list.files(file.path("0-data/usms-optim-beer",names(workspace_usms), "plant"), full.names = TRUE)
+
+# workspace_usms_IC is a list of workspace-name -> usm names for all intercrop USMs
+workspace_usms_IC =
+  list(
+    "Angers-IC-Pea_Barley" = "IC_PeaBarley_Angers_2003_N0_D50-50", # replace by N1?
+    "Auzeville-IC" = "IC_Wheat_Pea_2005-2006_N0",
+    "Auzeville-IC-2012" = "IC_Wheat_Pea_2012-2013_N1",
+    "1Tprecoce2Stardif2012" = "1Tprecoce2Stardif2012",
+    "Auzeville_wfb-Fababean-Wheat-IC" = "Fababean_Wheat_IC_2007"
+  )
+
+# workspace_usms_cor is a list that links which intercrop workspaces correspong to 
+# which sole crop workspaces:
+workspace_usms_cor =
+  list(
+    "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
+    "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
+    "Auzeville-IC-2012" = c(p = "Auzeville-Wheat-2012-SC", a = "Auzeville-Pea-2012-SC"),
+    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC"),
+    "Auzeville_wfb-Fababean-Wheat-IC" = c(p = "Auzeville_wfb-Fababean-SC", a = "Auzeville_wfb-Wheat-SC")
+  )
 
 # Activate Beer's law:
 lapply(plant_files, function(x){
@@ -76,17 +105,6 @@ lapply(list.files(file.path(workspaces_opti,"plant"), full.names = TRUE), functi
   )
 })
 
-
-workspace_usms_IC =
-  list(
-    "Angers-IC-Pea_Barley" = c(p = "Angers-SC-Pea", a = "Angers-SC-Barley"),
-    "Auzeville-IC" = c(p = "Auzeville-Wheat-SC", a = "Auzeville-Pea-SC"),
-    "Auzeville-IC-2012" = c(p = "Auzeville-Wheat-2012-SC", a = "Auzeville-Pea-2012-SC"),
-    "1Tprecoce2Stardif2012" = c(p = "tourPrecoce2012-SC", a = "sojaTardif2012-SC"),
-    "Auzeville_wfb-Fababean-Wheat-IC" = c(p = "Auzeville_wfb-Fababean-SC", a = "Auzeville_wfb-Wheat-SC")
-  )
-
-
 mapply(
   function(x,y){
     mapply(function(z, dominance){
@@ -97,28 +115,17 @@ mapply(
                 overwrite = TRUE)
     }, y, names(y))
   },
-  names(workspace_usms_IC),
-  workspace_usms_IC
+  names(workspace_usms_cor),
+  workspace_usms_cor
 )
 
 # Comparison before and after ---------------------------------------------
-
-source("1-code/functions.R")
 
 # sim_variables = c("lai(n)","QNplante","Qfix","masec(n)","hauteur","CNgrain","mafruit","chargefruit")
 sim_variables = unique(unlist(lapply(parameters_vars, function(x) x$vars)))
 sim_variables = c(sim_variables, "hauteur", "largeur")
 
 # Run the simulations -----------------------------------------------------
-
-workspace_usms_IC =
-  list(
-    "Angers-IC-Pea_Barley" = "IC_PeaBarley_Angers_2003_N0_D50-50", # replace by N1?
-    "Auzeville-IC" = "IC_Wheat_Pea_2005-2006_N0",
-    "Auzeville-IC-2012" = "IC_Wheat_Pea_2012-2013_N1",
-    "1Tprecoce2Stardif2012" = "1Tprecoce2Stardif2012",
-    "Auzeville_wfb-Fababean-Wheat-IC" = "Fababean_Wheat_IC_2007"
-  )
 
 res_orig_beer = run_simulation(
   workspaces = normalizePath(file.path("0-data/usms",names(workspace_usms_IC)), winslash = "/"),
@@ -132,6 +139,7 @@ res_opti_beer = run_simulation(
   javastics = javastics_path,
   usms = workspace_usms_IC
 )
+# If you already made the simulations you can import them (faster):
 # res_orig_beer = import_simulations(workspaces = workspaces_orig, variables = sim_variables)
 # res_opti_beer = import_simulations(workspaces = workspaces_opti, variables = sim_variables)
 
@@ -153,6 +161,7 @@ dynamic_plots =
 
 dynamic_plots$`Auzeville-IC-2012.IC_Wheat_Pea_2012-2013_N1`
 
+# Save the plots to disk:
 mapply(function(x,y){
   ggplot2::ggsave(
     filename = paste0(x,".png"),
