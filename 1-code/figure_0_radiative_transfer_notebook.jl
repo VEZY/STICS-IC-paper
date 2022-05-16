@@ -7,11 +7,7 @@ using InteractiveUtils
 # This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
 macro bind(def, element)
     quote
-        local iv = try
-            Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value
-        catch
-            b -> missing
-        end
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
         local el = $(esc(element))
         global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
         el
@@ -418,7 +414,7 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
     # NB: using trigonometry here, remember tan(β) = AC/AB ? Well here AC is the crop height,
     # and AB is the distance between the point and the plant on the horizontal plane.
 
-    # So atan(G) woule be the β from above, and it represents the angle between the horizontal
+    # So atan(G) would be the β from above, and it represents the angle between the horizontal
     # line (AB) and BC, the line between the point and the top of the canopy.
 
     # For reference, RHS means the right-hand side, and LHS means left-hand side.
@@ -432,17 +428,17 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
 
     G1, G2 = get_G(x, shape, limite, h0, e, width, ir)
 
-    θ1 = -θcrit(lat, j, G1, alpha) # θ1 is negative because it runs clockwise
-    θ2 = θcrit(lat, j, G2, alpha) # θ2 is positive, it is counter-clockwise
+    θ1 = θcrit(lat, j, G1, alpha)
+    θ2 = -θcrit(lat, j, G2, alpha) # This one runs anti-clockwise so it is negative
 
     if x < limite
         # The point is below the canopy, its angle is negative (going towards the right-hand-side)
         θ2 = -θ2
 
-        # In this case it may happen that θ1 > θ2, which means the point sees nothing
+        # In this case it may happen that θ1 < θ2, which means the point sees nothing
         # because the top of the righ-hand side plant is above the view angle of the point (i.e.
         # it is completely shaded.
-        if θ1 < θ2
+        if θ1 > θ2
             θ1 = 0.0
             θ2 = 0.0
         end
@@ -476,8 +472,7 @@ function kdir(lat, j, width, x, ir, shape, h0, alpha, e)
     end
 
     θ1, θ2 = get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
-
-    kg = 0.5 * (cos(π / 2 - θ1) + cos(π / 2 + θ2))
+	kg = abs(-θ1 + θ2) / π
 
     return (max(kg, 0.0), θ1, θ2)
 end
@@ -723,6 +718,7 @@ because we only use this one for computations.
 towards the ground.
 """
 function half_canopy_left(shape, width, height, h0=0.0, x0=0.0)
+
     if !in(shape, [:dtriangle, :utriangle, :rectangle])
         error("shape should be one of `:dtriangle`, `:utriangle` or `:rectangle`")
     end
@@ -730,8 +726,8 @@ function half_canopy_left(shape, width, height, h0=0.0, x0=0.0)
     if shape == :dtriangle
         p = poly(
             [
-                Point(x0, height + h0),
-                Point(x0 + width / 2.0, height + h0),
+                Point(x0, height),
+                Point(x0 + width / 2.0, height),
                 Point(x0, h0)
             ],
             :fill,
@@ -740,7 +736,7 @@ function half_canopy_left(shape, width, height, h0=0.0, x0=0.0)
     elseif shape == :utriangle
         p = poly(
             [
-                Point(x0, height + h0),
+                Point(x0, height),
                 Point(x0, h0),
                 Point(x0 + width / 2.0, h0),
             ],
@@ -750,10 +746,10 @@ function half_canopy_left(shape, width, height, h0=0.0, x0=0.0)
     elseif shape == :rectangle
         p = poly(
             [
-                Point(x0, height + h0),
+                Point(x0, height),
                 Point(x0, h0),
                 Point(x0 + width / 2.0, h0),
-                Point(x0 + width / 2.0, height + h0)
+                Point(x0 + width / 2.0, height)
             ],
             :fill,
             close=true
@@ -807,29 +803,26 @@ end
 
 # ╔═╡ 030d4bd1-b596-4590-b1c5-d53bdc656c7f
 """
-	P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
+	P_drawing(P1, orig_xmax, orig_ymax, to_xmin, to_xmax)
 
 Rescale point P position from meters to drawing coordinates.
 """
-function P_drawing(P1, orig_xmax, orig_ymax, to_xmax, to_ymax)
+function P_drawing(P1, orig_xmax, orig_ymax, to_xmin, to_xmax)
     # Rescale to fit the position of the point on the drawing scale
-    d_P_xpos = rescale(P1[1], 0, orig_xmax, to_xmax, to_ymax)
+    d_P_xpos = rescale(P1[1], 0, orig_xmax, to_xmin, to_xmax)
 
     return Point(d_P_xpos, orig_ymax)
 end
 
 # ╔═╡ 172d2086-efb1-4805-b75e-7801072347f4
 """
-	P_from_θ(θ, sky_height, x, side)
+	X_from_θ(θ, sky_height, x, side)
 
-Get the point X position (in m) of a ray in the sky giving the angle `θ` (angle to the vertical), the sky heigth (`sky_height`) and the point position on the X axis.
+Get the point X position (in m) of a ray in the sky giving the angle `θ` and the sky heigth (`sky_height`).
 """
-function P_from_θ(θ, sky_height, x)
+function X_from_θ(θ, sky_height)
     # This is the X position of P in m relative to the sample point X
-    P_x = sin(θ) * sky_height / cos(θ)
-
-    # x - P1 to get the true position in m from the relative position:
-    return Point(x + P_x, 0)
+    return sky_height / tan(θ)
 end
 
 # ╔═╡ fe676fa3-bc50-493d-b41f-55fdcba91d83
@@ -975,6 +968,7 @@ begin
     shape = Symbol(params["shape"])
     width = min(params["width"], interrow)
     height = params["height"]
+	e = height - h0
     i_sample_point = Int(params["sample_point"])
 
     # Beginning of the drawing:
@@ -1014,8 +1008,8 @@ begin
     # Rescaling the crop dimensions to match the drawing coordinates:
     d_width = width * outer_box_width / (interrow + width)
     # NB: interrow + width because the outer box include plant half-width for both plants
-    d_h0 = h0 * outer_box_height / (h0 + height)
-    d_height = outer_box_height - d_h0
+    d_h0 = h0 * outer_box_height / height
+    d_height = outer_box_height
 
     sethue("black")
     setdash("solid")
@@ -1053,7 +1047,7 @@ begin
             format=(d) -> string("H0:", round(h0, digits=1)))
     end
 
-    # Show plant height:
+    # Show plant thickness (height - h0):
     @layer begin
         sethue("grey")
         setopacity(1)
@@ -1065,7 +1059,7 @@ begin
             toextension=[25, 5],
             textrotation=π / 2,
             textgap=40,
-            format=(d) -> string("Height:", round(height, digits=1)))
+            format=(d) -> string("Thickness:", round(e, digits=1)))
     end
 
     # Show interrow dimension:
@@ -1092,7 +1086,7 @@ begin
         translate(-(x0 * 2 + inner_box_width), 0)  # translate back
         dimension(outer_box[2], Point(x0 + d_width / 2, y0),
             offset=-25,
-            fromextension=[5, d_h0 + d_height + 25],
+            fromextension=[5, d_height + 25],
             toextension=[5, 25],
             textrotation=π / 2,
             textgap=40,
@@ -1115,7 +1109,7 @@ begin
             format=(d) -> string("Shaded:", round(surfAO, digits=1)))
 
 
-        dimension(Point(bottom_center[1] - inner_box_width, bottom_center[2]), Point(inner_box[2][1] - d_width / 2, inner_box[2][2]),
+        dimension(Point(bottom_center[1] - inner_box_width, bottom_center[2]), Point(inner_box[2][1] - d_width / 2, y0),
             offset=-60,
             fromextension=[5, 10],
             toextension=[5, 30],
@@ -1129,9 +1123,8 @@ begin
     sethue("green")
 
     # Draw right sides of the plants
-    p = half_canopy_left(shape, d_width, d_height, d_h0 + y0, x0)
-    # NB: h0 + y0 to add the box height to the crop height
-
+    p = half_canopy_left(shape, d_width, d_height + y0, d_h0 + y0, x0)
+	
     # Outter right side of the right-hand plant
     @layer begin
         # scale(-1, 1)
@@ -1175,43 +1168,47 @@ begin
     sample_point = all_sample_points[i_sample_point] # Point coordinates
 
     # Compute direct light:
-    light_ray_height = h0 + height
-    d_light_ray_height = d_height + d_h0
-
-    if light_from_sky
-        light_ray_height *= rescale(t.height, sample_point[2], inner_box[4][2], 0, 1)
-        d_light_ray_height = t.height - sample_point[2]
-    end
-
     # Get the value of θ1 and θ2, the angles relative to the vertical plane on the sample_point
     # that give the view angle of the direct light comming from the sky:
-    kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, height - h0)
+    kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, e) 
 
     # Compute P1 and P2, the two points on the sky that provide the direct light view angle:
-    P1 = P_from_θ(θ1, light_ray_height, point_pos_m)
-    P2 = P_from_θ(θ2, light_ray_height, point_pos_m)
-    P1, P2 = P_drawing.([P1, P2], interrow, sample_point[2] + d_light_ray_height, inner_box[2][1], inner_box[4][1])
 
-    sun_pos = [P1, P2]
+	θ1_soil = π/2 + θ1
+	θ2_soil = π/2 + θ2
+	
+	@layer begin
+		center_point = Point3D(sample_point[1], sample_point[2], 0.0)
+		end_line = Point3D(sample_point[1] + 800, sample_point[2], 0.0)
+		end_line_point1 = rotateby(end_line, center_point, RotXYZ(0, 0.0, θ1_soil))
+		sethue("red")
+		setdash("solid")
+		arrow(Point(center_point[1], center_point[2]), Point(end_line_point1[1], 
+		end_line_point1[2]))
+		end_line_point2 = rotateby(end_line, center_point, RotXYZ(0, 0.0, θ2_soil))
+		
+		arrow(Point(center_point[1], center_point[2]), Point(end_line_point2[1], end_line_point2[2]))
+		
+	end
 
+    XP1 = X_from_θ(θ1_soil, height)
+    XP2 = X_from_θ(θ2_soil, height)
+
+	P1_d = Point(x0 + ((point_pos_m + XP1) / interrow) * (inner_box[4][1] - x0), y0 + d_height)
+	P2_d = Point(x0 + ((point_pos_m + XP2) / interrow) * (inner_box[4][1] - x0), y0 + d_height)
+		
     setopacity(0.3)
     sethue("yellow")
     poly(
         [
-            sun_pos[1],
+            P1_d,
             sample_point,
-            sun_pos[2]
+            P2_d
         ],
         :fill,
         close=true
     )
-
-    # Recompute the points P1 and P2 but at the inner
-    P1 = P_from_θ(θ1, h0 + height, point_pos_m)
-    P2 = P_from_θ(θ2, h0 + height, point_pos_m)
-
-    P1_d, P2_d = P_drawing.([P1, P2], interrow, sample_point[2] + d_h0 + d_height, inner_box[2][1], inner_box[4][1])
-
+	
     text_point = midpoint(P1_d, P2_d)
 
     # Add kdir text:
@@ -1345,6 +1342,9 @@ begin
     finish()
     preview()
 end
+
+# ╔═╡ a4700fcb-6fb0-44b2-aa46-04bf16450211
+rad2deg.([θ1_soil,θ2_soil])
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2172,14 +2172,15 @@ version = "3.5.0+0"
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╠═a4700fcb-6fb0-44b2-aa46-04bf16450211
+# ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
-# ╠═ab594776-ea39-48f6-9218-78c5eed58916
+# ╟─ab594776-ea39-48f6-9218-78c5eed58916
 # ╟─53d29bf9-dab8-4586-89d3-fcbb9d6d28bc
 # ╟─58ec9faa-cbf1-4e46-b4bb-420586ac7dba
-# ╠═0385990f-397e-46f8-93d7-578c8ead2be3
+# ╟─0385990f-397e-46f8-93d7-578c8ead2be3
 # ╟─fbe6d054-56ff-4201-8d55-f5afcda7ec52
 # ╟─09a77c7f-409d-4083-8267-d52ba0346c9c
 # ╟─4ab56f65-3314-4dc4-9eb1-59f68058e435
