@@ -27,7 +27,7 @@ begin
 end
 
 # ╔═╡ 8db00b5e-b7f7-4a47-a76e-8a1d89d0b799
-include(dirname(dirname(pathof(Thebes))) * "/data/moreobjects.jl");
+# include(dirname(dirname(pathof(Thebes))) * "/data/moreobjects.jl");
 
 # ╔═╡ 6788dbbe-317e-4212-a0e8-d417a52301f6
 md"""
@@ -429,7 +429,7 @@ function get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
     G1, G2 = get_G(x, shape, limite, h0, e, width, ir)
 
     θ1 = θcrit(lat, j, G1, alpha)
-    θ2 = -θcrit(lat, j, G2, alpha) # This one runs anti-clockwise so it is negative
+    θ2 = -θcrit(lat, j, G2, alpha) # This one runs anti-clockwise so it is positive (output is negative so we add a - before)
 
     if x < limite
         # The point is below the canopy, its angle is negative (going towards the right-hand-side)
@@ -472,7 +472,7 @@ function kdir(lat, j, width, x, ir, shape, h0, alpha, e)
     end
 
     θ1, θ2 = get_θ(lat, j, width, x, ir, shape, h0, alpha, e)
-	kg = abs(-θ1 + θ2) / π
+	kg = (-θ1 + θ2) / π # proportion of sky the point receives direct light
 
     return (max(kg, 0.0), θ1, θ2)
 end
@@ -1346,6 +1346,9 @@ end
 # ╔═╡ a4700fcb-6fb0-44b2-aa46-04bf16450211
 rad2deg.([θ1_soil,θ2_soil])
 
+# ╔═╡ 4c11224b-cad4-4fa2-a686-21b16fa30043
+θ1,θ2
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -2173,6 +2176,7 @@ version = "3.5.0+0"
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╠═a4700fcb-6fb0-44b2-aa46-04bf16450211
+# ╠═4c11224b-cad4-4fa2-a686-21b16fa30043
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
