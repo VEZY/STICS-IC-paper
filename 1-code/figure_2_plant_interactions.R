@@ -46,7 +46,7 @@ lapply(workspaces, function(x) SticsRFiles::gen_varmod(x, sim_variables))
 mapply(function(x,y){
   SticsOnR::run_javastics(javastics = javastics,
                           workspace = normalizePath(x, winslash = "/"),
-                          stics_exe = "Stics_IC_v13-05-2022.exe",
+                          stics_exe = "Stics_IC_v17-05-2022.exe",
                           usms_list = y)
 },workspaces,usms)
 

@@ -73,7 +73,7 @@ mapply(
     SticsRFiles::gen_varmod(x, sim_variables)
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
-                            stics_exe = "Stics_IC_v13-05-2022.exe",
+                            stics_exe = "Stics_IC_v17-05-2022.exe",
                             usm = y)
   },
   worskpaces_paths,
@@ -94,7 +94,7 @@ mapply(
     SticsRFiles::gen_varmod(x, sim_variables)
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
-                            stics_exe = "Stics_IC_v13-05-2022.exe",
+                            stics_exe = "Stics_IC_v17-05-2022.exe",
                             usm = y)
   },
   worskpaces_paths_sc,

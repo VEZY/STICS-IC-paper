@@ -67,7 +67,7 @@ model_options =
     javastics = javastics_path,
     workspace = stics_inputs_path,
     parallel = FALSE, # Because we have only one usm per workspace so no need
-    stics_exe = "Stics_IC_v13-05-2022.exe"
+    stics_exe = "Stics_IC_v17-05-2022.exe"
   )
 
 # Get the current (previous) parameter value:
@@ -98,11 +98,11 @@ res_opti = stics_wrapper(
     "efcroirepro" = 4.3,
     "efcroiveg" = 3.5,
     "durvieF" = 290,
-    # "nbgrmin" = 1540, 
-    "cgrain" = 0.138, 
+    # "nbgrmin" = 1540,
+    "cgrain" = 0.138,
     "croirac" = 0.2,
     # "nbgrmin" = 2000,
-    "Vmax2" = 0.0039, 
+    "Vmax2" = 0.0039,
     "inngrain2" = 1.3,
     "vitircarbT"= 0.00082
     # "innsen" = 0.2
@@ -114,16 +114,16 @@ res_opti = stics_wrapper(
 # Compare the outputs before and after changing the values:
 plot(orig = res_orig$sim_list, optim = res_opti$sim_list, obs = obs_list)
 
-# /!\ Remember that stics_wrapper does not update the values of the parameter in 
+# /!\ Remember that stics_wrapper does not update the values of the parameter in
 # the XML files, so you'll need to manually change them when you're happy.
 
 # Intercrop simulation ----------------------------------------------------
 
-# Carefull, this step is just for control, DO NOT optimize parameter values to the 
-# intercrop USMs as it would defeat the working hypothesis of STICS: the model should 
-# be optimized on sole crop and then applied to intercrop and simulate the 
+# Carefull, this step is just for control, DO NOT optimize parameter values to the
+# intercrop USMs as it would defeat the working hypothesis of STICS: the model should
+# be optimized on sole crop and then applied to intercrop and simulate the
 # interactions. If the outputs are not good, then the formalisms should be updated.
-# Keep in mind that IC simulations should be done under the same conditions than 
+# Keep in mind that IC simulations should be done under the same conditions than
 # the ones it was optimized on in SC, has for any SC calibrations and evaluations.
 
 # Plot the intercrop version of this USM

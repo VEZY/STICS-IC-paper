@@ -43,7 +43,7 @@ SticsRFiles::gen_varmod(workspace, sim_variables)
 
 SticsOnR::run_javastics(
   javastics_path = javastics, workspace_path = workspace,
-  stics_exe = "Stics_IC_v13-05-2022.exe",
+  stics_exe = "Stics_IC_v17-05-2022.exe",
   usms_list = usms
 )
 

@@ -54,7 +54,7 @@ SticsRFiles::gen_varmod(workspace_opt, sim_variables)
 SticsOnR::run_javastics(
   javastics = javastics,
   workspace = workspace_opt,
-  stics_exe = "Stics_IC_v13-05-2022.exe",
+  stics_exe = "Stics_IC_v17-05-2022.exe",
   usms_list = usms
 )
 
@@ -72,16 +72,16 @@ plot(regular = sim_regular, obs = obs)
 # We can change the values of a parameter and compare the outputs with the previous simulation:
 set_param_xml(
   file = file.path(workspace_opt,"plant","pea-sebastian_plt.xml"),
-  param_name = "stdnofno", 
-  param_value = 1000, 
+  param_name = "stdnofno",
+  param_value = 1000,
   overwrite = TRUE
 )
 
 # Re-run the model with the new values:
 SticsOnR::run_javastics(
-  javastics_path = javastics, 
+  javastics_path = javastics,
   workspace_path = workspace_opt,
-  stics_exe = "Stics_IC_v13-05-2022.exe",
+  stics_exe = "Stics_IC_v17-05-2022.exe",
   usms_list = usms
 )
 

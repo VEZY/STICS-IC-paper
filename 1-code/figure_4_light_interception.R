@@ -34,12 +34,12 @@ for (i in 1:length(workspace_usms)) {
   SticsRFiles::gen_varmod(worskpaces_beer[i], sim_variables)
   SticsOnR::run_javastics(javastics_path = javastics_path,
                           workspace_path = worskpaces_beer[i],
-                          stics_exe = "Stics_IC_v13-05-2022.exe",
+                          stics_exe = "Stics_IC_v17-05-2022.exe",
                           usms_list = workspace_usms[[i]])
   SticsRFiles::gen_varmod(worskpaces_rad[i], sim_variables)
   SticsOnR::run_javastics(javastics_path = javastics_path,
                           workspace_path = worskpaces_rad[i],
-                          stics_exe = "Stics_IC_v13-05-2022.exe",
+                          stics_exe = "Stics_IC_v17-05-2022.exe",
                           usms_list = workspace_usms[[i]])
 }
 

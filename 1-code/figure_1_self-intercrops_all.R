@@ -65,7 +65,7 @@ res_scat = mapply(function(x,y){
   SticsRFiles::gen_varmod(workspace, sim_variables)
   SticsOnR::run_javastics(
     javastics = javastics, workspace = workspace,
-    stics_exe = "Stics_IC_v13-05-2022.exe",
+    stics_exe = "Stics_IC_v17-05-2022.exe",
     usms_list = x
   )
   # Get the results
