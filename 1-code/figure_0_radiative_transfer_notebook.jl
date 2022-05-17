@@ -994,7 +994,6 @@ begin
     # Compute radiation:
     raint, rombre, rsoleil, surfAO, surfAS = transrad(rg, width, params["latitude"], 0.48, j, interrow, shape, h0, alpha, k, lai, 0.0, height)
 
-
     # Writting bottom text:
     @layer begin
         fontsize(16)
@@ -1025,13 +1024,17 @@ begin
     inner_box_width = inner_box[3][1] - inner_box[1][1]
     inner_box_length = inner_box[1][2] - inner_box[3][2]
 
+	setdash("dot")
+
     # Draw the center line
     bottom_center = midpoint(inner_box[2], inner_box[3])
     top_center = midpoint(inner_box[1], inner_box[4])
-    sethue("black")
-    setdash("dot")
-    line(bottom_center, top_center, :stroke)
-
+	@layer begin
+	    sethue("grey")
+		setopacity(0.5)
+	    line(bottom_center, top_center, :stroke)
+	end
+	
     # Show base height:
     @layer begin
         sethue("grey")
@@ -1044,7 +1047,7 @@ begin
             toextension=[25, 5],
             textrotation=π / 2,
             textgap=20,
-            format=(d) -> string("H0:", round(h0, digits=1)))
+            format=(d) -> string("Base:", round(h0, digits=1)))
     end
 
     # Show plant thickness (height - h0):
@@ -1176,20 +1179,21 @@ begin
 
 	θ1_soil = π/2 + θ1
 	θ2_soil = π/2 + θ2
-	
-	@layer begin
-		center_point = Point3D(sample_point[1], sample_point[2], 0.0)
-		end_line = Point3D(sample_point[1] + 800, sample_point[2], 0.0)
-		end_line_point1 = rotateby(end_line, center_point, RotXYZ(0, 0.0, θ1_soil))
-		sethue("red")
-		setdash("solid")
-		arrow(Point(center_point[1], center_point[2]), Point(end_line_point1[1], 
-		end_line_point1[2]))
-		end_line_point2 = rotateby(end_line, center_point, RotXYZ(0, 0.0, θ2_soil))
+
+	# Draw direct light directions (redundant with one below):
+	# @layer begin
+	# 	center_point = Point3D(sample_point[1], sample_point[2], 0.0)
+	# 	end_line = Point3D(sample_point[1] + 800, sample_point[2], 0.0)
+	# 	end_line_point1 = rotateby(end_line, center_point, RotXYZ(0, 0.0, θ1_soil))
+	# 	sethue("red")
+	# 	setdash("solid")
+	# 	arrow(Point(center_point[1], center_point[2]), Point(end_line_point1[1], 
+	# 	end_line_point1[2]))
+	# 	end_line_point2 = rotateby(end_line, center_point, RotXYZ(0, 0.0, θ2_soil))
 		
-		arrow(Point(center_point[1], center_point[2]), Point(end_line_point2[1], end_line_point2[2]))
+	# 	arrow(Point(center_point[1], center_point[2]), Point(end_line_point2[1], end_line_point2[2]))
 		
-	end
+	# end
 
     XP1 = X_from_θ(θ1_soil, height)
     XP2 = X_from_θ(θ2_soil, height)
@@ -1208,7 +1212,7 @@ begin
         :fill,
         close=true
     )
-	
+
     text_point = midpoint(P1_d, P2_d)
 
     # Add kdir text:
@@ -1290,18 +1294,6 @@ begin
         end
     end
 
-    if display_icosahedron
-        @layer begin
-            ti = make(truncated_icosahedron)
-            sethue("grey")
-            setline(3)
-            scaleby!(ti, 50, 50, -50)
-            translate(Point(sample_point[1], sample_point[2]))
-            # pin(ti, gfunction=wireframe)
-            pin(ti)
-        end
-    end
-
     @layer begin
         for (i, v) in enumerate(all_sample_points)
             sethue("black")
@@ -1342,12 +1334,6 @@ begin
     finish()
     preview()
 end
-
-# ╔═╡ a4700fcb-6fb0-44b2-aa46-04bf16450211
-rad2deg.([θ1_soil,θ2_soil])
-
-# ╔═╡ 4c11224b-cad4-4fa2-a686-21b16fa30043
-θ1,θ2
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2175,8 +2161,6 @@ version = "3.5.0+0"
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╠═a4700fcb-6fb0-44b2-aa46-04bf16450211
-# ╠═4c11224b-cad4-4fa2-a686-21b16fa30043
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
