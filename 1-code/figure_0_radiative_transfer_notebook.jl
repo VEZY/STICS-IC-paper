@@ -75,6 +75,9 @@ md"""
 *Figure 1. Diagram of the light interception computation for each sample point below the crop. Grey arrows represent sampled angles for diffuse light coming from the sky, drawn in 2D but computed in the 3D space. Yellow triangle represents the view angle receiving direct light, whith space (triangles) receiving diffuse light. Green triangles represent the inner-part of the plant canopy, i.e. the part between the interrow.*
 """
 
+# ╔═╡ 857b6390-711e-40ff-9c0a-852373c2ce44
+Tiler(1000, 800, 2, 2, margin=0).tileheight
+
 # ╔═╡ 9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 md"""
 Please note that the direct angles (`kdir`) are projected in 2D, but are computed in the 3D space following row orientation and sun azimuthal and zenithal angles. So it is perfectly normal to see the angles appearing *"into"* the plant crown, and that's because the angle is in fact projected towards or away from you, thus appearing drawn on top of the plant.
@@ -967,11 +970,10 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 	# fontface("Calibri Bold")
 	fontsize(11)
 
-	background("white")
+	# background("white")
 	sethue("black")
-	scale(1, -1) # to set the y axis up
-	translate(0, -theight)
-
+	# scale(1, -1) # to set the y axis up
+	# translate(0,theight)
 	center = tcenter
 
 	# Drawing the big box inside the plot that delimits the scene boundary:
@@ -1221,8 +1223,6 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 		end
 	end
 
-
-
 	# Compute transmitted light:
 	# Transmitted light: Drawing the left triangle between θ1 and the horizontal
 	sethue("goldenrod")
@@ -1338,6 +1338,38 @@ begin
 	t = currentdrawing()
 	tcenter = Point(t.width * 0.5, t.height * 0.55)
 	draw_radiative_transfer(t.width,t.height, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0)
+
+    finish()
+    preview()
+end
+
+# ╔═╡ 4615dc72-47f2-45ea-b42e-5ac64eb11982
+begin
+    Drawing(1000, 800, :png)
+	t2 = currentdrawing()
+	scale(1, -1) # to set the y axis up
+	translate(t2.width/2,-t2.height/2)
+    
+	tiles = Tiler(1000, 800, 2, 2, margin=50)
+
+    for (pos, n) in tiles
+        @layer begin
+		    draw_radiative_transfer(
+				tiles.tilewidth, 
+				tiles.tileheight, 
+				pos, 
+				width, 
+				i_sample_point, 
+				latitude_r, 
+				j, 
+				interrow, 
+				height, 
+				diffuse_angles, 
+				shape, 
+				h0
+			)
+        end
+    end
 
     finish()
     preview()
@@ -2171,6 +2203,8 @@ version = "3.5.0+0"
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
+# ╠═4615dc72-47f2-45ea-b42e-5ac64eb11982
+# ╠═857b6390-711e-40ff-9c0a-852373c2ce44
 # ╠═b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
