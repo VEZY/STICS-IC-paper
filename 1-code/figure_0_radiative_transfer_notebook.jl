@@ -972,7 +972,14 @@ let
 end
 
 # ╔═╡ b90cd9e1-30ca-48be-9e7e-dd6afbce35db
-function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0, display_text)
+function draw_radiative_transfer(
+	twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0, display_text; 
+	text_height= 0.13,
+	outer_box_rel_width = 0.9, # Width of the outter box relative to figure width
+	outer_box_rel_height = 0.60, # Height of the outter box relative to figure height
+	text_color = "grey",
+	n = ""
+ )
 
 	e = height - h0
 
@@ -982,8 +989,6 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 	center = tcenter
 
 	# Drawing the big box inside the plot that delimits the scene boundary:
-	outer_box_rel_width = 0.9 # Width of the outter box relative to figure width
-	outer_box_rel_height = 0.60 # Height of the outter box relative to figure height
 	outer_box_width = outer_box_rel_width * twidth
 	outer_box_height = outer_box_rel_height * theight
 	outer_box = box(center, outer_box_width, outer_box_height, :none)
@@ -998,7 +1003,11 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 		sethue("black")
 		setopacity(0.8)
 		scale(1, -1)
-		text("Latitude $(params["latitude"])°, day $j, sample point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))", Point((10 + outer_box[1][1]) * 1.3, -5))
+		text(
+			# "Latitude $(params["latitude"])°, day $j, sample point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))",
+			n*"Latitude $(params["latitude"])°, day $j, point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1",
+			Point(outer_box[1][1], -outer_box[1][2] - theight*text_height)
+		)
 	end
 
 	# Rescaling the crop dimensions to match the drawing coordinates:
@@ -1034,7 +1043,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 	
 	# Show base height:
 	@layer begin
-		sethue("grey")
+		sethue(text_color)
 		setopacity(1)
 		scale(-1, 1)
 		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
@@ -1049,7 +1058,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 
 	# Show plant thickness (height - h0):
 	@layer begin
-		sethue("grey")
+		sethue(text_color)
 		setopacity(1)
 		scale(-1, 1)
 		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
@@ -1064,7 +1073,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 
 	# Show interrow dimension:
 	@layer begin
-		sethue("grey")
+		sethue(text_color)
 		setopacity(1)
 		scale(-1, 1)
 		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
@@ -1079,7 +1088,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 
 	# Show crop width:
 	@layer begin
-		sethue("grey")
+		sethue(text_color)
 		setopacity(1)
 		setdash("dot")
 		scale(-1, 1)
@@ -1095,7 +1104,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 
 	# Show shaded and sunlit:
 	@layer begin
-		sethue("grey")
+		sethue(text_color)
 		setopacity(1)
 		setdash("dot")
 		scale(-1, 1)
@@ -1127,7 +1136,6 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 	
 	# Outter right side of the right-hand plant
 	@layer begin
-		# scale(-1, 1)
 		setopacity(0.15)
 		sethue("green")
 		setdash("dot")
@@ -1149,7 +1157,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 
 	if display_text
 		@layer begin
-			sethue("grey")
+			sethue(text_color)
 			setopacity(1)
 			scale(1, -1) # to set the y axis up
 			setdash("dot")
@@ -1215,7 +1223,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 	# Add kdir text:
 	if display_text && kgdirect > 6.0e-10
 		@layer begin
-			sethue("grey")
+			sethue(text_color)
 			setopacity(1)
 			scale(1, -1)
 			dimension(Point(P1_d[1], -P1_d[2]), Point(P2_d[1], -P2_d[2]),
@@ -1260,12 +1268,10 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 		@layer begin
 			setdash("solid")
 			setopacity(1)
-			sethue("red")
 			setline(1)
 			# RHS:
 			center_point, end_line_points_right = draw_diffuse_angles_3d(sample_point, H1, π / 2 .- az1, inner_box_length * 0.3, colormap)
 			# LHS:
-			sethue("green")
 			center_point, end_line_points_left = draw_diffuse_angles_3d(sample_point, π / 2 .- H2, -π / 2 .- az2, 100, colormap)
 		end
 	end
@@ -1273,7 +1279,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 	if display_text
 		# Show kdif from top:
 		@layer begin
-			sethue("grey")
+			sethue(text_color)
 			setopacity(1)
 			scale(-1, 1)
 			translate(-(x0 * 2 + inner_box_width), 0)  # translate back
@@ -1313,7 +1319,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 
 	if display_text
 		@layer begin
-			sethue("grey")
+			sethue(text_color)
 			setopacity(1)
 			scale(1, -1) # to set the y axis up
 			setdash("dot")

@@ -10,15 +10,15 @@ using Colors, ColorSchemes # For the color palette of the diffuse arrows
 includet("figure_0_radiative_transfer_notebook.jl")
 
 begin
-    width = [0.3, 0.3, 0.2, 0.2]
-    i_sample_point = [150, 150, 20, 20]
+    width = [0.4, 0.4, 0.13, 0.13]
+    i_sample_point = [150, 150, 30, 30]
     latitude_r = deg2rad.([0, 40, 40, 40])
     j = [1, 1, 120, 120]
-    interrow = [1.0, 1.0, 0.5, 0.50]
+    interrow = [1.0, 1.0, 0.4, 0.4]
     height = [0.3, 0.3, 0.9, 0.9]
     diffuse_angles = true
     shape = [:rectangle, :dtriangle, :rectangle, :utriangle]
-    h0 = [0.1, 0.1, 0.4, 0.4]
+    h0 = [0.12, 0.12, 0.4, 0.4]
     display_text = [true, true, true, true]
 
     Drawing(1000, 800, :png)
@@ -37,7 +37,12 @@ begin
                 tiles.tilewidth, tiles.tileheight, pos, width[n],
                 i_sample_point[n], latitude_r[n], j[n], interrow[n], height[n],
                 diffuse_angles, shape[n], h0[n],
-                display_text[n]
+                display_text[n],
+                text_height=0.18,
+                outer_box_rel_width=0.95,
+                outer_box_rel_height=0.55,
+                text_color="grey50",
+                n="$n. "
             )
         end
     end
