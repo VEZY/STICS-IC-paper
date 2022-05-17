@@ -951,7 +951,7 @@ let
     end
 
     if params["diffuse_angles"]
-        str = str * """\nDiffuse and direct angles are projected in 2D but are actually computed in the 3D space, so they can appear poiting below the canopy, while in fact pointing towards or afar from us."""
+        str = str * """\nDiffuse and direct angles are projected in 2D but are actually computed in the 3D space, so they can appear poiting below the canopy, while in fact pointing towards or afar from the viewer."""
     end
 
     if length(str) > 0
@@ -959,223 +959,213 @@ let
     end
 end
 
-# ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
-begin
-    j = params["day"]
-    diffuse_angles = params["diffuse_angles"]
-    latitude_r = deg2rad(params["latitude"])
-    interrow = params["interrow"]
-    shape = Symbol(params["shape"])
-    width = min(params["width"], interrow)
-    height = params["height"]
+# ╔═╡ b90cd9e1-30ca-48be-9e7e-dd6afbce35db
+function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0)
+
 	e = height - h0
-    i_sample_point = Int(params["sample_point"])
 
-    # Beginning of the drawing:
-    Drawing(image_dim[1], image_dim[2], :png)
-    t = currentdrawing()
-    # fontface("Calibri Bold")
-    fontsize(11)
+	# fontface("Calibri Bold")
+	fontsize(11)
 
-    background("white")
-    sethue("black")
-    scale(1, -1) # to set the y axis up
-    translate(0, -t.height)
+	background("white")
+	sethue("black")
+	scale(1, -1) # to set the y axis up
+	translate(0, -theight)
 
-    center = Point(t.width * 0.5, t.height * 0.55)
+	center = tcenter
 
-    # Drawing the big box inside the plot that delimits the scene boundary:
-    outer_box_rel_width = 1.0 # Width of the outter box relative to figure width
-    outer_box_rel_height = 0.70 # Height of the outter box relative to figure height
-    outer_box_width = outer_box_rel_width * t.width
-    outer_box_height = outer_box_rel_height * t.height
-    outer_box = box(center, outer_box_width, outer_box_height, :none)
+	# Drawing the big box inside the plot that delimits the scene boundary:
+	outer_box_rel_width = 1.0 # Width of the outter box relative to figure width
+	outer_box_rel_height = 0.70 # Height of the outter box relative to figure height
+	outer_box_width = outer_box_rel_width * twidth
+	outer_box_height = outer_box_rel_height * theight
+	outer_box = box(center, outer_box_width, outer_box_height, :none)
 
-    # Compute radiation:
-    raint, rombre, rsoleil, surfAO, surfAS = transrad(rg, width, params["latitude"], 0.48, j, interrow, shape, h0, alpha, k, lai, 0.0, height)
+	# Compute radiation:
+	raint, rombre, rsoleil, surfAO, surfAS = transrad(rg, width, params["latitude"], 0.48, j, interrow, shape, h0, alpha, k, lai, 0.0, height)
 
-    # Writting bottom text:
-    @layer begin
-        fontsize(16)
-        fontface("Calibri Bold")
-        sethue("black")
-        setopacity(0.8)
-        scale(1, -1)
-        text("Latitude $(params["latitude"])°, day $j, sample point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))", Point((10 + outer_box[1][1]) * 1.3, -5))
-    end
+	# Writting bottom text:
+	@layer begin
+		fontsize(16)
+		fontface("Calibri Bold")
+		sethue("black")
+		setopacity(0.8)
+		scale(1, -1)
+		text("Latitude $(params["latitude"])°, day $j, sample point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))", Point((10 + outer_box[1][1]) * 1.3, -5))
+	end
 
-    # Rescaling the crop dimensions to match the drawing coordinates:
-    d_width = width * outer_box_width / (interrow + width)
-    # NB: interrow + width because the outer box include plant half-width for both plants
-    d_h0 = h0 * outer_box_height / height
-    d_height = outer_box_height
+	# Rescaling the crop dimensions to match the drawing coordinates:
+	d_width = width * outer_box_width / (interrow + width)
+	# NB: interrow + width because the outer box include plant half-width for both plants
+	d_h0 = h0 * outer_box_height / height
+	d_height = outer_box_height
 
-    sethue("black")
-    setdash("solid")
-    inner_box = box(
-        Point(outer_box[2][1] + d_width / 2, outer_box[2][2]),
-        Point(outer_box[4][1] - d_width / 2, outer_box[4][2]),
-        :stroke
-    )
+	sethue("black")
+	setdash("solid")
+	inner_box = box(
+		Point(outer_box[2][1] + d_width / 2, outer_box[2][2]),
+		Point(outer_box[4][1] - d_width / 2, outer_box[4][2]),
+		:stroke
+	)
 
-    # Crop dimensions in box dimensions:
-    x0 = inner_box[2][1]
-    y0 = inner_box[2][2]
-    inner_box_width = inner_box[3][1] - inner_box[1][1]
-    inner_box_length = inner_box[1][2] - inner_box[3][2]
+	# Crop dimensions in box dimensions:
+	x0 = inner_box[2][1]
+	y0 = inner_box[2][2]
+	inner_box_width = inner_box[3][1] - inner_box[1][1]
+	inner_box_length = inner_box[1][2] - inner_box[3][2]
 
 	setdash("dot")
 
-    # Draw the center line
-    bottom_center = midpoint(inner_box[2], inner_box[3])
-    top_center = midpoint(inner_box[1], inner_box[4])
+	# Draw the center line
+	bottom_center = midpoint(inner_box[2], inner_box[3])
+	top_center = midpoint(inner_box[1], inner_box[4])
 	@layer begin
-	    sethue("grey")
+		sethue("grey")
 		setopacity(0.5)
-	    line(bottom_center, top_center, :stroke)
+		line(bottom_center, top_center, :stroke)
 	end
 	
-    # Show base height:
-    @layer begin
-        sethue("grey")
-        setopacity(1)
-        scale(-1, 1)
-        translate(-(x0 * 2 + inner_box_width), 0)  # translate back
-        dimension(inner_box[2], Point(inner_box[2][1], inner_box[2][2] + d_h0),
-            offset=25,
-            fromextension=[25, 5],
-            toextension=[25, 5],
-            textrotation=π / 2,
-            textgap=20,
-            format=(d) -> string("Base:", round(h0, digits=1)))
-    end
+	# Show base height:
+	@layer begin
+		sethue("grey")
+		setopacity(1)
+		scale(-1, 1)
+		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+		dimension(inner_box[2], Point(inner_box[2][1], inner_box[2][2] + d_h0),
+			offset=25,
+			fromextension=[25, 5],
+			toextension=[25, 5],
+			textrotation=π / 2,
+			textgap=20,
+			format=(d) -> string("Base:", round(h0, digits=1)))
+	end
 
-    # Show plant thickness (height - h0):
-    @layer begin
-        sethue("grey")
-        setopacity(1)
-        scale(-1, 1)
-        translate(-(x0 * 2 + inner_box_width), 0)  # translate back
-        dimension(Point(inner_box[2][1], inner_box[2][2] + d_h0), inner_box[1],
-            offset=25,
-            fromextension=[25, 5],
-            toextension=[25, 5],
-            textrotation=π / 2,
-            textgap=40,
-            format=(d) -> string("Thickness:", round(e, digits=1)))
-    end
+	# Show plant thickness (height - h0):
+	@layer begin
+		sethue("grey")
+		setopacity(1)
+		scale(-1, 1)
+		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+		dimension(Point(inner_box[2][1], inner_box[2][2] + d_h0), inner_box[1],
+			offset=25,
+			fromextension=[25, 5],
+			toextension=[25, 5],
+			textrotation=π / 2,
+			textgap=40,
+			format=(d) -> string("Thickness:", round(e, digits=1)))
+	end
 
-    # Show interrow dimension:
-    @layer begin
-        sethue("grey")
-        setopacity(1)
-        scale(-1, 1)
-        translate(-(x0 * 2 + inner_box_width), 0)  # translate back
-        dimension(inner_box[1], inner_box[4],
-            offset=45,
-            fromextension=[45, 5],
-            toextension=[45, 5],
-            textrotation=π / 2,
-            textgap=40,
-            format=(d) -> string("Interrow:", round(interrow, digits=1)))
-    end
+	# Show interrow dimension:
+	@layer begin
+		sethue("grey")
+		setopacity(1)
+		scale(-1, 1)
+		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+		dimension(inner_box[1], inner_box[4],
+			offset=45,
+			fromextension=[45, 5],
+			toextension=[45, 5],
+			textrotation=π / 2,
+			textgap=40,
+			format=(d) -> string("Interrow:", round(interrow, digits=1)))
+	end
 
-    # Show crop width:
-    @layer begin
-        sethue("grey")
-        setopacity(1)
-        setdash("dot")
-        scale(-1, 1)
-        translate(-(x0 * 2 + inner_box_width), 0)  # translate back
-        dimension(outer_box[2], Point(x0 + d_width / 2, y0),
-            offset=-25,
-            fromextension=[5, d_height + 25],
-            toextension=[5, 25],
-            textrotation=π / 2,
-            textgap=40,
-            format=(d) -> string("Width:", round(width, digits=1)))
-    end
+	# Show crop width:
+	@layer begin
+		sethue("grey")
+		setopacity(1)
+		setdash("dot")
+		scale(-1, 1)
+		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+		dimension(outer_box[2], Point(x0 + d_width / 2, y0),
+			offset=-25,
+			fromextension=[5, d_height + 25],
+			toextension=[5, 25],
+			textrotation=π / 2,
+			textgap=40,
+			format=(d) -> string("Width:", round(width, digits=1)))
+	end
 
-    # Show shaded and sunlit:
-    @layer begin
-        sethue("grey")
-        setopacity(1)
-        setdash("dot")
-        scale(-1, 1)
-        translate(-(x0 * 2), 0)  # translate back
-        dimension(Point(inner_box[2][1] - d_width / 2, inner_box[2][2]), inner_box[2],
-            offset=-60,
-            fromextension=[5, 60],
-            toextension=[5, 60],
-            textrotation=π / 2,
-            textgap=40,
-            format=(d) -> string("Shaded:", round(surfAO, digits=1)))
+	# Show shaded and sunlit:
+	@layer begin
+		sethue("grey")
+		setopacity(1)
+		setdash("dot")
+		scale(-1, 1)
+		translate(-(x0 * 2), 0)  # translate back
+		dimension(Point(inner_box[2][1] - d_width / 2, inner_box[2][2]), inner_box[2],
+			offset=-60,
+			fromextension=[5, 60],
+			toextension=[5, 60],
+			textrotation=π / 2,
+			textgap=40,
+			format=(d) -> string("Shaded:", round(surfAO, digits=1)))
 
 
-        dimension(Point(bottom_center[1] - inner_box_width, bottom_center[2]), Point(inner_box[2][1] - d_width / 2, y0),
-            offset=-60,
-            fromextension=[5, 10],
-            toextension=[5, 30],
-            textrotation=π / 2,
-            textgap=40,
-            format=(d) -> string("Sunlit:", round(surfAS, digits=1)))
-    end
+		dimension(Point(bottom_center[1] - inner_box_width, bottom_center[2]), Point(inner_box[2][1] - d_width / 2, y0),
+			offset=-60,
+			fromextension=[5, 10],
+			toextension=[5, 30],
+			textrotation=π / 2,
+			textgap=40,
+			format=(d) -> string("Sunlit:", round(surfAS, digits=1)))
+	end
 
-    # Drawing the left-hand side crop:
-    setopacity(0.4)
-    sethue("green")
+	# Drawing the left-hand side crop:
+	setopacity(0.4)
+	sethue("green")
 
-    # Draw right sides of the plants
-    p = half_canopy_left(shape, d_width, d_height + y0, d_h0 + y0, x0)
+	# Draw right sides of the plants
+	p = half_canopy_left(shape, d_width, d_height + y0, d_h0 + y0, x0)
 	
-    # Outter right side of the right-hand plant
-    @layer begin
-        # scale(-1, 1)
-        setopacity(0.15)
-        sethue("green")
-        setdash("dot")
-        translate(inner_box_width, 0)
-        poly(p, :fill, close=true)
-    end
+	# Outter right side of the right-hand plant
+	@layer begin
+		# scale(-1, 1)
+		setopacity(0.15)
+		sethue("green")
+		setdash("dot")
+		translate(inner_box_width, 0)
+		poly(p, :fill, close=true)
+	end
 
-    # Draw left sides of the plants
-    @layer begin
-        scale(-1, 1) # mirror the scene
-        translate(-(x0 * 2 + inner_box_width), 0)  # translate back
-        poly(p, :fill, close=true) # Inner left side of the LHS plant
-        setopacity(0.15)
-        sethue("green")
-        setdash("dot")
-        translate(inner_box_width, 0)  # translate back
-        poly(p, :fill, close=true) # Outter left side of the LHS plant
-    end
+	# Draw left sides of the plants
+	@layer begin
+		scale(-1, 1) # mirror the scene
+		translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+		poly(p, :fill, close=true) # Inner left side of the LHS plant
+		setopacity(0.15)
+		sethue("green")
+		setdash("dot")
+		translate(inner_box_width, 0)  # translate back
+		poly(p, :fill, close=true) # Outter left side of the LHS plant
+	end
 
-    if display_text
-        @layer begin
-            sethue("grey")
-            setopacity(1)
-            scale(1, -1) # to set the y axis up
-            setdash("dot")
-            label(
-                "Row center", :S, Point(bottom_center[1], -bottom_center[2]),
-                offset=40, leader=true, leaderoffsets=[0.1, 0.95]
-            )
-        end
-    end
+	if display_text
+		@layer begin
+			sethue("grey")
+			setopacity(1)
+			scale(1, -1) # to set the y axis up
+			setdash("dot")
+			label(
+				"Row center", :S, Point(bottom_center[1], -bottom_center[2]),
+				offset=40, leader=true, leaderoffsets=[0.1, 0.95]
+			)
+		end
+	end
 
-    all_point_pos_m = (1:n_sample_points) ./ n_sample_points .* (interrow / 2.0)
-    point_pos_m = all_point_pos_m[i_sample_point]
-    all_point_pos = rescale.(all_point_pos_m, 0, interrow, x0, inner_box[4][1]) # Point position on the plane coords
-    point_pos = all_point_pos[i_sample_point]
-    all_sample_points = Point.(all_point_pos, y0)
-    sample_point = all_sample_points[i_sample_point] # Point coordinates
+	all_point_pos_m = (1:n_sample_points) ./ n_sample_points .* (interrow / 2.0)
+	point_pos_m = all_point_pos_m[i_sample_point]
+	all_point_pos = rescale.(all_point_pos_m, 0, interrow, x0, inner_box[4][1]) # Point position on the plane coords
+	point_pos = all_point_pos[i_sample_point]
+	all_sample_points = Point.(all_point_pos, y0)
+	sample_point = all_sample_points[i_sample_point] # Point coordinates
 
-    # Compute direct light:
-    # Get the value of θ1 and θ2, the angles relative to the vertical plane on the sample_point
-    # that give the view angle of the direct light comming from the sky:
-    kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, e) 
+	# Compute direct light:
+	# Get the value of θ1 and θ2, the angles relative to the vertical plane on the sample_point
+	# that give the view angle of the direct light comming from the sky:
+	kgdirect, θ1, θ2 = kdir(latitude_r, j, width, point_pos_m, interrow, shape, h0, alpha, e) 
 
-    # Compute P1 and P2, the two points on the sky that provide the direct light view angle:
+	# Compute P1 and P2, the two points on the sky that provide the direct light view angle:
 
 	θ1_soil = π/2 + θ1
 	θ2_soil = π/2 + θ2
@@ -1195,141 +1185,159 @@ begin
 		
 	# end
 
-    XP1 = X_from_θ(θ1_soil, height)
-    XP2 = X_from_θ(θ2_soil, height)
+	XP1 = X_from_θ(θ1_soil, height)
+	XP2 = X_from_θ(θ2_soil, height)
 
 	P1_d = Point(x0 + ((point_pos_m + XP1) / interrow) * (inner_box[4][1] - x0), y0 + d_height)
 	P2_d = Point(x0 + ((point_pos_m + XP2) / interrow) * (inner_box[4][1] - x0), y0 + d_height)
 		
-    setopacity(0.3)
-    sethue("yellow")
-    poly(
-        [
-            P1_d,
-            sample_point,
-            P2_d
-        ],
-        :fill,
-        close=true
-    )
+	setopacity(0.3)
+	sethue("yellow")
+	poly(
+		[
+			P1_d,
+			sample_point,
+			P2_d
+		],
+		:fill,
+		close=true
+	)
 
-    text_point = midpoint(P1_d, P2_d)
+	text_point = midpoint(P1_d, P2_d)
 
-    # Add kdir text:
-    if display_text && kgdirect > 6.0e-10
-        @layer begin
-            sethue("grey")
-            setopacity(1)
-            scale(1, -1)
-            dimension(Point(P1_d[1], -P1_d[2]), Point(P2_d[1], -P2_d[2]),
-                offset=15,
-                fromextension=[15, 5],
-                toextension=[15, 5],
-                textrotation=π / 2,
-                textgap=40,
-                format=(d) -> string("kdir: ", round(kgdirect, digits=2)))
-        end
-    end
+	# Add kdir text:
+	if display_text && kgdirect > 6.0e-10
+		@layer begin
+			sethue("grey")
+			setopacity(1)
+			scale(1, -1)
+			dimension(Point(P1_d[1], -P1_d[2]), Point(P2_d[1], -P2_d[2]),
+				offset=15,
+				fromextension=[15, 5],
+				toextension=[15, 5],
+				textrotation=π / 2,
+				textgap=40,
+				format=(d) -> string("kdir: ", round(kgdirect, digits=2)))
+		end
+	end
 
 
 
-    # Compute transmitted light:
-    # Transmitted light: Drawing the left triangle between θ1 and the horizontal
-    sethue("goldenrod")
+	# Compute transmitted light:
+	# Transmitted light: Drawing the left triangle between θ1 and the horizontal
+	sethue("goldenrod")
 
-    (p_trans_left, p_trans_right) = draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
+	(p_trans_left, p_trans_right) = draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
 
-    # Theta angle :
-    #   @layer begin
-    #       sethue("black")
-    #       setopacity(0.5)
-    #       setdash("solid")
-    # H1 = anglethreepoints(p_trans_left[end-1],p_trans_left[1], p_trans_left[2])
-    # newpath()
-    # (p_trans_left, p_trans_right)
-    # arc(sample_point, 50, 0, cos(π/2 + H1), :path)
-    # p_arc = pathtopoly()[1]
-    # poly(p_arc, :stroke)
+	# Theta angle :
+	#   @layer begin
+	#       sethue("black")
+	#       setopacity(0.5)
+	#       setdash("solid")
+	# H1 = anglethreepoints(p_trans_left[end-1],p_trans_left[1], p_trans_left[2])
+	# newpath()
+	# (p_trans_left, p_trans_right)
+	# arc(sample_point, 50, 0, cos(π/2 + H1), :path)
+	# p_arc = pathtopoly()[1]
+	# poly(p_arc, :stroke)
 
-    # @layer begin
-    #           scale(1, -1)
-    # 	mid_p_arc = midpoint(p_arc[1], p_arc[end])
-    # 	label(string("H2: ",round(rad2deg(H1), digits=2), "°"), :NE, Point(mid_p_arc[1], -mid_p_arc[2]),offset=10)
-    # 	# offset=10, leader=false, leaderoffsets=[0.4, 0.9]
-    #       end
+	# @layer begin
+	#           scale(1, -1)
+	# 	mid_p_arc = midpoint(p_arc[1], p_arc[end])
+	# 	label(string("H2: ",round(rad2deg(H1), digits=2), "°"), :NE, Point(mid_p_arc[1], -mid_p_arc[2]),offset=10)
+	# 	# offset=10, leader=false, leaderoffsets=[0.4, 0.9]
+	#       end
 
-    #   end
+	#   end
 
-    text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
-    kgdiffus, H1, H2, az1, az2 = kdif(point_pos_m, h0, width, interrow, height - h0, shape)
+	text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
+	kgdiffus, H1, H2, az1, az2 = kdif(point_pos_m, h0, width, interrow, height - h0, shape)
 
-    if diffuse_angles
-        @layer begin
-            setdash("solid")
-            setopacity(1)
-            sethue("red")
-            setline(1)
-            # RHS:
-            center_point, end_line_points_right = draw_diffuse_angles_3d(sample_point, H1, π / 2 .- az1, inner_box_length * 0.3, colormap)
-            # LHS:
-            sethue("green")
-            center_point, end_line_points_left = draw_diffuse_angles_3d(sample_point, π / 2 .- H2, -π / 2 .- az2, 100, colormap)
-        end
-    end
+	if diffuse_angles
+		@layer begin
+			setdash("solid")
+			setopacity(1)
+			sethue("red")
+			setline(1)
+			# RHS:
+			center_point, end_line_points_right = draw_diffuse_angles_3d(sample_point, H1, π / 2 .- az1, inner_box_length * 0.3, colormap)
+			# LHS:
+			sethue("green")
+			center_point, end_line_points_left = draw_diffuse_angles_3d(sample_point, π / 2 .- H2, -π / 2 .- az2, 100, colormap)
+		end
+	end
 
-    if display_text
-        # Show kdif from top:
-        @layer begin
-            sethue("grey")
-            setopacity(1)
-            scale(-1, 1)
-            translate(-(x0 * 2 + inner_box_width), 0)  # translate back
-            dimension(Point(p[1][1] + d_width / 2, p[1][2]), Point(inner_box[4][1] - d_width / 2, inner_box[4][2]),
-                offset=30,
-                fromextension=[30, 5],
-                toextension=[30, 5],
-                textrotation=π / 2,
-                textgap=40,
-                format=(d) -> string("kdif: ", round(kgdiffus, digits=2)))
-        end
-    end
+	if display_text
+		# Show kdif from top:
+		@layer begin
+			sethue("grey")
+			setopacity(1)
+			scale(-1, 1)
+			translate(-(x0 * 2 + inner_box_width), 0)  # translate back
+			dimension(Point(p[1][1] + d_width / 2, p[1][2]), Point(inner_box[4][1] - d_width / 2, inner_box[4][2]),
+				offset=30,
+				fromextension=[30, 5],
+				toextension=[30, 5],
+				textrotation=π / 2,
+				textgap=40,
+				format=(d) -> string("kdif: ", round(kgdiffus, digits=2)))
+		end
+	end
 
-    @layer begin
-        for (i, v) in enumerate(all_sample_points)
-            sethue("black")
-            setdash("solid")
-            setline(0.5)
-            setopacity(0.8)
-            i != i_sample_point && line(v, Point(v[1], v[2] - 3), :stroke)
+	@layer begin
+		for (i, v) in enumerate(all_sample_points)
+			sethue("black")
+			setdash("solid")
+			setline(0.5)
+			setopacity(0.8)
+			i != i_sample_point && line(v, Point(v[1], v[2] - 3), :stroke)
 
-            if display_text && i == 1 || mod(i, 25) == 0
-                @layer begin
-                    sethue("black")
-                    setopacity(1)
-                    fontsize(5)
-                    scale(1, -1) # to set the y axis up
-                    label(
-                        string(i), :S, Point(v[1], -v[2]),
-                        offset=5, leader=false
-                    )
-                end
-            end
+			if display_text && i == 1 || mod(i, 25) == 0
+				@layer begin
+					sethue("black")
+					setopacity(1)
+					fontsize(5)
+					scale(1, -1) # to set the y axis up
+					label(
+						string(i), :S, Point(v[1], -v[2]),
+						offset=5, leader=false
+					)
+				end
+			end
 
-        end
-    end
+		end
+	end
 
-    if display_text
-        @layer begin
-            sethue("grey")
-            setopacity(1)
-            scale(1, -1) # to set the y axis up
-            setdash("dot")
-            label(
-                "Sample point", :S, Point(sample_point[1], -sample_point[2]),
-                offset=25, leader=true, leaderoffsets=[0.5, 0.9]
-            )
-        end
-    end
+	if display_text
+		@layer begin
+			sethue("grey")
+			setopacity(1)
+			scale(1, -1) # to set the y axis up
+			setdash("dot")
+			label(
+				"Sample point", :S, Point(sample_point[1], -sample_point[2]),
+				offset=25, leader=true, leaderoffsets=[0.5, 0.9]
+			)
+		end
+	end	
+end
+
+# ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
+begin
+    j = params["day"]
+    diffuse_angles = params["diffuse_angles"]
+    latitude_r = deg2rad(params["latitude"])
+    interrow = params["interrow"]
+    shape = Symbol(params["shape"])
+    width = min(params["width"], interrow)
+    height = params["height"]
+    i_sample_point = Int(params["sample_point"])
+
+    # Beginning of the drawing:
+    Drawing(image_dim[1], image_dim[2], :png)
+	t = currentdrawing()
+	tcenter = Point(t.width * 0.5, t.height * 0.55)
+	draw_radiative_transfer(t.width,t.height, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0)
 
     finish()
     preview()
@@ -2163,6 +2171,7 @@ version = "3.5.0+0"
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
+# ╠═b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
