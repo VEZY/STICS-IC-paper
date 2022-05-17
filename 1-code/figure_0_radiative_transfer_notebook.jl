@@ -75,9 +75,6 @@ md"""
 *Figure 1. Diagram of the light interception computation for each sample point below the crop. Grey arrows represent sampled angles for diffuse light coming from the sky, drawn in 2D but computed in the 3D space. Yellow triangle represents the view angle receiving direct light, whith space (triangles) receiving diffuse light. Green triangles represent the inner-part of the plant canopy, i.e. the part between the interrow.*
 """
 
-# ╔═╡ 857b6390-711e-40ff-9c0a-852373c2ce44
-Tiler(1000, 800, 2, 2, margin=0).tileheight
-
 # ╔═╡ 9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 md"""
 Please note that the direct angles (`kdir`) are projected in 2D, but are computed in the 3D space following row orientation and sun azimuthal and zenithal angles. So it is perfectly normal to see the angles appearing *"into"* the plant crown, and that's because the angle is in fact projected towards or away from you, thus appearing drawn on top of the plant.
@@ -776,16 +773,28 @@ function draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
     plant_top_points = p[plant_y.==maximum(plant_y)]
     plant_top_point = sort(plant_top_points)[end]
 
-    p_outline = poly(
-        [
-            sample_point,
-            corner_left,
-            plant_base_points...,
-            plant_top_point,
-            sample_point
-        ],
-        :fill
-    )
+	if sample_point[1] < maximum(plant_x)
+	    p_outline = poly(
+	        [
+	            sample_point,
+	            corner_left,
+	            plant_base_points...,
+	            sample_point
+	        ],
+	        :fill
+	    )
+	else
+	    p_outline = poly(
+	        [
+	            sample_point,
+	            corner_left,
+	            plant_base_points...,
+	            plant_top_point,
+	            sample_point
+	        ],
+	        :fill
+	    )
+	end
 
     # Transmitted light: Drawing the right triangle between θ2 and the horizontal
     # Computing the coordinates of the LHS of the right plant:
@@ -963,22 +972,18 @@ let
 end
 
 # ╔═╡ b90cd9e1-30ca-48be-9e7e-dd6afbce35db
-function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0)
+function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0, display_text)
 
 	e = height - h0
 
 	# fontface("Calibri Bold")
 	fontsize(11)
-
-	# background("white")
 	sethue("black")
-	# scale(1, -1) # to set the y axis up
-	# translate(0,theight)
 	center = tcenter
 
 	# Drawing the big box inside the plot that delimits the scene boundary:
-	outer_box_rel_width = 1.0 # Width of the outter box relative to figure width
-	outer_box_rel_height = 0.70 # Height of the outter box relative to figure height
+	outer_box_rel_width = 0.9 # Width of the outter box relative to figure width
+	outer_box_rel_height = 0.60 # Height of the outter box relative to figure height
 	outer_box_width = outer_box_rel_width * twidth
 	outer_box_height = outer_box_rel_height * theight
 	outer_box = box(center, outer_box_width, outer_box_height, :none)
@@ -1224,9 +1229,7 @@ function draw_radiative_transfer(twidth, theight, tcenter, width, i_sample_point
 	end
 
 	# Compute transmitted light:
-	# Transmitted light: Drawing the left triangle between θ1 and the horizontal
 	sethue("goldenrod")
-
 	(p_trans_left, p_trans_right) = draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
 
 	# Theta angle :
@@ -1336,40 +1339,24 @@ begin
     # Beginning of the drawing:
     Drawing(image_dim[1], image_dim[2], :png)
 	t = currentdrawing()
-	tcenter = Point(t.width * 0.5, t.height * 0.55)
-	draw_radiative_transfer(t.width,t.height, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0)
-
-    finish()
-    preview()
-end
-
-# ╔═╡ 4615dc72-47f2-45ea-b42e-5ac64eb11982
-begin
-    Drawing(1000, 800, :png)
-	t2 = currentdrawing()
 	scale(1, -1) # to set the y axis up
-	translate(t2.width/2,-t2.height/2)
-    
-	tiles = Tiler(1000, 800, 2, 2, margin=50)
-
-    for (pos, n) in tiles
-        @layer begin
-		    draw_radiative_transfer(
-				tiles.tilewidth, 
-				tiles.tileheight, 
-				pos, 
-				width, 
-				i_sample_point, 
-				latitude_r, 
-				j, 
-				interrow, 
-				height, 
-				diffuse_angles, 
-				shape, 
-				h0
-			)
-        end
-    end
+	translate(0.0,-t.height)
+	tcenter = Point(t.width * 0.5, t.height * 0.55)
+	draw_radiative_transfer(
+		t.width,
+		t.height, 
+		tcenter, 
+		width, 
+		i_sample_point, 
+		latitude_r, 
+		j, 
+		interrow, 
+		height, 
+		diffuse_angles, 
+		shape, 
+		h0,
+		display_text
+	)
 
     finish()
     preview()
@@ -2201,10 +2188,8 @@ version = "3.5.0+0"
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
 # ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
-# ╠═2030aa31-a8d6-4b44-b359-04a0eb45a748
+# ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
-# ╠═4615dc72-47f2-45ea-b42e-5ac64eb11982
-# ╠═857b6390-711e-40ff-9c0a-852373c2ce44
 # ╠═b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
@@ -2221,7 +2206,7 @@ version = "3.5.0+0"
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
-# ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
+# ╠═b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─030d4bd1-b596-4590-b1c5-d53bdc656c7f
 # ╟─172d2086-efb1-4805-b75e-7801072347f4
 # ╟─fe676fa3-bc50-493d-b41f-55fdcba91d83

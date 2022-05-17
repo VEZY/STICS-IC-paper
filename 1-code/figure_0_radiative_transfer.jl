@@ -19,6 +19,7 @@ begin
     diffuse_angles = true
     shape = [:rectangle, :dtriangle, :rectangle, :utriangle]
     h0 = [0.1, 0.1, 0.4, 0.4]
+    display_text = [true, true, true, true]
 
     Drawing(1000, 800, :png)
     t2 = currentdrawing()
@@ -35,7 +36,8 @@ begin
             draw_radiative_transfer(
                 tiles.tilewidth, tiles.tileheight, pos, width[n],
                 i_sample_point[n], latitude_r[n], j[n], interrow[n], height[n],
-                diffuse_angles, shape[n], h0[n]
+                diffuse_angles, shape[n], h0[n],
+                display_text[n]
             )
         end
     end
