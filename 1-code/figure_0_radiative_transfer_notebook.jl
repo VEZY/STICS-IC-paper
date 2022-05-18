@@ -26,9 +26,6 @@ begin
     using Colors, ColorSchemes # For the color palette of the diffuse arrows
 end
 
-# ╔═╡ 8db00b5e-b7f7-4a47-a76e-8a1d89d0b799
-# include(dirname(dirname(pathof(Thebes))) * "/data/moreobjects.jl");
-
 # ╔═╡ 6788dbbe-317e-4212-a0e8-d417a52301f6
 md"""
 # STICS radiative transfer computation
@@ -46,7 +43,6 @@ md"""
 # ╔═╡ 311611bd-89f9-4e34-84cb-11924e8efc2d
 begin
     image_dim = (800, 500)
-    h0 = 0.2
     npoints = 200
     alpha = deg2rad(0) # Crop row direction relative to north
     light_from_sky = false # if false the light stops at the inner box, else at the sky
@@ -54,10 +50,10 @@ begin
     k = 0.8 # Light extinction coefficient
     lai = 2.0 # Leaf Area Index in m2[leaves] m-2[soil]
     display_text = true # display names and values?
-    display_icosahedron = false # display the truncated icosahedron that shows diffuse directions
     n_sample_points = 200
     colormap = ColorScheme(range(colorant"black", colorant"grey", length=100)) # colormap for the diffuse angles
     # colormap = colorschemes[:autumn1]
+	nothing
 end
 
 # ╔═╡ 4dff9014-73ff-4c32-b6ad-c936bd892588
@@ -772,8 +768,22 @@ function draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
     plant_base_points = sort(p[plant_y.==minimum(plant_y)])
     plant_top_points = p[plant_y.==maximum(plant_y)]
     plant_top_point = sort(plant_top_points)[end]
-
-	if sample_point[1] < maximum(plant_x)
+	
+	if length(plant_top_points) == 1
+		# Case of the utriangle, the shade is casted by the top point until limite2
+		limite2 = minimum(plant_x) + d_width / 2 * (d_h0 / (maximum(plant_y) - corner_left[2] - d_h0) + 1)
+		if sample_point[1] > limite2
+			below_limit = false
+		else
+			below_limit = true
+		end
+	elseif sample_point[1] < maximum(plant_x[plant_y.==minimum(plant_y)])
+		below_limit = true
+	else
+		below_limit = false
+	end
+	
+	if below_limit
 	    p_outline = poly(
 	        [
 	            sample_point,
@@ -811,19 +821,6 @@ function draw_transmitted_light(sample_point, p, inner_box, d_width, d_h0)
     )
 
     (p_outline, p_outline_right)
-end
-
-# ╔═╡ 030d4bd1-b596-4590-b1c5-d53bdc656c7f
-"""
-	P_drawing(P1, orig_xmax, orig_ymax, to_xmin, to_xmax)
-
-Rescale point P position from meters to drawing coordinates.
-"""
-function P_drawing(P1, orig_xmax, orig_ymax, to_xmin, to_xmax)
-    # Rescale to fit the position of the point on the drawing scale
-    d_P_xpos = rescale(P1[1], 0, orig_xmax, to_xmin, to_xmax)
-
-    return Point(d_P_xpos, orig_ymax)
 end
 
 # ╔═╡ 172d2086-efb1-4805-b75e-7801072347f4
@@ -925,6 +922,7 @@ begin
                 "width" => (0.05:0.05:1.0, 0.3),
                 "interrow" => (0.05:0.05:2.0, 1),
                 "height" => (0.05:0.05:1.0, 0.5),
+				"base" => (0.05:0.05:1.0, 0.2),
                 "sample_point" => (1:199.0, 100),
             ]
         ]
@@ -941,8 +939,8 @@ begin
     end
 
     params_df = DataFrame(
-        :Parameter => ["latitude", "day", "width", "interrow", "height", "sample_point", "shape", "diffuse_angles"],
-        :Units => ["degree", "julian day", "m", "m", "m", "index", "-", "-"],
+        :Parameter => ["latitude", "day", "width", "interrow", "height", "base", "sample_point", "shape", "diffuse_angles"],
+        :Units => ["degree", "julian day", "m", "m", "m", "m", "index", "-", "-"],
         Symbol("Value") => params_
     )
 
@@ -972,6 +970,39 @@ let
 end
 
 # ╔═╡ b90cd9e1-30ca-48be-9e7e-dd6afbce35db
+"""
+	draw_radiative_transfer(
+		twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0, display_text; 
+		text_height= 0.13,
+		outer_box_rel_width = 0.9, # Width of the outter box relative to figure width
+		outer_box_rel_height = 0.60, # Height of the outter box relative to figure height
+		text_color = "grey",
+		n = ""
+ 	)
+
+Draw a diagram of the radiative transfer computation from the STICS soil-crop model.
+
+##### Arguments
+
+- `twidth`: Width of the drawing window
+- `theight`: Height of the drawing window
+- `tcenter`: Center point of the drawing window
+- `width`: Plant width
+- `i_sample_point`: index of the sample point for light interception (1-200)
+- `latitude_r`: latitude (radians)
+- `j`: julian day of year
+- `interrow`: interrow distance (m)
+- `height`: plant height (m)
+- `diffuse_angles`: boolean, are diffuse angles to be drawn?
+- `shape`: plant shape (`:rectangle`, `:utriangle`, `:dtriangle`)
+- `h0`: plant canopy base height (m), this is e.g. the trunk height
+- `display_text`: Boolean, should text be displayed in the diagram?
+- `text_height= 0.13`: Diagram sub-title height relative to plot height 
+- `outer_box_rel_width = 0.9`: Width of the outter box relative to figure width
+- `outer_box_rel_height = 0.60`: Height of the outter box relative to figure height
+- `text_color = "grey"`: the color of the text
+- `n = ""`: the index of the plot
+"""
 function draw_radiative_transfer(
 	twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0, display_text; 
 	text_height= 0.13,
@@ -994,7 +1025,7 @@ function draw_radiative_transfer(
 	outer_box = box(center, outer_box_width, outer_box_height, :none)
 
 	# Compute radiation:
-	raint, rombre, rsoleil, surfAO, surfAS = transrad(rg, width, params["latitude"], 0.48, j, interrow, shape, h0, alpha, k, lai, 0.0, height)
+	raint, rombre, rsoleil, surfAO, surfAS = transrad(rg, width, rad2deg(latitude_r), 0.48, j, interrow, shape, h0, alpha, k, lai, 0.0, height)
 
 	# Writting bottom text:
 	@layer begin
@@ -1004,8 +1035,8 @@ function draw_radiative_transfer(
 		setopacity(0.8)
 		scale(1, -1)
 		text(
-			# "Latitude $(params["latitude"])°, day $j, sample point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))",
-			n*"Latitude $(params["latitude"])°, day $j, point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1",
+			n*"Lat. $(params["latitude"])°, day $j, point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))",
+			# n*"Latitude $(rad2deg(latitude_r))°, day $j, point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1",
 			Point(outer_box[1][1], -outer_box[1][2] - theight*text_height)
 		)
 	end
@@ -1333,15 +1364,6 @@ end
 
 # ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
 begin
-    j = params["day"]
-    diffuse_angles = params["diffuse_angles"]
-    latitude_r = deg2rad(params["latitude"])
-    interrow = params["interrow"]
-    shape = Symbol(params["shape"])
-    width = min(params["width"], interrow)
-    height = params["height"]
-    i_sample_point = Int(params["sample_point"])
-
     # Beginning of the drawing:
     Drawing(image_dim[1], image_dim[2], :png)
 	t = currentdrawing()
@@ -1352,15 +1374,15 @@ begin
 		t.width,
 		t.height, 
 		tcenter, 
-		width, 
-		i_sample_point, 
-		latitude_r, 
-		j, 
-		interrow, 
-		height, 
-		diffuse_angles, 
-		shape, 
-		h0,
+		min(params["width"], params["interrow"]), 
+		Int(params["sample_point"]), 
+		deg2rad(params["latitude"]), 
+		params["day"], 
+		params["interrow"], 
+		params["height"], 
+		params["diffuse_angles"], 
+		Symbol(params["shape"]), 
+		params["base"],
 		display_text
 	)
 
@@ -2185,7 +2207,6 @@ version = "3.5.0+0"
 
 # ╔═╡ Cell order:
 # ╠═f5cd7710-c533-11ec-1490-a502fac92221
-# ╠═8db00b5e-b7f7-4a47-a76e-8a1d89d0b799
 # ╟─6788dbbe-317e-4212-a0e8-d417a52301f6
 # ╟─f92c1e63-d40f-41eb-8d58-b44b62e44ff9
 # ╠═311611bd-89f9-4e34-84cb-11924e8efc2d
@@ -2196,7 +2217,6 @@ version = "3.5.0+0"
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
-# ╠═b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
@@ -2211,9 +2231,9 @@ version = "3.5.0+0"
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
+# ╠═b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
-# ╠═b777571c-91b2-4c80-a3bb-1bc65f48fbc8
-# ╟─030d4bd1-b596-4590-b1c5-d53bdc656c7f
+# ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─172d2086-efb1-4805-b75e-7801072347f4
 # ╟─fe676fa3-bc50-493d-b41f-55fdcba91d83
 # ╟─d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
