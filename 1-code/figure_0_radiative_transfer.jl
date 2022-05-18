@@ -11,17 +11,18 @@ includet("figure_0_radiative_transfer_notebook.jl")
 
 begin
     width = [0.4, 0.4, 0.4, 0.4]
-    i_sample_point = [150, 150, 20, 20]
+    i_sample_point = [150, 150, 50, 50]
     latitude_r = deg2rad.([0, 40, 40, 40])
-    j = [1, 1, 1, 120]
+    j = [1, 1, 1, 122]
     interrow = [1.0, 1.0, 1.0, 1.0]
-    height = [0.3, 0.3, 0.8, 0.8]
+    height = [0.8, 0.8, 0.8, 0.8]
     diffuse_angles = true
     shape = [:rectangle, :dtriangle, :rectangle, :utriangle]
-    h0 = [0.12, 0.12, 0.4, 0.4]
+    h0 = [0.4, 0.4, 0.4, 0.4]
     display_text = [true, true, true, true]
 
-    Drawing(1000, 800, :png)
+    # Drawing(1000, 800, :png)
+    Drawing(1000, 800, "2-outputs/plots/Fig.0_radiative_transfer.png")
     t2 = currentdrawing()
     scale(1, -1) # to set the y axis up
     translate(t2.width / 2, -t2.height / 2)

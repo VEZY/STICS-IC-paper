@@ -73,7 +73,7 @@ md"""
 
 # ╔═╡ 9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 md"""
-Please note that the direct angles (`kdir`) are projected in 2D, but are computed in the 3D space following row orientation and sun azimuthal and zenithal angles. So it is perfectly normal to see the angles appearing *"into"* the plant crown, and that's because the angle is in fact projected towards or away from you, thus appearing drawn on top of the plant.
+Please note that the direct angles (`kdir`) are projected in 2D, but are computed in the 3D space following row orientation and sun azimuthal and zenithal angles. So it is perfectly normal to see the angles appearing *"into"* the plant crown, because the angle is in fact projected towards or away from the viewer, thus appearing drawn on top of the plant.
 """
 
 # ╔═╡ e261142a-c411-40a3-85e4-ae979a4d9506
@@ -870,105 +870,6 @@ function draw_diffuse_angles_3d(sample_point, H, az, a_length=100, colormap=colo
     return center_point, end_line_points
 end
 
-# ╔═╡ d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
-"""
-	DataFrameInput(data_frame_input, combine_funct; title="")
-
-Make a DataFrame of binded widgets out of a Pluto `combine` array.
-
-Adapted from [this code](https://github.com/jeremiahpslewis/PlutoMiscellany.jl/blob/main/notebooks/DataFrameInput_Widget.jl) from the Github account **@jeremiahpslewis**.
-"""
-function DataFrameInput(data_frame_input, combine_funct; title="")
-    table_header = []
-    table_body = []
-    col_names = [@htl("<th>$(col_name)</th>") for col_name in names(data_frame_input)]
-
-    function cell_element(row, cell)
-        if isa(cell, Slider) | isa(cell, Scrubbable) | isa(cell, TextField) | isa(cell, RangeSlider) | isa(cell, Radio) | isa(cell, Select) | isa(cell, CheckBox)
-            @htl("<td>$(combine_funct(row, cell))</td>")
-        else
-            @htl("<td>$(cell)</td>")
-        end
-    end
-
-    table_header = @htl("$(col_names)")
-    for df_row in eachrow(data_frame_input)
-        row_output = [cell_element(string(UUIDs.uuid4()), cell) for cell in df_row]
-        table_body = [table_body..., @htl("<tr>$(row_output)</tr>")]
-    end
-
-    @htl("""
-    <h6 style="text-align: center;">$(title)</h6>
-    <table>
-    <thead>
-    <tr>
-    $(table_header)
-    </tr>
-    </thead>
-    <tbody>
-    $(table_body)
-    </tbody>
-    </table>
-    """)
-end
-
-# ╔═╡ e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
-begin
-    params_ = let
-        params_ = Any[
-            Slider(param.second[1]; default=param.second[2], show_value=true) for param in [
-                "latitude" => (-90:1:90, 44.0),
-                "day" => (1:365, 1),
-                "width" => (0.05:0.05:1.0, 0.3),
-                "interrow" => (0.05:0.05:2.0, 1),
-                "height" => (0.05:0.05:1.0, 0.5),
-				"base" => (0.05:0.05:1.0, 0.2),
-                "sample_point" => (1:199.0, 100),
-            ]
-        ]
-
-        push!(
-            params_,
-            Select(["dtriangle" => "🔻", "utriangle" => "🔺", "rectangle" => "🟥"]; default="dtriangle")
-        )
-
-        push!(
-            params_,
-            CheckBox(default=true)
-        )
-    end
-
-    params_df = DataFrame(
-        :Parameter => ["latitude", "day", "width", "interrow", "height", "base", "sample_point", "shape", "diffuse_angles"],
-        :Units => ["degree", "julian day", "m", "m", "m", "m", "index", "-", "-"],
-        Symbol("Value") => params_
-    )
-
-
-    @bind df_values PlutoUI.combine() do Child
-        DataFrameInput(params_df, Child; title="Input Dataframe")
-    end
-end
-
-# ╔═╡ a24703dc-9b43-4b9c-9f2e-11b042c67af2
-params = Dict(zip(params_df.Parameter, [df_values[i] for i in 1:length(df_values)]));
-
-# ╔═╡ 6d52ea68-1c71-4cc4-970b-8c9a947fc582
-let
-    str = ""
-    if params["width"] > params["interrow"]
-        str = str * "\nPlant width > interrow, will use interrow for the computation"
-    end
-
-    if params["diffuse_angles"]
-        str = str * """\nDiffuse and direct angles are projected in 2D but are actually computed in the 3D space, so they can appear poiting below the canopy, while in fact pointing towards or afar from the viewer."""
-    end
-
-    if length(str) > 0
-        @warn str
-    end
-end
-
 # ╔═╡ b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 """
 	draw_radiative_transfer(
@@ -1035,7 +936,7 @@ function draw_radiative_transfer(
 		setopacity(0.8)
 		scale(1, -1)
 		text(
-			n*"Lat. $(params["latitude"])°, day $j, point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))",
+			n*"Lat. $(rad2deg(latitude_r))°, day $j, point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))",
 			# n*"Latitude $(rad2deg(latitude_r))°, day $j, point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1",
 			Point(outer_box[1][1], -outer_box[1][2] - theight*text_height)
 		)
@@ -1360,6 +1261,105 @@ function draw_radiative_transfer(
 			)
 		end
 	end	
+end
+
+# ╔═╡ d02a0cb0-7e61-4d6b-a2b8-ace9ef94e4fc
+"""
+	DataFrameInput(data_frame_input, combine_funct; title="")
+
+Make a DataFrame of binded widgets out of a Pluto `combine` array.
+
+Adapted from [this code](https://github.com/jeremiahpslewis/PlutoMiscellany.jl/blob/main/notebooks/DataFrameInput_Widget.jl) from the Github account **@jeremiahpslewis**.
+"""
+function DataFrameInput(data_frame_input, combine_funct; title="")
+    table_header = []
+    table_body = []
+    col_names = [@htl("<th>$(col_name)</th>") for col_name in names(data_frame_input)]
+
+    function cell_element(row, cell)
+        if isa(cell, Slider) | isa(cell, Scrubbable) | isa(cell, TextField) | isa(cell, RangeSlider) | isa(cell, Radio) | isa(cell, Select) | isa(cell, CheckBox)
+            @htl("<td>$(combine_funct(row, cell))</td>")
+        else
+            @htl("<td>$(cell)</td>")
+        end
+    end
+
+    table_header = @htl("$(col_names)")
+    for df_row in eachrow(data_frame_input)
+        row_output = [cell_element(string(UUIDs.uuid4()), cell) for cell in df_row]
+        table_body = [table_body..., @htl("<tr>$(row_output)</tr>")]
+    end
+
+    @htl("""
+    <h6 style="text-align: center;">$(title)</h6>
+    <table>
+    <thead>
+    <tr>
+    $(table_header)
+    </tr>
+    </thead>
+    <tbody>
+    $(table_body)
+    </tbody>
+    </table>
+    """)
+end
+
+# ╔═╡ e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
+begin
+    params_ = let
+        params_ = Any[
+            Slider(param.second[1]; default=param.second[2], show_value=true) for param in [
+                "latitude" => (-90:1:90, 44.0),
+                "day" => (1:365, 1),
+                "width" => (0.05:0.05:1.0, 0.3),
+                "interrow" => (0.05:0.05:2.0, 1),
+                "height" => (0.05:0.05:1.0, 0.5),
+				"base" => (0.05:0.05:1.0, 0.2),
+                "sample_point" => (1:199.0, 100),
+            ]
+        ]
+
+        push!(
+            params_,
+            Select(["dtriangle" => "🔻", "utriangle" => "🔺", "rectangle" => "🟥"]; default="dtriangle")
+        )
+
+        push!(
+            params_,
+            CheckBox(default=true)
+        )
+    end
+
+    params_df = DataFrame(
+        :Parameter => ["latitude", "day", "width", "interrow", "height", "base", "sample_point", "shape", "diffuse_angles"],
+        :Units => ["degree", "julian day", "m", "m", "m", "m", "index", "-", "-"],
+        Symbol("Value") => params_
+    )
+
+
+    @bind df_values PlutoUI.combine() do Child
+        DataFrameInput(params_df, Child; title="Input Dataframe")
+    end
+end
+
+# ╔═╡ a24703dc-9b43-4b9c-9f2e-11b042c67af2
+params = Dict(zip(params_df.Parameter, [df_values[i] for i in 1:length(df_values)]));
+
+# ╔═╡ 6d52ea68-1c71-4cc4-970b-8c9a947fc582
+let
+    str = ""
+    if params["width"] > params["interrow"]
+        str = str * "\nPlant width > interrow, will use interrow for the computation"
+    end
+
+    if params["diffuse_angles"]
+        str = str * """\nDiffuse and direct angles are projected in 2D but are actually computed in the 3D space, so they can appear poiting below the canopy, while in fact pointing towards or afar from the viewer."""
+    end
+
+    if length(str) > 0
+        @warn str
+    end
 end
 
 # ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
@@ -2231,7 +2231,7 @@ version = "3.5.0+0"
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
-# ╠═b90cd9e1-30ca-48be-9e7e-dd6afbce35db
+# ╟─b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
 # ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─172d2086-efb1-4805-b75e-7801072347f4
