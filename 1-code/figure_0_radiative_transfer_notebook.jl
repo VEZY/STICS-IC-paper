@@ -43,12 +43,7 @@ md"""
 # ╔═╡ 311611bd-89f9-4e34-84cb-11924e8efc2d
 begin
     image_dim = (800, 500)
-    alpha = deg2rad(0) # Crop row direction relative to north
-    rg = 20 # Global radiation from the atmosphere, in MJ m-2 day-1
-    k = 0.8 # Light extinction coefficient
-    lai = 2.0 # Leaf Area Index in m2[leaves] m-2[soil]
-    display_text = true # display names and values?
-	nothing
+    display_text = true # display names and values in the diagram?
 end
 
 # ╔═╡ 4dff9014-73ff-4c32-b6ad-c936bd892588
@@ -1462,22 +1457,6 @@ end
 # ╔═╡ a24703dc-9b43-4b9c-9f2e-11b042c67af2
 params = Dict(zip(params_df.Parameter, [df_values[i] for i in 1:length(df_values)]));
 
-# ╔═╡ 6d52ea68-1c71-4cc4-970b-8c9a947fc582
-let
-    str = ""
-    if params["width"] > params["interrow"]
-        str = str * "\nPlant width > interrow, will use interrow for the computation"
-    end
-
-    if params["diffuse_angles"]
-        str = str * """\nDiffuse and direct angles are projected in 2D but are actually computed in the 3D space, so they can appear poiting below the canopy, while in fact pointing towards or afar from the viewer."""
-    end
-
-    if length(str) > 0
-        @warn str
-    end
-end
-
 # ╔═╡ 2030aa31-a8d6-4b44-b359-04a0eb45a748
 begin
     # Beginning of the drawing:
@@ -1513,6 +1492,22 @@ begin
 
     finish()
     preview()
+end
+
+# ╔═╡ 6d52ea68-1c71-4cc4-970b-8c9a947fc582
+let
+    str = ""
+    if params["width"] > params["interrow"]
+        str = str * "\nPlant width > interrow, will use interrow for the computation"
+    end
+
+    if params["diffuse_angles"]
+        str = str * """\nDiffuse and direct angles are projected in 2D but are actually computed in the 3D space, so they can appear poiting below the canopy, while in fact pointing towards or afar from the viewer."""
+    end
+
+    if length(str) > 0
+        @warn str
+    end
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
