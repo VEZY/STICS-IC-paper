@@ -20,9 +20,6 @@ source("1-code/functions.R")
 # STICS set-up -----------------------------------------------------------
 
 javastics_path = normalizePath("0-javastics", winslash = "/")
-javastics_workspace_path = normalizePath(file.path("0-data/usms-optim-radiative",names(workspace_usms)[i]), winslash = "/")
-# Name of the folder where text files will be written:
-stics_inputs_path = file.path(javastics_workspace_path, "manual_optimization")
 
 workspace_usms =
   list(
@@ -39,8 +36,12 @@ workspace_usms =
   )
 
 # Choose which workspace to simulate:
-i = 2
+i = 5
 usms = workspace_usms[[i]]
+javastics_workspace_path = normalizePath(file.path("0-data/usms-optim-radiative",names(workspace_usms)[i]), winslash = "/")
+
+# Name of the folder where text files will be written:
+stics_inputs_path = file.path(javastics_workspace_path, "manual_optimization")
 
 # Choose the variables:
 var_name = c("lai_n", "masec_n", "mafruit", "CNgrain", "QNplante")
@@ -71,7 +72,7 @@ model_options =
   )
 
 # Get the current (previous) parameter value:
-get_param_txt(file.path(stics_inputs_path,usms), "cgrain")
+get_param_txt(file.path(stics_inputs_path,usms), "vitircarbT")
 
 # Simulate the original value without changing parameters:
 res_orig = stics_wrapper(
@@ -86,25 +87,23 @@ res_opti = stics_wrapper(
   param_values = c(
     # "stdrpmat" = 550,
     # "stlevamf" = 380,
-    "pentlaimax" = 3.8,
-    "laicomp" = 0.10,
-    "dlaimaxbrut" = 0.00029,
+    # "pentlaimax" = 3.8,
+    # "laicomp" = 0.10,
+    # "dlaimaxbrut" = 0.00029,
     # "stdrpmat" = 660,
-    "vlaimax" = 2.0,
-    # "dlaimaxbrut" = 0.00021,
-    "ktrou" = 0.9,
-    "stamflax" = 320,
-    "efcroijuv" = 3.5,
-    "efcroirepro" = 4.3,
-    "efcroiveg" = 3.5,
-    "durvieF" = 290,
-    # "nbgrmin" = 1540,
-    "cgrain" = 0.138,
-    "croirac" = 0.2,
+    # "vlaimax" = 2.0,
+    # "ktrou" = 0.9,
+    # "stamflax" = 320,
+    # "efcroijuv" = 3.5,
+    # "efcroirepro" = 4.3,
+    # "efcroiveg" = 3.5,
+    # "durvieF" = 290,
+    # "cgrain" = 0.138,
+    # "croirac" = 0.2,
     # "nbgrmin" = 2000,
-    "Vmax2" = 0.0039,
-    "inngrain2" = 1.3,
-    "vitircarbT"= 0.00082
+    # "Vmax2" = 0.0039,
+    # "inngrain2" = 1.3,
+    "vitircarbT"= 0.00138
     # "innsen" = 0.2
   ),
   situation = usms,

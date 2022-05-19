@@ -35,14 +35,25 @@ begin
     for (pos, n) in [(tiles[i][1], j) for (i, j) in enumerate(index_plot)]
         @layer begin
             draw_radiative_transfer(
-                tiles.tilewidth, tiles.tileheight, pos, width[n],
-                i_sample_point[n], latitude_r[n], j[n], interrow[n], height[n],
-                diffuse_angles, shape[n], h0[n],
-                display_text[n],
+                tiles.tilewidth, tiles.tileheight, pos;
+                width=width[n],
+                i_sample_point=i_sample_point[n],
+                latitude_r=latitude_r[n],
+                j=j[n],
+                interrow=interrow[n],
+                height=height[n],
+                diffuse_angles=diffuse_angles,
+                shape=shape[n],
+                h0=h0[n],
+                alpha=deg2rad(0.0),
+                rg=20,
+                k=0.8,
+                lai=2.0,
+                display_text=display_text[n],
                 title_height=0.18,
                 outer_box_rel_width=0.95,
                 outer_box_rel_height=0.55,
-                ri_text_pos=(-0.24, 0.1);
+                ri_text_pos=(-0.24, 0.1),
                 text_color="grey50",
                 n="$n. "
             )
