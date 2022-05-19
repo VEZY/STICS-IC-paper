@@ -43,16 +43,11 @@ md"""
 # ╔═╡ 311611bd-89f9-4e34-84cb-11924e8efc2d
 begin
     image_dim = (800, 500)
-    npoints = 200
     alpha = deg2rad(0) # Crop row direction relative to north
-    light_from_sky = false # if false the light stops at the inner box, else at the sky
     rg = 20 # Global radiation from the atmosphere, in MJ m-2 day-1
     k = 0.8 # Light extinction coefficient
     lai = 2.0 # Leaf Area Index in m2[leaves] m-2[soil]
     display_text = true # display names and values?
-    n_sample_points = 200
-    colormap = ColorScheme(range(colorant"black", colorant"grey", length=100)) # colormap for the diffuse angles
-    # colormap = colorschemes[:autumn1]
 	nothing
 end
 
@@ -477,7 +472,11 @@ end
 """
 	r_transmitted(width, P_latitude, j, ir, shape, h0, alpha, rdif, P_ktrou, lai, eai, height)
 
-Computes the transmitted radiation to the plane below the plant.
+Computes the transmitted radiation to the plane below the plant, *i.e.* the total light
+intercepted by the points.
+
+The function returns two values, `(rombre, rsoleil)`, the light transmitted to the shaded
+surface (directly below the plant), and the light transmitter to the sunlit surface.
 
 ##### Arguments
 
@@ -873,21 +872,41 @@ end
 # ╔═╡ b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 """
 	draw_radiative_transfer(
-		twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0, display_text; 
-		text_height= 0.13,
-		outer_box_rel_width = 0.9, # Width of the outter box relative to figure width
-		outer_box_rel_height = 0.60, # Height of the outter box relative to figure height
+		twidth, theight, tcenter; 
+		width = 0.4, 
+		i_sample_point = 150, 
+		latitude_r = 0.0, 
+		j = 1, 
+		interrow = 1.0, 
+		height = 0.8, 
+		diffuse_angles = true, 
+		shape = :rectangle, 
+		h0 = 0.4, 
+		alpha = deg2rad(0),
+	    rg = 20, 
+	    k = 0.8,
+	    lai = 2.0,
+	    display_text = true,
+		title_height= 0.125,
+		outer_box_rel_width = 0.9,
+		outer_box_rel_height = 0.60,
+		ri_text_pos = (-0.15,0.1),
 		text_color = "grey",
 		n = ""
- 	)
+    )
 
 Draw a diagram of the radiative transfer computation from the STICS soil-crop model.
 
 ##### Arguments
 
+###### Positional
+
 - `twidth`: Width of the drawing window
 - `theight`: Height of the drawing window
 - `tcenter`: Center point of the drawing window
+
+###### Keyword arguments (named)
+
 - `width`: Plant width
 - `i_sample_point`: index of the sample point for light interception (1-200)
 - `latitude_r`: latitude (radians)
@@ -897,24 +916,49 @@ Draw a diagram of the radiative transfer computation from the STICS soil-crop mo
 - `diffuse_angles`: boolean, are diffuse angles to be drawn?
 - `shape`: plant shape (`:rectangle`, `:utriangle`, `:dtriangle`)
 - `h0`: plant canopy base height (m), this is e.g. the trunk height
+- `alpha = 0.0`: Crop row direction relative to north (radians)
+- `rg = 20`: Global radiation from the atmosphere, in MJ m-2 day-1
+- `k = 0.8`: Light extinction coefficient
+- `lai = 2.0`: Leaf Area Index in m2[leaves] m-2[soil]
 - `display_text`: Boolean, should text be displayed in the diagram?
 - `text_height= 0.13`: Diagram sub-title height relative to plot height 
 - `outer_box_rel_width = 0.9`: Width of the outter box relative to figure width
 - `outer_box_rel_height = 0.60`: Height of the outter box relative to figure height
+- `ri_text_pos = (-0.15,0.1)`: position of the Ri text relative to the inner (black) box width and height 
 - `text_color = "grey"`: the color of the text
 - `n = ""`: the index of the plot
 """
 function draw_radiative_transfer(
-	twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0, display_text; 
-	text_height= 0.125,
+	twidth, theight, tcenter; 
+	width = 0.4, 
+	i_sample_point = 150, 
+	latitude_r = 0.0, 
+	j = 1, 
+	interrow = 1.0, 
+	height = 0.8, 
+	diffuse_angles = true, 
+	shape = :rectangle, 
+	h0 = 0.4, 
+	alpha = deg2rad(0),
+    rg = 20, 
+    k = 0.8,
+    lai = 2.0,
+    display_text = true,
+	title_height= 0.125,
 	outer_box_rel_width = 0.9, # Width of the outter box relative to figure width
 	outer_box_rel_height = 0.60, # Height of the outter box relative to figure height
+	ri_text_pos = (-0.15,0.1),
 	text_color = "grey",
 	n = ""
  )
 
 	e = height - h0
+    n_sample_points = 200
 
+	# colormap for the diffuse angles
+	colormap = ColorScheme(range(colorant"black", colorant"grey", length=100))
+    # colormap = colorschemes[:autumn1]
+	
 	# fontface("Calibri Bold")
 	fontsize(11)
 	sethue("black")
@@ -928,7 +972,7 @@ function draw_radiative_transfer(
 	# Compute radiation:
 	raint, rombre, rsoleil, surfAO, surfAS = transrad(rg, width, rad2deg(latitude_r), 0.48, j, interrow, shape, h0, alpha, k, lai, 0.0, height)
 
-	# Writting bottom text:
+	# Writting top text:
 	@layer begin
 		fontsize(16)
 		fontface("Calibri Bold")
@@ -937,7 +981,7 @@ function draw_radiative_transfer(
 		scale(1, -1)
 		text(
 			n*"Lat. $(rad2deg(latitude_r))°, day $j",
-			Point(outer_box[1][1], -outer_box[1][2] - theight*text_height)
+			Point(outer_box[1][1], -outer_box[1][2] - theight*title_height)
 		)
 	end
 
@@ -1054,6 +1098,19 @@ function draw_radiative_transfer(
 			format=(d) -> string("Shaded:", round(surfAO, digits=1))
 		)
 
+		@layer begin
+			setopacity(0.5)
+			sethue("lightskyblue")
+			box(
+				midpoint(
+					Point(inner_box[2][1] - d_width / 2, inner_box[2][2]-10),
+					inner_box[2]
+				),
+				(inner_box[2][1] - d_width / 2) -inner_box[2][1], 10, 0; action=:fill
+			)
+		end
+		
+		sethue(text_color)
 		dimension(
 			Point(bottom_center[1] - inner_box_width, bottom_center[2]), Point(inner_box[2][1] - d_width / 2, y0),
 			offset=-60,
@@ -1062,6 +1119,16 @@ function draw_radiative_transfer(
 			textrotation=π / 2,
 			textgap=40,
 			format=(d) -> string("Sunlit:", round(surfAS, digits=1))
+		)
+
+		setopacity(0.8)
+		sethue("lemonchiffon")
+		box(
+			midpoint(
+				Point(bottom_center[1] - inner_box_width, bottom_center[2]-10),
+				Point(inner_box[2][1] - d_width / 2, y0)
+			),
+			(bottom_center[1] - inner_box_width) - (inner_box[2][1] - d_width / 2), 10, 0; action=:fill
 		)
 	end
 
@@ -1228,7 +1295,7 @@ function draw_radiative_transfer(
 		fontsize(16)
 		fontface("Calibri Bold")
 		scale(1, -1)
-		p_Ri = Point(inner_box[3][1] - inner_box_width*0.15, -inner_box[3][2] - 30)
+		p_Ri = Point(inner_box[3][1] + inner_box_width*ri_text_pos[1], -inner_box[3][2] - inner_box_length * ri_text_pos[2])
 		setopacity(1)
 		sethue("white")
 		box(p_Ri, 150, 30, 5, :fill)
@@ -1356,12 +1423,16 @@ begin
         params_ = Any[
             Slider(param.second[1]; default=param.second[2], show_value=true) for param in [
                 "latitude" => (-90:1:90, 44.0),
-                "day" => (1:365, 1),
+                "alpha" => (-90:1:90, 0.0),
+				"day" => (1:365, 1),
                 "width" => (0.05:0.05:1.0, 0.3),
                 "interrow" => (0.05:0.05:2.0, 1),
                 "height" => (0.05:0.05:1.0, 0.5),
 				"base" => (0.05:0.05:1.0, 0.2),
                 "sample_point" => (1:199.0, 100),
+				"rg" => (1:30, 20),
+				"k" => (0.1:0.1:1.0, 0.8),
+				"lai" => (0.1:0.1:3.0, 2.0),
             ]
         ]
 
@@ -1377,8 +1448,8 @@ begin
     end
 
     params_df = DataFrame(
-        :Parameter => ["latitude", "day", "width", "interrow", "height", "base", "sample_point", "shape", "diffuse_angles"],
-        :Units => ["degree", "julian day", "m", "m", "m", "m", "index", "-", "-"],
+        :Parameter => ["latitude", "alpha", "day", "width", "interrow", "height", "base", "sample_point", "rg", "k", "lai", "shape", "diffuse_angles"],
+        :Units => ["degree", "degree", "julian day", "m", "m", "m", "m", "index", "MJ m⁻² d⁻¹","-","m² m⁻²", "-", "-"],
         Symbol("Value") => params_
     )
 
@@ -1415,20 +1486,29 @@ begin
 	scale(1, -1) # to set the y axis up
 	translate(0.0,-t.height)
 	tcenter = Point(t.width * 0.5, t.height * 0.55)
+
 	draw_radiative_transfer(
-		t.width,
-		t.height, 
-		tcenter, 
-		min(params["width"], params["interrow"]), 
-		Int(params["sample_point"]), 
-		deg2rad(params["latitude"]), 
-		params["day"], 
-		params["interrow"], 
-		params["height"], 
-		params["diffuse_angles"], 
-		Symbol(params["shape"]), 
-		params["base"],
-		display_text
+		t.width, t.height, tcenter; 
+		width = min(params["width"], params["interrow"]), 
+		i_sample_point = Int(params["sample_point"]), 
+		latitude_r = deg2rad(params["latitude"]), 
+		j = params["day"], 
+		interrow = params["interrow"], 
+		height = params["height"], 
+		diffuse_angles = params["diffuse_angles"], 
+		shape = Symbol(params["shape"]), 
+		h0 = params["base"],
+		alpha = deg2rad(params["alpha"]),
+	    rg = params["rg"], 
+	    k = params["k"],
+	    lai = params["lai"],
+	    display_text = true,
+		title_height= 0.125,
+		outer_box_rel_width = 0.9,
+		outer_box_rel_height = 0.60,
+		ri_text_pos = (-0.15,0.1),
+		text_color = "grey",
+		n = ""
 	)
 
     finish()
@@ -2258,10 +2338,10 @@ version = "3.5.0+0"
 # ╟─4dff9014-73ff-4c32-b6ad-c936bd892588
 # ╟─a24703dc-9b43-4b9c-9f2e-11b042c67af2
 # ╟─e6c55f6f-a8bf-423b-b3d7-49acf1cf74d0
-# ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─dff1401d-a2e9-45c1-9e26-a46d0fa44eff
 # ╟─2030aa31-a8d6-4b44-b359-04a0eb45a748
 # ╟─78c00fe4-feb0-45de-b5e1-df0fae546287
+# ╟─6d52ea68-1c71-4cc4-970b-8c9a947fc582
 # ╟─9db4dbb1-5f92-4ce4-bd85-5a74fae7025e
 # ╟─e261142a-c411-40a3-85e4-ae979a4d9506
 # ╟─ab594776-ea39-48f6-9218-78c5eed58916
@@ -2276,7 +2356,7 @@ version = "3.5.0+0"
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
-# ╠═b90cd9e1-30ca-48be-9e7e-dd6afbce35db
+# ╟─b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
 # ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─172d2086-efb1-4805-b75e-7801072347f4

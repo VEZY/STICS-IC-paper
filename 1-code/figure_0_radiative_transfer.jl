@@ -39,9 +39,10 @@ begin
                 i_sample_point[n], latitude_r[n], j[n], interrow[n], height[n],
                 diffuse_angles, shape[n], h0[n],
                 display_text[n],
-                text_height=0.18,
+                title_height=0.18,
                 outer_box_rel_width=0.95,
                 outer_box_rel_height=0.55,
+                ri_text_pos=(-0.24, 0.1);
                 text_color="grey50",
                 n="$n. "
             )
