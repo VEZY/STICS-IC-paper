@@ -906,7 +906,7 @@ Draw a diagram of the radiative transfer computation from the STICS soil-crop mo
 """
 function draw_radiative_transfer(
 	twidth, theight, tcenter, width, i_sample_point, latitude_r, j, interrow, height, diffuse_angles, shape, h0, display_text; 
-	text_height= 0.13,
+	text_height= 0.125,
 	outer_box_rel_width = 0.9, # Width of the outter box relative to figure width
 	outer_box_rel_height = 0.60, # Height of the outter box relative to figure height
 	text_color = "grey",
@@ -936,8 +936,7 @@ function draw_radiative_transfer(
 		setopacity(0.8)
 		scale(1, -1)
 		text(
-			n*"Lat. $(rad2deg(latitude_r))°, day $j, point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1, Rsh $(round(rombre, digits = 1)), Rsu $(round(rsoleil, digits = 1))",
-			# n*"Latitude $(rad2deg(latitude_r))°, day $j, point $i_sample_point/200, Ri = $(round(raint, digits = 1)) MJ m-2 day-1",
+			n*"Lat. $(rad2deg(latitude_r))°, day $j",
 			Point(outer_box[1][1], -outer_box[1][2] - theight*text_height)
 		)
 	end
@@ -963,7 +962,7 @@ function draw_radiative_transfer(
 	inner_box_length = inner_box[1][2] - inner_box[3][2]
 
 	setdash("dot")
-
+	
 	# Draw the center line
 	bottom_center = midpoint(inner_box[2], inner_box[3])
 	top_center = midpoint(inner_box[1], inner_box[4])
@@ -1000,7 +999,8 @@ function draw_radiative_transfer(
 			toextension=[25, 5],
 			textrotation=π / 2,
 			textgap=40,
-			format=(d) -> string("Thickness:", round(e, digits=1)))
+			format=(d) -> string("Thickness:", round(e, digits=1))
+		)
 	end
 
 	# Show interrow dimension:
@@ -1015,7 +1015,8 @@ function draw_radiative_transfer(
 			toextension=[45, 5],
 			textrotation=π / 2,
 			textgap=40,
-			format=(d) -> string("Interrow:", round(interrow, digits=1)))
+			format=(d) -> string("Interrow:", round(interrow, digits=1))
+		)
 	end
 
 	# Show crop width:
@@ -1031,7 +1032,8 @@ function draw_radiative_transfer(
 			toextension=[5, 25],
 			textrotation=π / 2,
 			textgap=40,
-			format=(d) -> string("Width:", round(width, digits=1)))
+			format=(d) -> string("Width:", round(width, digits=1))
+		)
 	end
 
 	# Show shaded and sunlit:
@@ -1041,22 +1043,50 @@ function draw_radiative_transfer(
 		setdash("dot")
 		scale(-1, 1)
 		translate(-(x0 * 2), 0)  # translate back
-		dimension(Point(inner_box[2][1] - d_width / 2, inner_box[2][2]), inner_box[2],
+		dimension(
+			Point(inner_box[2][1] - d_width / 2, inner_box[2][2]), 
+			inner_box[2],
 			offset=-60,
 			fromextension=[5, 60],
 			toextension=[5, 60],
 			textrotation=π / 2,
 			textgap=40,
-			format=(d) -> string("Shaded:", round(surfAO, digits=1)))
+			format=(d) -> string("Shaded:", round(surfAO, digits=1))
+		)
 
-
-		dimension(Point(bottom_center[1] - inner_box_width, bottom_center[2]), Point(inner_box[2][1] - d_width / 2, y0),
+		dimension(
+			Point(bottom_center[1] - inner_box_width, bottom_center[2]), Point(inner_box[2][1] - d_width / 2, y0),
 			offset=-60,
 			fromextension=[5, 10],
 			toextension=[5, 30],
 			textrotation=π / 2,
 			textgap=40,
-			format=(d) -> string("Sunlit:", round(surfAS, digits=1)))
+			format=(d) -> string("Sunlit:", round(surfAS, digits=1))
+		)
+	end
+
+	@layer begin 
+		sethue(text_color)
+		setopacity(1)
+		setdash("dot")
+		scale(1, -1)
+		rsh_pos = midpoint(
+			Point(inner_box[2][1] + d_width / 2, -inner_box[2][2]),
+			Point(inner_box[2][1], -inner_box[2][2])
+		)
+		text(
+			"Rsh: $(round(rombre, digits = 1))", 
+			Point(rsh_pos[1], rsh_pos[2]+70), halign=:center, valign=:middle
+		)
+
+		rsu_pos = midpoint(
+			Point(inner_box[2][1] + d_width / 2, -inner_box[2][2]),
+			Point(bottom_center[1], -bottom_center[2]),
+		)
+		text(
+			"Rsu: $(round(rsoleil, digits = 1))", 
+			Point(rsu_pos[1], rsu_pos[2]+70), halign=:center, valign=:middle
+		)
 	end
 
 	# Drawing the left-hand side crop:
@@ -1193,6 +1223,21 @@ function draw_radiative_transfer(
 
 	#   end
 
+	# Writting Ri:
+	@layer begin
+		fontsize(16)
+		fontface("Calibri Bold")
+		scale(1, -1)
+		p_Ri = Point(inner_box[3][1] - inner_box_width*0.15, -inner_box[3][2] - 30)
+		setopacity(1)
+		sethue("white")
+		box(p_Ri, 150, 30, 5, :fill)
+		setopacity(0.8)
+		sethue("black")
+		text("Ri: $(round(raint, digits = 1)) MJ m⁻² day⁻¹", p_Ri, halign = :center, valign = :middle)
+	end
+
+	# Compute diffuse light:
 	text_point = midpoint(p[1], Point(inner_box[4][1] - d_width / 2, inner_box[4][2]))
 	kgdiffus, H1, H2, az1, az2 = kdif(point_pos_m, h0, width, interrow, height - h0, shape)
 
@@ -2231,7 +2276,7 @@ version = "3.5.0+0"
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
-# ╟─b90cd9e1-30ca-48be-9e7e-dd6afbce35db
+# ╠═b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
 # ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─172d2086-efb1-4805-b75e-7801072347f4
