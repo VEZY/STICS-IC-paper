@@ -22,48 +22,4 @@
             <flai>defaut.lai</flai>
         </plante>
     </usm>
-    <usm nom="Fababean_Wheat_IC_2011">
-        <datedebut>292</datedebut>
-        <datefin>546</datefin>
-        <finit>Initialisation_2011_ini.xml</finit>
-        <nomsol>Sol_Auzevillle.2011</nomsol>
-        <fstation>Station_Auzeville_sta.xml</fstation>
-        <fclim1>Climat_Auzeville.2010</fclim1>
-        <fclim2>Climat_Auzeville.2011</fclim2>
-        <culturean>0</culturean>
-        <nbplantes>2</nbplantes>
-        <codesimul>0</codesimul>
-        <plante dominance="1">
-            <fplt>Plant_FabaBean_plt.xml</fplt>
-            <ftec>ITK_2011_IC_row_Fb_tec.xml</ftec>
-            <flai>defaut.lai</flai>
-        </plante>
-        <plante dominance="2">
-            <fplt>Wheat_remi_plt.xml</fplt>
-            <ftec>ITK_2011_IC_row_Wh_tec.xml</ftec>
-            <flai>defaut.lai</flai>
-        </plante>
-    </usm>
-    <usm nom="Fababean_Wheat_IC_2010">
-        <datedebut>292</datedebut>
-        <datefin>580</datefin>
-        <finit>Initialisation_2011_ini.xml</finit>
-        <nomsol>Sol_Auzevillle.2010</nomsol>
-        <fstation>Station_Auzeville_sta.xml</fstation>
-        <fclim1>Climat_Auzeville.2009</fclim1>
-        <fclim2>Climat_Auzeville.2010</fclim2>
-        <culturean>0</culturean>
-        <nbplantes>2</nbplantes>
-        <codesimul>0</codesimul>
-        <plante dominance="1">
-            <fplt>Plant_FabaBean_plt.xml</fplt>
-            <ftec>ITK_2010_IC_row_Fb_tec.xml</ftec>
-            <flai>defaut.lai</flai>
-        </plante>
-        <plante dominance="2">
-            <fplt>Wheat_remi_plt.xml</fplt>
-            <ftec>ITK_2010_IC_row_Wh_tec.xml</ftec>
-            <flai>defaut.lai</flai>
-        </plante>
-    </usm>
 </usms>

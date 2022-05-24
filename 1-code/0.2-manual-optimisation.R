@@ -67,7 +67,7 @@ model_options =
     javastics = javastics_path,
     workspace = stics_inputs_path,
     parallel = FALSE, # Because we have only one usm per workspace so no need
-    stics_exe = "Stics_IC_v17-05-2022.exe"
+    stics_exe = "Stics_IC_v24-05-2022.exe"
   )
 
 # Get the current (previous) parameter value:

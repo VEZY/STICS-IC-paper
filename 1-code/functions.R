@@ -11,7 +11,7 @@ run_simulation = function(workspaces,variables,javastics,usms=NULL){
       SticsRFiles::gen_varmod(i, variables)
       # Run the simulations:
       SticsOnR::run_javastics(javastics = javastics, workspace = i,
-                              stics_exe = "Stics_IC_v17-05-2022.exe",
+                              stics_exe = "Stics_IC_v24-05-2022.exe",
                               usm = usms_i)
       # Get the results
       sim = get_sim(workspace = i, usm = usms_i, usms_file = file.path(i,"usms.xml"))
@@ -90,7 +90,7 @@ optim_height = function(workspace, usms){
   SticsRFiles::gen_varmod(workspace, sim_variables)
 
   run_javastics(javastics_path = javastics, workspace_path = workspace,
-                stics_exe = "Stics_IC_v17-05-2022.exe",
+                stics_exe = "Stics_IC_v24-05-2022.exe",
                 usms_list = usms)
 
 
@@ -163,7 +163,7 @@ optim_height = function(workspace, usms){
 }
 
 
-optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,javastics_path,stics_version = "Stics_IC_v17-05-2022.exe"){
+optimize_workspace = function(worspaces_path, workspace_usms,parameters_vars,javastics_path,stics_version = "Stics_IC_v24-05-2022.exe"){
 
   param_values = list()
 

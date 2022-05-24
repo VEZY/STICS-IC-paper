@@ -1,27 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <usms>
-    <usm nom="IC_PeaBarley_Angers_2002">
-        <datedebut>86</datedebut>
-        <datefin>210</datefin>
-        <finit>IC_Pea-Barley_2002_ini.xml</finit>
-        <nomsol>Sand_2001-2002</nomsol>
-        <fstation>angers_sta.xml</fstation>
-        <fclim1>angers.2002</fclim1>
-        <fclim2>angers.2002</fclim2>
-        <culturean>1</culturean>
-        <nbplantes>2</nbplantes>
-        <codesimul>0</codesimul>
-        <plante dominance="1">
-            <fplt>pea-remi_plt.xml</fplt>
-            <ftec>IC_Pea_2002_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-        <plante dominance="2">
-            <fplt>barley-remi_plt.xml</fplt>
-            <ftec>IC_Barley_2002_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-    </usm>
     <usm nom="IC_PeaBarley_Angers_2003_N0_D50-50">
         <datedebut>70</datedebut>
         <datefin>210</datefin>
@@ -41,94 +19,6 @@
         <plante dominance="2">
             <fplt>barley-remi_plt.xml</fplt>
             <ftec>IC_Barley_2003_N0_D50-50_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-    </usm>
-    <usm nom="IC_PeaBarley_Angers_2003_N1_D50-50">
-        <datedebut>70</datedebut>
-        <datefin>210</datefin>
-        <finit>IC_Pea-Barley_2003_ini.xml</finit>
-        <nomsol>Clay-Sand_2003-2004</nomsol>
-        <fstation>angers_sta.xml</fstation>
-        <fclim1>angers.2003</fclim1>
-        <fclim2>angers.2003</fclim2>
-        <culturean>1</culturean>
-        <nbplantes>2</nbplantes>
-        <codesimul>0</codesimul>
-        <plante dominance="1">
-            <fplt>pea-remi_plt.xml</fplt>
-            <ftec>IC_Pea_2003_N1_D50_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-        <plante dominance="2">
-            <fplt>barley-remi_plt.xml</fplt>
-            <ftec>IC_Barley_2003_N1_D50-50_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-    </usm>
-    <usm nom="IC_PeaBarley_Angers_2001_D100-50">
-        <datedebut>99</datedebut>
-        <datefin>210</datefin>
-        <finit>IC_Pea-Barley_2001_ini.xml</finit>
-        <nomsol>Sand_2001-2002</nomsol>
-        <fstation>angers_sta.xml</fstation>
-        <fclim1>angers.2001</fclim1>
-        <fclim2>angers.2001</fclim2>
-        <culturean>1</culturean>
-        <nbplantes>2</nbplantes>
-        <codesimul>0</codesimul>
-        <plante dominance="1">
-            <fplt>pea-remi_plt.xml</fplt>
-            <ftec>IC_Pea_2001_D100-50_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-        <plante dominance="2">
-            <fplt>barley-remi_plt.xml</fplt>
-            <ftec>IC_Barley_2001_D50-100_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-    </usm>
-    <usm nom="IC_PeaBarley_Angers_2004_N0_D50-50">
-        <datedebut>76</datedebut>
-        <datefin>210</datefin>
-        <finit>IC_Pea-Barley_2004_ini.xml</finit>
-        <nomsol>Clay-Sand_2003-2004</nomsol>
-        <fstation>angers_sta.xml</fstation>
-        <fclim1>angers.2004</fclim1>
-        <fclim2>angers.2004</fclim2>
-        <culturean>1</culturean>
-        <nbplantes>2</nbplantes>
-        <codesimul>0</codesimul>
-        <plante dominance="1">
-            <fplt>pea-remi_plt.xml</fplt>
-            <ftec>IC_Pea_2004_N0_D50-50_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-        <plante dominance="2">
-            <fplt>barley-remi_plt.xml</fplt>
-            <ftec>IC_Barley_2004_N0_D50-50_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-    </usm>
-    <usm nom="IC_PeaBarley_Angers_2004_N1_D50-50">
-        <datedebut>76</datedebut>
-        <datefin>210</datefin>
-        <finit>IC_Pea-Barley_2004_ini.xml</finit>
-        <nomsol>Clay-Sand_2003-2004</nomsol>
-        <fstation>angers_sta.xml</fstation>
-        <fclim1>angers.2004</fclim1>
-        <fclim2>angers.2004</fclim2>
-        <culturean>1</culturean>
-        <nbplantes>2</nbplantes>
-        <codesimul>0</codesimul>
-        <plante dominance="1">
-            <fplt>pea-remi_plt.xml</fplt>
-            <ftec>IC_Pea_2004_N1_D50-50_tec.xml</ftec>
-            <flai>null</flai>
-        </plante>
-        <plante dominance="2">
-            <fplt>barley-remi_plt.xml</fplt>
-            <ftec>IC_Barley_2004_N1_D50-50_tec.xml</ftec>
             <flai>null</flai>
         </plante>
     </usm>

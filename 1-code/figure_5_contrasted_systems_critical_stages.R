@@ -73,7 +73,7 @@ mapply(
     SticsRFiles::gen_varmod(x, sim_variables)
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
-                            stics_exe = "Stics_IC_v17-05-2022.exe",
+                            stics_exe = "Stics_IC_v24-05-2022.exe",
                             usm = y)
   },
   worskpaces_paths,
@@ -94,7 +94,7 @@ mapply(
     SticsRFiles::gen_varmod(x, sim_variables)
     SticsOnR::run_javastics(javastics = javastics,
                             workspace = x,
-                            stics_exe = "Stics_IC_v17-05-2022.exe",
+                            stics_exe = "Stics_IC_v24-05-2022.exe",
                             usm = y)
   },
   worskpaces_paths_sc,
@@ -417,3 +417,22 @@ if(!presentation){
   ggsave(filename = "Fig.4_contrasted_systems_2.png", path = "2-outputs/plots/presentation",
          width = 24, height = 14, units = "cm")
 }
+
+
+df_LER =
+  df_ic%>%
+  filter(variable == "Partial~LER")%>%
+  group_by(Association, Plant)%>%
+  summarise(
+    Simulated = unique(Simulated),
+    Observed = unique(Observed)
+    )%>%
+  group_by(Association)%>%
+  summarise(
+    Observed = round(sum(Observed),2),
+    Simulated = round(sum(Simulated),2),
+    error = Simulated-Observed,
+    nerror = (Simulated-Observed) / Observed
+  )
+
+write.csv(df_LER, "2-outputs/stats/stats_LER.csv", row.names = FALSE)

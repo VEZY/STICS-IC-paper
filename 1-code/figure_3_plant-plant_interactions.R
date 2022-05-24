@@ -8,8 +8,10 @@
 
 # Import the packages -----------------------------------------------------
 
+library(dplyr)
+library(ggplot2)
+library(tidyr)
 library(SticsRPacks)
-library(tidyverse)
 source("1-code/functions.R")
 Sys.setlocale("LC_TIME", "C") # To get the dates in english
 
@@ -29,7 +31,7 @@ workspaces = list(wheat = workspace_wheat, pea = workspace_pea, wheat_pea = work
 # Define the variables to simulate ----------------------------------------
 
 # sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix","profexteau","profextN","hauteur")
-sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix", "inns", "fapar","hauteur")
+sim_variables = c("lai(n)","masec(n)","QNplante","mafruit","Qfix", "fapar","hauteur")
 # SticsRFiles::get_var_info(keyword = "transpi")
 
 # Run the simulations -----------------------------------------------------
@@ -44,10 +46,12 @@ lapply(workspaces, function(x) SticsRFiles::gen_varmod(x, sim_variables))
 
 
 mapply(function(x,y){
-  SticsOnR::run_javastics(javastics = javastics,
-                          workspace = normalizePath(x, winslash = "/"),
-                          stics_exe = "Stics_IC_v17-05-2022.exe",
-                          usms_list = y)
+  SticsOnR::run_javastics(
+    javastics = javastics,
+    workspace = normalizePath(x, winslash = "/"),
+    stics_exe = "Stics_IC_v24-05-2022.exe",
+    usm = y
+  )
 },workspaces,usms)
 
 sim = mapply(function(x,y){
@@ -81,7 +85,6 @@ names(obs) = usms
 
 # Add NDFA to obs:
 obs = lapply(obs, function(x){
-
   if(!is.null(x$Qfix)){
     x = x%>%mutate(NDFA = Qfix / QNplante)
   }
@@ -178,9 +181,9 @@ p =
              "hauteur" = "bold(Height~(m))"
            )
   )%>%
-  ggplot(aes(x = Date, color = System, fill=System))+
-  geom_line(aes(y = Simulated), lwd = 1.3)+
-  geom_point(aes(y = Observed), show.legend = FALSE, size = 1.5, shape = 21, stroke = 1.5)+
+  ggplot(aes(x = Date, color = System, fill = System))+
+  geom_line(aes(y = Simulated, lty = System), lwd = 1.3)+
+  geom_point(aes(y = Observed, shape = System), size = 1.5, stroke = 1.5)+
   facet_grid(
     scales = "free_y", cols = vars(Plant), rows = vars(variable),
     labeller = label_parsed,
@@ -188,18 +191,19 @@ p =
   )+
   geom_label(
     x = as.POSIXct("2005-09-26 UTC", tz = "UTC"),
-    aes(y = y, label = plot_nb),inherit.aes = FALSE,
-    data = numbering, hjust=0, size = 3.1,
+    aes(y = y, label = plot_nb), inherit.aes = FALSE,
+    data = numbering, hjust = 0, size = 3.1,
     label.size = NA, fontface = "bold",
     parse = FALSE, color = text_color,
     fill = if(presentation){"#2F2F31"}else{"white"}
   )+
-  labs(colour = "Cropping system:")+
   theme_minimal()+
   labs(y = NULL)+
   scale_colour_manual(values= c("Intercrop" = "#6EC0C0", "Sole crop" = "#746EC2"))+
   scale_fill_manual(values= c("Intercrop" = "#6EC0C04C", "Sole crop" = "#746EC24C")) +
   scale_y_continuous(expand = expansion(mult = c(0.1, 0.1)))+ # expand the limits of the plots
+  scale_shape_manual(values= c("Intercrop" = 21, "Sole crop" = 23))+
+  labs(colour = "Cropping system:", lty = "Cropping system:", shape = "Cropping system:", fill = "Cropping system:")+
   theme(
     strip.text.x = element_text(size = 12, face = "bold"),
     strip.text.y = element_text(size = 8),
@@ -207,6 +211,8 @@ p =
     legend.position = 'bottom',
     strip.placement.y = "outside"
   )
+
+p
 
 if(presentation){
   p =
@@ -224,7 +230,7 @@ if(presentation){
 
 if(!presentation){
   ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots",
-         width = 16, height = 19, units = "cm")
+         width = 16, height = 17, units = "cm")
 }else{
   ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots/presentation",
          width = 22, height = 17, units = "cm")

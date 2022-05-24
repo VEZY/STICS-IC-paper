@@ -25,7 +25,8 @@ javastics = normalizePath("0-javastics", winslash = "/")
 # workspace_opt = "0-data/usms-optim-radiative/Auzeville_wfb-Wheat-SC"
 # workspace_opt = "0-data/usms-optim-radiative/Auzeville_wfb-Fababean-SC"
 # workspace_opt = "0-data/usms-optim-radiative/Auzeville_wfb-Fababean-Wheat-IC"
-workspace_opt = normalizePath("0-data/usms-optim-radiative/Auzeville-IC", winslash = "/")
+# workspace_opt = normalizePath("0-data/usms-optim-radiative/Auzeville-IC", winslash = "/")
+workspace_opt = normalizePath("0-data/usms-optim-radiative/Auzeville-Pea-SC", winslash = "/")
 # workspace_opt = "0-data/usms-optim-radiative/1Tprecoce2Stardif2012"
 
 # Define the variables to simulate ----------------------------------------
@@ -38,7 +39,7 @@ sim_variables = c("lai(n)","masec(n)","QNplante","Qfix","mafruit","fapar","ilaxs
 # List possible usms in the workspace:
 SticsRFiles::get_usms_list(file = file.path(workspace_opt,"usms.xml"))
 # choose your usm:
-usms = "IC_Wheat_Pea_2012-2013_N1"
+usms = "SC_Pea_2005-2006_N0"
 
 # Get the observations:
 obs = get_obs(
@@ -54,7 +55,7 @@ SticsRFiles::gen_varmod(workspace_opt, sim_variables)
 SticsOnR::run_javastics(
   javastics = javastics,
   workspace = workspace_opt,
-  stics_exe = "Stics_IC_v17-05-2022.exe",
+  stics_exe = "Stics_IC_v24-05-2022.exe",
   usms_list = usms
 )
 
@@ -81,7 +82,7 @@ set_param_xml(
 SticsOnR::run_javastics(
   javastics_path = javastics,
   workspace_path = workspace_opt,
-  stics_exe = "Stics_IC_v17-05-2022.exe",
+  stics_exe = "Stics_IC_v24-05-2022.exe",
   usms_list = usms
 )
 
