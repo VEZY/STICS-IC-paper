@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<usms>
+    <usm nom="TournPrecoce-SC2012">
+        <datedebut>90</datedebut>
+        <datefin>300</datefin>
+        <finit>toursoja2012-SC_ini.xml</finit>
+        <nomsol>toursoja2012</nomsol>
+        <fstation>Auzeville_sta.xml</fstation>
+        <fclim1>Auzevillej.2012</fclim1>
+        <fclim2>Auzevillej.2012</fclim2>
+        <culturean>1</culturean>
+        <nbplantes>1</nbplantes>
+        <codesimul>0</codesimul>
+        <plante dominance="1">
+            <fplt>sunflowerPrecoceAsso_plt.xml</fplt>
+            <ftec>Tournesol-SC2012_tec.xml</ftec>
+            <flai>sortie.lai</flai>
+        </plante>
+    </usm>
+</usms>
