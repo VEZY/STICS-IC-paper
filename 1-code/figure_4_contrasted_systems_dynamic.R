@@ -168,9 +168,9 @@ stats =
       recode(
         variable,
         "lai_n" = "LAI~(m2~m^{-2})",
-        "masec_n" = "Agb~(t~ha^{-1})",
-        "Qfix" = "N~Fix.~(kg~ha^{-1})",
-        "QNplante" = "N~acc.~(kg~ha^{-1})",
+        "masec_n" = "Biomass~(t~ha^{-1})",
+        "Qfix" = "N~Fix.~(kg[N]~ha^{-1})",
+        "QNplante" = "N~acc.~(kg[N]~ha^{-1})",
         "hauteur" = "Height~(m)",
         "NDFA" = "NDFA~('%')"
       )
@@ -203,9 +203,9 @@ df_ic =
     ),
     variable = recode(variable,
                       "lai_n" = "LAI~(m2~m^{-2})",
-                      "masec_n" = "Agb~(t~ha^{-1})",
-                      "Qfix" = "N~Fix.~(kg~ha^{-1})",
-                      "QNplante" = "N~acc.~(kg~ha^{-1})",
+                      "masec_n" = "Biomass~(t~ha^{-1})",
+                      "Qfix" = "N~Fix.~(kg[N]~ha^{-1})",
+                      "QNplante" = "N~acc.~(kg[N]~ha^{-1})",
                       "hauteur" = "Height~(m)",
                       "NDFA" = "NDFA~('%')"
     )

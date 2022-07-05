@@ -257,18 +257,34 @@ stats =
   filter(variable != "Qfix")%>%
   mutate(across(is.numeric, ~round(.x, 2)))%>%
   mutate(
+    # Order variables appear in the plot:
+    # variable = factor(
+    #   variable,
+    #   levels= c(
+    #     "iflos",
+    #     "imats",
+    #     "hauteur",
+    #     "lai_n",
+    #     "masec_n",
+    #     "mafruit",
+    #     "CNgrain",
+    #     "QNplante",
+    #     "NDFA",
+    #     "LER"
+    #   )
+    # ),
     variable =
-      recode(
+      recode_factor(
         variable,
+        "iflos" = "Flowering~(Julian~day)",
+        "imats" = "Maturity~(Julian~day)",
+        "hauteur" = "Max.~height~(m)",
         "lai_n" = "Max.~LAI~(m2~m^{-2})",
-        "masec_n" = "Harvested~Agb~(t~ha^{-1})",
-        "mafruit" = "Gr.~yield~(t~ha^{-1})",
+        "masec_n" = "Harvested~Biomass~(t~ha^{-1})",
+        "mafruit" = "Grain~(t~ha^{-1})",
+        "QNplante" = "N~acc.~(kg[N]~ha^{-1})",
         # "Qfix" = "N~Fix.~(kg~ha^{-1})",
         "CNgrain" = "N~grain~('%')",
-        "QNplante" = "N~acc.~(kg~ha^{-1})",
-        "imats" = "D.~Matur.~(julian~day)",
-        "iflos" = "D.~Flowe.~(julian~day)",
-        "hauteur" = "Max.~height~(m)",
         "NDFA" = "NDFA~('%')",
         "LER" = "Partial~LER"
       )
@@ -292,25 +308,42 @@ df_ic =
                    "tou" = "Sunflower",
                    "esc" = "Barley"
     ),
-    Association = recode(Sit_Name,
-                         "IC_PeaBarley_Angers_2003_N0_D50-50" = "Pea-Barley",
-                         "IC_Wheat_Pea_2005-2006_N0"  = "Wheat-Pea (alt.)",
-                         "IC_Wheat_Pea_2012-2013_N1"  = "Wheat-Pea (mix.)",
-                         "1Tprecoce2Stardif2012" = "Sunflower-Soybean",
-                         "Fababean_Wheat_IC_2007" = "Fababean-Wheat"
+    Association = recode(
+      Sit_Name,
+      "IC_PeaBarley_Angers_2003_N0_D50-50" = "Pea-Barley",
+      "IC_Wheat_Pea_2005-2006_N0"  = "Wheat-Pea (alt.)",
+      "IC_Wheat_Pea_2012-2013_N1"  = "Wheat-Pea (mix.)",
+      "1Tprecoce2Stardif2012" = "Sunflower-Soybean",
+      "Fababean_Wheat_IC_2007" = "Fababean-Wheat"
     ),
-    variable = recode(variable,
-                      "lai_n" = "Max.~LAI~(m2~m^{-2})",
-                      "masec_n" = "Harvested~Agb~(t~ha^{-1})",
-                      "mafruit" = "Gr.~yield~(t~ha^{-1})",
-                      # "Qfix" = "N~Fix.~(kg~ha^{-1})",
-                      "CNgrain" = "N~grain~('%')",
-                      "QNplante" = "N~acc.~(kg~ha^{-1})",
-                      "imats" = "D.~Matur.~(julian~day)",
-                      "iflos" = "D.~Flowe.~(julian~day)",
-                      "hauteur" = "Max.~height~(m)",
-                      "NDFA" = "NDFA~('%')",
-                      "LER" = "Partial~LER"
+    # Order variables appear in the plot:
+    # variable = factor(
+    #   variable,
+    #   levels= c(
+    #     "iflos",
+    #     "imats",
+    #     "hauteur",
+    #     "lai_n",
+    #     "masec_n",
+    #     "mafruit",
+    #     "CNgrain",
+    #     "QNplante",
+    #     "NDFA",
+    #     "LER"
+    #   )),
+    variable = recode_factor(
+      variable,
+      "iflos" = "Flowering~(Julian~day)",
+      "imats" = "Maturity~(Julian~day)",
+      "hauteur" = "Max.~height~(m)",
+      "lai_n" = "Max.~LAI~(m2~m^{-2})",
+      "masec_n" = "Harvested~Biomass~(t~ha^{-1})",
+      "mafruit" = "Grain~(t~ha^{-1})",
+      "QNplante" = "N~acc.~(kg[N]~ha^{-1})",
+      # "Qfix" = "N~Fix.~(kg~ha^{-1})",
+      "CNgrain" = "N~grain~('%')",
+      "NDFA" = "NDFA~('%')",
+      "LER" = "Partial~LER"
     )
   )%>%
   arrange(variable)
@@ -361,7 +394,7 @@ p =
     parse = FALSE, color = text_color,
     fill = if(presentation){"#2F2F31"}else{"transparent"}
   )+
-  facet_wrap(variable~.,
+  facet_wrap(vars(variable),
              scales = "free",
              ncol = if(presentation){5}else{NULL},
              labeller = label_parsed,

@@ -7,7 +7,7 @@ using Thebes # Add 3D to Luxor
 using Rotations # For 3D rotations
 using Colors, ColorSchemes # For the color palette of the diffuse arrows
 
-includet("figure_0_radiative_transfer_notebook.jl")
+includet("figure_1_radiative_transfer_notebook.jl")
 
 begin
     width = [0.4, 0.4, 0.4, 0.4]

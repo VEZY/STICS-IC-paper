@@ -139,9 +139,9 @@ p =
     variable = recode(
       .data$variable,
       "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
-      "masec_n" = "bold(Agb~(t~ha^{-1}))",
+      "masec_n" = "bold(Biomass~(t~ha^{-1}))",
       "mafruit" = "bold(Grain~(t~ha^{-1}))",
-      "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
+      "QNplante"= "bold(N~acc.~(kg[N]~ha^{-1}))",
       "fapar"= "bold(faPAR)",
       "hauteur"= "bold(Height~(m))"
     )
@@ -180,7 +180,7 @@ p =
 p
 
 ggsave(p, filename = "Fig.1_self-intercrop_all.png", path = "2-outputs/plots",
-       width = 18, height = 18, units = "cm")
+       width = 18, height = 20, units = "cm")
 
 # Statistics for each variable for all crops:
 df%>%
