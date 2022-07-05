@@ -133,11 +133,11 @@ numbering =
            recode(
              .data$variable,
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
-             "masec_n" = "bold(Agb~(t~ha^{-1}))",
+             "masec_n" = "bold(Biomass~(t~ha^{-1}))",
              "fapar" = "bold(FaPAR~('%'))",
              "mafruit" = "bold(Grain~(t~ha^{-1}))",
-             "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
-             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
+             "Qfix" = "bold(N~Fix.~(kg[N]~ha^{-1}))",
+             "QNplante"= "bold(N~acc.~(kg[N]~ha^{-1}))",
              "NDFA" = "bold(NDFA~('%'))",
              "inns" = "bold(N~stress~eff.)",
              "hauteur" = "bold(Height~(m))"
@@ -171,11 +171,11 @@ p =
            recode(
              variable,
              "lai_n" = "bold(LAI~(m^{2}~m^{-2}))",
-             "masec_n" = "bold(Agb~(t~ha^{-1}))",
+             "masec_n" = "bold(Biomass~(t~ha^{-1}))",
              "fapar" = "bold(FaPAR~('%'))",
              "mafruit" = "bold(Grain~(t~ha^{-1}))",
-             "Qfix" = "bold(N~Fix.~(kg~ha^{-1}))",
-             "QNplante"= "bold(N~acc.~(kg~ha^{-1}))",
+             "Qfix" = "bold(N~Fix.~(kg[N]~ha^{-1}))",
+             "QNplante"= "bold(N~acc.~(kg[N]~ha^{-1}))",
              "NDFA" = "bold(NDFA~('%'))",
              "inns" = "bold(N~stress~eff.)",
              "hauteur" = "bold(Height~(m))"
@@ -230,10 +230,10 @@ if(presentation){
 
 if(!presentation){
   ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots",
-         width = 16, height = 17, units = "cm")
+         width = 16, height = 17.5, units = "cm")
 }else{
   ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots/presentation",
-         width = 22, height = 17, units = "cm")
+         width = 22, height = 17.5, units = "cm")
 }
 
 # Statistics --------------------------------------------------------------

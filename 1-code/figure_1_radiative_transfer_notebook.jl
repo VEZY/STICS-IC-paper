@@ -975,7 +975,7 @@ function draw_radiative_transfer(
 		setopacity(0.8)
 		scale(1, -1)
 		text(
-			n*"Lat. $(rad2deg(latitude_r))°, day $j",
+			n*"Lat. $(rad2deg(latitude_r))°N, day $j",
 			Point(outer_box[1][1], -outer_box[1][2] - theight*title_height)
 		)
 	end
@@ -1343,8 +1343,8 @@ function draw_radiative_transfer(
 			if display_text && i == 1 || mod(i, 25) == 0
 				@layer begin
 					sethue("black")
-					setopacity(1)
-					fontsize(5)
+					setopacity(0.8)
+					fontsize(9)
 					scale(1, -1) # to set the y axis up
 					label(
 						string(i), :S, Point(v[1], -v[2]),
@@ -2351,7 +2351,7 @@ version = "3.5.0+0"
 # ╟─54cda4ec-dc89-41d4-a28d-544f556c2f34
 # ╟─78cc38c7-22ab-4f24-b68f-4ba0f668d253
 # ╟─3c421bef-6123-4554-b2de-b8ceabaf1b39
-# ╟─b90cd9e1-30ca-48be-9e7e-dd6afbce35db
+# ╠═b90cd9e1-30ca-48be-9e7e-dd6afbce35db
 # ╟─4eb15ffa-5218-4d30-a9ec-4c6f6d0a4524
 # ╟─b777571c-91b2-4c80-a3bb-1bc65f48fbc8
 # ╟─172d2086-efb1-4805-b75e-7801072347f4
