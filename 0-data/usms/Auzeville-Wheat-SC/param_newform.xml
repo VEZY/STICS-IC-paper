@@ -162,12 +162,12 @@
     </option>
   </formalisme>
   <formalisme nom="Plant height computation">
-    <param format="real" max="1.0" min="0.05" nom="hauteur_threshold">0.2</param>
+    <param format="real" max="1.0" min="0.05" nom="hauteur_threshold">-0.5</param>
     <param format="character" max="1.0" min="0.0" nom="stage_const_height1">no</param>
     <param format="real" max="2.0" min="1.0" nom="elongation1">1.0</param>
     <param format="real" max="1.0" min="0.0" nom="nw_height1">0.0</param>
     <param format="character" nom="stage_const_height2">no</param>
-    <param format="real" max="2.0" min="1.0" nom="elongation2">0.0</param>
+    <param format="real" max="2.0" min="1.0" nom="elongation2">1.0</param>
     <param format="real" max="1.0" min="0.0" nom="nw_height2">0.0</param>
     <option choix="3" nom="LAI, Dry mass or phasic development relationship - Principal plant" nomParam="code_shape1">
       <choix code="1" nom="LAI"/>
@@ -189,8 +189,8 @@
         <param format="real" max="1.0" min="0.0" nom="hautdens2">0</param>
       </choix>
       <choix code="3" nom="Development">
-        <param format="real" max="5000.0" min="0.0" nom="haut_dev_x02">0</param>
-        <param format="real" max="0.05" min="0.0" nom="haut_dev_k2">0.0</param>
+        <param format="real" max="5000.0" min="0.0" nom="haut_dev_x02">667.759055880149</param>
+        <param format="real" max="0.05" min="0.0" nom="haut_dev_k2">0.00665998033328452</param>
       </choix>
     </option>
     <option choix="2" nom="Strip intercropping" nomParam="code_strip">
@@ -205,4 +205,3 @@
     <param nom="par_to_net">0.83</param>
   </formalisme>
 </fichierparamgen>
-
