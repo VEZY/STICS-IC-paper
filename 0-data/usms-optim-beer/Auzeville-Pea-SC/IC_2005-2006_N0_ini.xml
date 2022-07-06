@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<initialisations>
+    <nbplantes>2</nbplantes>
+    <plante dominance="1">
+        <stade0>snu</stade0>
+        <lai0>0.00</lai0>
+        <masec0>0.00</masec0>
+        <zrac0>0.00</zrac0>
+        <magrain0>0.00</magrain0>
+        <QNplante0>0.00</QNplante0>
+        <resperenne0>0.00</resperenne0>
+        <densinitial>
+            <horizon nh="1">0.00</horizon>
+            <horizon nh="2">0.00</horizon>
+            <horizon nh="3">0.00</horizon>
+            <horizon nh="4">0.00</horizon>
+            <horizon nh="5">0.00</horizon>
+        </densinitial>
+    </plante>
+    <plante dominance="2">
+        <stade0>snu</stade0>
+        <lai0>0.00</lai0>
+        <masec0>0.00</masec0>
+        <zrac0>0.00</zrac0>
+        <magrain0>0.00</magrain0>
+        <QNplante0>0.00</QNplante0>
+        <resperenne0>0.00</resperenne0>
+        <densinitial>
+            <horizon nh="1">0.00</horizon>
+            <horizon nh="2">0.00</horizon>
+            <horizon nh="3">0.00</horizon>
+            <horizon nh="4">0.00</horizon>
+            <horizon nh="5">0.00</horizon>
+        </densinitial>
+    </plante>
+    <sol>
+        <hinit>
+            <horizon nh="1">19.7</horizon>
+            <horizon nh="2">17.2</horizon>
+            <horizon nh="3">16.2</horizon>
+            <horizon nh="4">18.6</horizon>
+            <horizon nh="5">0.0</horizon>
+        </hinit>
+        <NO3init>
+            <horizon nh="1">14.0</horizon>
+            <horizon nh="2">12.3</horizon>
+            <horizon nh="3">4.4</horizon>
+            <horizon nh="4">3.0</horizon>
+            <horizon nh="5">0.0</horizon>
+        </NO3init>
+        <NH4init>
+            <horizon nh="1">1.1</horizon>
+            <horizon nh="2">1.5</horizon>
+            <horizon nh="3">1.4</horizon>
+            <horizon nh="4">0.7</horizon>
+            <horizon nh="5">0.0</horizon>
+        </NH4init>
+    </sol>
+</initialisations>

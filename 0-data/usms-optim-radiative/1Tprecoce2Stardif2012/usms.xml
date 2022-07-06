@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<usms>
+    <usm nom="1Tprecoce2Stardif2012">
+        <datedebut>90</datedebut>
+        <datefin>300</datefin>
+        <finit>toursoja2012_ini.xml</finit>
+        <nomsol>toursoja2012</nomsol>
+        <fstation>Auzeville_sta.xml</fstation>
+        <fclim1>Auzevillej.2012</fclim1>
+        <fclim2>Auzevillej.2012</fclim2>
+        <culturean>1</culturean>
+        <nbplantes>2</nbplantes>
+        <codesimul>0</codesimul>
+        <plante dominance="1">
+            <fplt>sunflowerPrecoceAsso_plt.xml</fplt>
+            <ftec>1Tournesol2012_tec.xml</ftec>
+            <flai>mais.lai</flai>
+        </plante>
+        <plante dominance="2">
+            <fplt>soybeanAssoTardif_plt.xml</fplt>
+            <ftec>2Soja2012_tec.xml</ftec>
+            <flai>null</flai>
+        </plante>
+    </usm>
+</usms>

@@ -39,8 +39,6 @@ vignettes/*.pdf
 *.knit.md
 
 0-data/raw
-0-data/usms-optim-beer
-0-data/usms-optim-radiative
 0-data/usms-optim-beer-backup
 0-data/usms-optim-radiative-backup
 
