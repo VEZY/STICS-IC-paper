@@ -17,4 +17,26 @@
             <flai>sortie.lai</flai>
         </plante>
     </usm>
+    <usm nom="SojaTardif-IC2012">
+        <datedebut>90</datedebut>
+        <datefin>300</datefin>
+        <finit>toursoja2012-IC_ini.xml</finit>
+        <nomsol>toursoja2012</nomsol>
+        <fstation>Auzeville_sta.xml</fstation>
+        <fclim1>Auzevillej.2012</fclim1>
+        <fclim2>Auzevillej.2012</fclim2>
+        <culturean>1</culturean>
+        <nbplantes>2</nbplantes>
+        <codesimul>0</codesimul>
+        <plante dominance="1">
+            <fplt>soybeanAssoTardif_plt.xml</fplt>
+            <ftec>Soja-IC2012_tec.xml</ftec>
+            <flai>sortie.lai</flai>
+        </plante>
+        <plante dominance="2">
+            <fplt>soybeanAssoTardif_plt.xml</fplt>
+            <ftec>Soja-IC2012_tec.xml</ftec>
+            <flai>sortie.lai</flai>
+        </plante>
+    </usm>
 </usms>

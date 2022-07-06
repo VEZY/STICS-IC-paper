@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <sols>
-
     <sol nom="Clay-Sand_2003-2004">
         <param format="real" max="60.0" min="0.0" nom="argi">25.0</param>
         <param format="real" max="0.5" min="0.05" nom="norg">0.17</param>

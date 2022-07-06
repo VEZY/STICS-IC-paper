@@ -162,7 +162,7 @@
     </option>
   </formalisme>
   <formalisme nom="Plant height computation">
-    <param format="real" max="1.0" min="0.1" nom="hauteur_threshold">0.2</param>
+    <param format="real" max="1.0" min="0.1" nom="hauteur_threshold">0.05</param>
     <param format="character" max="1.0" min="0.0" nom="stage_const_height1">no</param>
     <param format="real" max="2.0" min="1.0" nom="elongation1">1.0</param>
     <param format="real" max="1.0" min="0.0" nom="nw_height1">0.0</param>

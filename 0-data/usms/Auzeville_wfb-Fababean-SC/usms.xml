@@ -17,4 +17,26 @@
             <flai>defaut.lai</flai>
         </plante>
     </usm>
+    <usm nom="Fababean_IC_2007">
+        <datedebut>268</datedebut>
+        <datefin>600</datefin>
+        <finit>Initialisation_2007_IC_ini.xml</finit>
+        <nomsol>Sol_Auzevillle.2007</nomsol>
+        <fstation>Station_Auzeville_sta.xml</fstation>
+        <fclim1>Climat_Auzeville.2006</fclim1>
+        <fclim2>Climat_Auzeville.2007</fclim2>
+        <culturean>0</culturean>
+        <nbplantes>2</nbplantes>
+        <codesimul>0</codesimul>
+        <plante dominance="1">
+            <fplt>Plant_FabaBean_plt.xml</fplt>
+            <ftec>ITK_2007_IC_mix_Fb_tec.xml</ftec>
+            <flai>defaut.lai</flai>
+        </plante>
+        <plante dominance="2">
+            <fplt>Plant_FabaBean_plt.xml</fplt>
+            <ftec>ITK_2007_IC_mix_Fb_tec.xml</ftec>
+            <flai>defaut.lai</flai>
+        </plante>
+    </usm>
 </usms>

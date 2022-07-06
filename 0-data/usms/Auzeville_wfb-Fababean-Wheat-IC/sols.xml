@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <sols>
     <sol nom="Sol_Auzevillle.2007">
-        <param format="real" max="60.0" min="0.0" nom="argi">28.0</param>
+    <param format="real" max="60.0" min="0.0" nom="argi">28.0</param>
         <param format="real" max="0.5" min="0.05" nom="norg">0.103</param>
         <param format="real" max="150.0" min="10.0" nom="profhum">25.0</param>
         <param format="real" max="100.0" min="0.0" nom="calc">10.0</param>
@@ -19,53 +19,53 @@
         <param format="real" max="20.0" min="8.0" nom="csurNsol">7.9</param>
         <param format="real" max="5.0" min="0.0" nom="penterui">0.3300</param>
         <option choix="2" nom="pebbles" nomParam="codecailloux">
-            <choix code="1" nom="yes" />
-            <choix code="2" nom="no" />
+        <choix code="1" nom="yes"/>
+            <choix code="2" nom="no"/>
         </option>
         <option choix="2" nom="macroporosity" nomParam="codemacropor">
-            <choix code="1" nom="yes" />
-            <choix code="2" nom="no" />
+        <choix code="1" nom="yes"/>
+            <choix code="2" nom="no"/>
         </option>
         <option choix="2" nom="cracks (case of swelling clay soils)" nomParam="codefente">
-            <choix code="1" nom="yes" />
-            <choix code="2" nom="no" />
+        <choix code="1" nom="yes"/>
+            <choix code="2" nom="no"/>
         </option>
         <option choix="2" nom="artificial drainage" nomParam="codrainage">
-            <choix code="1" nom="yes">
-                <param nom="profimper">10.0000</param>
+        <choix code="1" nom="yes">
+            <param nom="profimper">10.0000</param>
                 <param nom="ecartdrain">0.0000</param>
                 <param nom="ksol">0.0000</param>
                 <param nom="profdrain">0.0000</param>
             </choix>
-            <choix code="2" nom="no" />
+            <choix code="2" nom="no"/>
         </option>
         <option choix="2" nom="capillary rise" nomParam="coderemontcap">
-            <choix code="1" nom="yes">
-                <param nom="capiljour">1.0000</param>
+        <choix code="1" nom="yes">
+            <param nom="capiljour">1.0000</param>
                 <param nom="humcapil">10.0000</param>
             </choix>
-            <choix code="2" nom="no" />
+            <choix code="2" nom="no"/>
         </option>
         <option choix="2" nom="nitrification" nomParam="codenitrif">
-            <choix code="1" nom="yes" />
-            <choix code="2" nom="no" />
+        <choix code="1" nom="yes"/>
+            <choix code="2" nom="no"/>
         </option>
         <option choix="1" nom="denitrification" nomParam="codedenit">
-            <choix code="1" nom="yes">
-                <param nom="profdenit">20</param>
+        <choix code="1" nom="yes">
+            <param nom="profdenit">20</param>
                 <param nom="vpotdenit">16.0000</param>
             </choix>
-            <choix code="2" nom="no" />
+            <choix code="2" nom="no"/>
         </option>
         <tableau_entete nb_colonnes="8">
-            <colonne nom="epc" />
-            <colonne nom="HCCF" />
-            <colonne nom="HMINF" />
-            <colonne nom="DAF" />
-            <colonne nom="cailloux" />
-            <colonne nom="typecailloux" />
-            <colonne nom="infil" />
-            <colonne nom="epd" />
+            <colonne nom="epc"/>
+            <colonne nom="HCCF"/>
+            <colonne nom="HMINF"/>
+            <colonne nom="DAF"/>
+            <colonne nom="cailloux"/>
+            <colonne nom="typecailloux"/>
+            <colonne nom="infil"/>
+            <colonne nom="epd"/>
         </tableau_entete>
         <tableau nb_colonnes="8" nom="layer 1">
             <colonne nom="epc">30.00</colonne>
