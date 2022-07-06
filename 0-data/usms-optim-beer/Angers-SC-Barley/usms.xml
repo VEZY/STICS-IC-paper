@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<usms>
+    <usm nom="SC_Barley_Angers_2003_N0">
+        <datedebut>70</datedebut>
+        <datefin>200</datefin>
+        <finit>SC_Pea-Barley_2003_ini.xml</finit>
+        <nomsol>Clay-Sand_2003-2004</nomsol>
+        <fstation>angers_sta.xml</fstation>
+        <fclim1>angers.2003</fclim1>
+        <fclim2>angers.2003</fclim2>
+        <culturean>1</culturean>
+        <nbplantes>1</nbplantes>
+        <codesimul>0</codesimul>
+        <plante dominance="1">
+            <fplt>barley-remi_plt.xml</fplt>
+            <ftec>SC_Barley_2003_N0_tec.xml</ftec>
+            <flai>null</flai>
+        </plante>
+    </usm>
+    <usm nom="IC_Barley_Barley_Angers_2003_N0">
+        <datedebut>70</datedebut>
+        <datefin>200</datefin>
+        <finit>IC_Pea-Barley_2003_ini.xml</finit>
+        <nomsol>Clay-Sand_2003-2004</nomsol>
+        <fstation>angers_sta.xml</fstation>
+        <fclim1>angers.2003</fclim1>
+        <fclim2>angers.2003</fclim2>
+        <culturean>1</culturean>
+        <nbplantes>2</nbplantes>
+        <codesimul>0</codesimul>
+        <plante dominance="1">
+            <fplt>barley-remi_plt.xml</fplt>
+            <ftec>IC_Barley_2003_N0_tec.xml</ftec>
+            <flai>null</flai>
+        </plante>
+        <plante dominance="2">
+            <fplt>barley-remi_plt.xml</fplt>
+            <ftec>IC_Barley_2003_N0_tec.xml</ftec>
+            <flai>null</flai>
+        </plante>
+    </usm>
+</usms>
