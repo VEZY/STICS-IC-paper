@@ -43,7 +43,6 @@ vignettes/*.pdf
 0-data/usms-optim-radiative-backup
 
 0-javastics/
-2-outputs/
 height_equation/
 .Rproj.user
 .Rdata
