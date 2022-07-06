@@ -1,0 +1,6 @@
+"Association","Observed","Simulated","error","nerror"
+"Fababean-Wheat",0.8,0.94,0.14,0.175
+"Pea-Barley",1.5,1.53,0.03,0.02
+"Sunflower-Soybean",0.86,1.11,0.25,0.290697674418605
+"Wheat-Pea (alt.)",1.16,1.18,0.02,0.0172413793103448
+"Wheat-Pea (mix.)",1.02,1.17,0.15,0.147058823529412

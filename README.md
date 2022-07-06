@@ -4,11 +4,13 @@ This is the repository for the code and raw data of the paper entitled:
 
 > Modelling intercropping functioning to support sustainable agriculture
 
-If you're interested in reproducing the simulations, you can head over the permanent Zenodo repository that has the optimized parameter values and a functioning JavaStics distribution with this version of the model, along with the output statistics and figures.
+If you're interested in reproducing the simulations, you first need to install our version of JavaStics that is available from the permanent Zenodo repository that has the optimized parameter values and a functioning.
 
 This repository also contains the Pluto notebook that you can use to better understand how the radiative transfer computation works. To use it, please head over this link: <https://vezy.github.io/STICS-IC-paper>.
 
 You can remake all the steps from the article using the code and data in this repository. Be careful though, the optimization steps can take quite some time to execute so it may be best to use a cluster to run the simulations.
+
+The optimization results are available from the `usms-optim-beer` and `usms-optim-radiative` repository for the optimization using the Beer-Lambert law of light extinction and the radiative transfer options respectively.
 
 Repository tree:
 
