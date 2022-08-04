@@ -142,19 +142,24 @@ attr(sim, "class") = "cropr_simulation"
 # Get the observations ----------------------------------------------------
 
 obs = mapply(function(x,y){
-  get_obs(workspace = x, usm = y, usms_file = file.path(x, "usms.xml"))
+  obs_df = get_obs(workspace = x, usm = y, usms_file = file.path(x, "usms.xml"))
+  # Remove duplicated columns:
+  obs_df[[1]] = obs_df[[1]][,!duplicated(names(obs_df[[1]]))]
+  obs_df
 },worskpaces_paths,workspace_usms)
 names(obs) = unlist(workspace_usms)
 
 obs_sc = mapply(function(x,y){
-  get_obs(workspace = x, usm = y, usms_file = file.path(x, "usms.xml"))
+  obs_df = get_obs(workspace = x, usm = y, usms_file = file.path(x, "usms.xml"))
+  obs_df[[1]] = obs_df[[1]][,!duplicated(names(obs_df[[1]]))]
+  obs_df
 },worskpaces_paths_sc,workspace_usms_sc)
 names(obs_sc) = unlist(workspace_usms_sc)
 
 # Add NDFA to obs:
 obs = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
-
+  # df_sc = df_sc[,!duplicated(names(df_sc))]
   x =
     x%>%
     group_by(Plant)%>%
@@ -279,10 +284,10 @@ stats =
         "iflos" = "Flowering~(Julian~day)",
         "imats" = "Maturity~(Julian~day)",
         "hauteur" = "Max.~height~(m)",
-        "lai_n" = "Max.~LAI~(m2~m^{-2})",
+        "lai_n" = "Max.~LAI~(m^{2}~m^{-2})",
         "masec_n" = "Harvested~Biomass~(t~ha^{-1})",
         "mafruit" = "Grain~(t~ha^{-1})",
-        "QNplante" = "N~acc.~(kg[N]~ha^{-1})",
+        "QNplante" = "N~acq.~(kg~N~ha^{-1})",
         # "Qfix" = "N~Fix.~(kg~ha^{-1})",
         "CNgrain" = "N~grain~('%')",
         "NDFA" = "NDFA~('%')",
@@ -336,10 +341,10 @@ df_ic =
       "iflos" = "Flowering~(Julian~day)",
       "imats" = "Maturity~(Julian~day)",
       "hauteur" = "Max.~height~(m)",
-      "lai_n" = "Max.~LAI~(m2~m^{-2})",
+      "lai_n" = "Max.~LAI~(m^{2}~m^{-2})",
       "masec_n" = "Harvested~Biomass~(t~ha^{-1})",
       "mafruit" = "Grain~(t~ha^{-1})",
-      "QNplante" = "N~acc.~(kg[N]~ha^{-1})",
+      "QNplante" = "N~acq.~(kg~N~ha^{-1})",
       # "Qfix" = "N~Fix.~(kg~ha^{-1})",
       "CNgrain" = "N~grain~('%')",
       "NDFA" = "NDFA~('%')",
@@ -444,10 +449,10 @@ if(presentation){
 }
 
 if(!presentation){
-  ggsave(filename = "Fig.4_contrasted_systems_2.png", path = "2-outputs/plots",
+  ggsave(filename = "Fig.5_contrasted_systems_2.png", path = "2-outputs/plots",
          width = 16, height = 18, units = "cm")
 }else{
-  ggsave(filename = "Fig.4_contrasted_systems_2.png", path = "2-outputs/plots/presentation",
+  ggsave(filename = "Fig.5_contrasted_systems_2.png", path = "2-outputs/plots/presentation",
          width = 24, height = 14, units = "cm")
 }
 

@@ -22,7 +22,7 @@ begin
     display_text = [true, true, true, true]
 
     # Drawing(1000, 800, :png)
-    Drawing(1000, 800, "2-outputs/plots/Fig.0_radiative_transfer.png")
+    Drawing(1000, 800, "2-outputs/plots/Fig.1_radiative_transfer.png")
     t2 = currentdrawing()
     scale(1, -1) # to set the y axis up
     translate(t2.width / 2, -t2.height / 2)
