@@ -137,7 +137,7 @@ numbering =
              "fapar" = "bold(FaPAR~('%'))",
              "mafruit" = "bold(Grain~(t~ha^{-1}))",
              "Qfix" = "bold(N~Fix.~(kg[N]~ha^{-1}))",
-             "QNplante"= "bold(N~acc.~(kg[N]~ha^{-1}))",
+             "QNplante"= "bold(N~acq.~(kg~N~ha^{-1}))",
              "NDFA" = "bold(NDFA~('%'))",
              "inns" = "bold(N~stress~eff.)",
              "hauteur" = "bold(Height~(m))"
@@ -175,7 +175,7 @@ p =
              "fapar" = "bold(FaPAR~('%'))",
              "mafruit" = "bold(Grain~(t~ha^{-1}))",
              "Qfix" = "bold(N~Fix.~(kg[N]~ha^{-1}))",
-             "QNplante"= "bold(N~acc.~(kg[N]~ha^{-1}))",
+             "QNplante"= "bold(N~acq.~(kg~N~ha^{-1}))",
              "NDFA" = "bold(NDFA~('%'))",
              "inns" = "bold(N~stress~eff.)",
              "hauteur" = "bold(Height~(m))"
@@ -229,10 +229,10 @@ if(presentation){
 
 
 if(!presentation){
-  ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots",
-         width = 16, height = 17.5, units = "cm")
+  ggsave(p, filename = "Fig.3_sole_vs_intercrop.png", path = "2-outputs/plots",
+         width = 16, height = 18, units = "cm")
 }else{
-  ggsave(p, filename = "Fig.2_sole_vs_intercrop.png", path = "2-outputs/plots/presentation",
+  ggsave(p, filename = "Fig.3_sole_vs_intercrop.png", path = "2-outputs/plots/presentation",
          width = 22, height = 17.5, units = "cm")
 }
 

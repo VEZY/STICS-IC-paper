@@ -167,10 +167,10 @@ stats =
     variable =
       recode(
         variable,
-        "lai_n" = "LAI~(m2~m^{-2})",
+        "lai_n" = "LAI~(m^{2}~m^{-2})",
         "masec_n" = "Biomass~(t~ha^{-1})",
-        "Qfix" = "N~Fix.~(kg[N]~ha^{-1})",
-        "QNplante" = "N~acc.~(kg[N]~ha^{-1})",
+        "Qfix" = "N~Fix.~(kg~N~ha^{-1})",
+        "QNplante" = "N~acq.~(kg~N~ha^{-1})",
         "hauteur" = "Height~(m)",
         "NDFA" = "NDFA~('%')"
       )
@@ -202,10 +202,10 @@ df_ic =
                          "Fababean_Wheat_IC_2007" = "Fababean-Wheat"
     ),
     variable = recode(variable,
-                      "lai_n" = "LAI~(m2~m^{-2})",
+                      "lai_n" = "LAI~(m^{2}~m^{-2})",
                       "masec_n" = "Biomass~(t~ha^{-1})",
-                      "Qfix" = "N~Fix.~(kg[N]~ha^{-1})",
-                      "QNplante" = "N~acc.~(kg[N]~ha^{-1})",
+                      "Qfix" = "N~Fix.~(kg~N~ha^{-1})",
+                      "QNplante" = "N~acq.~(kg~N~ha^{-1})",
                       "hauteur" = "Height~(m)",
                       "NDFA" = "NDFA~('%')"
     )
@@ -308,9 +308,9 @@ if(presentation){
 }
 
 if(!presentation){
-  ggsave(filename = "Fig.3_contrasted_systems_all.png", path = "2-outputs/plots",
+  ggsave(filename = "Fig.4_contrasted_systems_all.png", path = "2-outputs/plots",
          width = 16, height = 14, units = "cm")
 }else{
-  ggsave(filename = "Fig.3_contrasted_systems_all.png", path = "2-outputs/plots/presentation",
+  ggsave(filename = "Fig.4_contrasted_systems_all.png", path = "2-outputs/plots/presentation",
          width = 24, height = 14, units = "cm")
 }
