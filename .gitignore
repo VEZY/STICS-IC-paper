@@ -53,3 +53,4 @@ new_travail.usm
 param.sol
 *.mod
 fort.[0-9]*
+!*var.mod

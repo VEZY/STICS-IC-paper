@@ -1,0 +1,15 @@
+iamfs
+idrps
+ilaxs
+imats
+irecs
+lai(n)
+fapar
+Qfix
+QNplante
+masec(n)
+chargefruit
+mafruit
+CNgrain
+hauteur
+largeur
