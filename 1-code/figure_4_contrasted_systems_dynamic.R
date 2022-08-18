@@ -159,10 +159,10 @@ plots = plot(sim, obs = obs, type = "scatter", shape_sit = "txt")
 # Statistics --------------------------------------------------------------
 
 stats =
-  summary(sim, obs = obs, stats = c("MAPE", "EF", "RMSE", "nRMSE", "Bias"))%>%
+  summary(sim, obs = obs, stats = c("n_obs","MAPE", "EF", "RMSE", "nRMSE", "Bias"))%>%
   select(-group, -situation)%>%
   # filter(variable != "Qfix")%>%
-  mutate(across(is.numeric, ~round(.x, 2)))%>%
+  mutate(across(where(is.numeric), ~round(.x, 2)))%>%
   mutate(
     variable =
       recode(
@@ -175,6 +175,7 @@ stats =
         "NDFA" = "NDFA~('%')"
       )
   )%>%
+  rename(n = n_obs)%>%
   arrange(variable)
 stats
 
@@ -251,7 +252,7 @@ p =
     x = -Inf,
     aes(
       y = y - (y - ymin) * 0.31,
-      label = paste0("EF:",EF,"\nnRMSE:",nRMSE,"\nRMSE:",RMSE,"\nBias:",Bias)
+      label = paste0("EF:",EF,"\nnRMSE:",nRMSE,"\nRMSE:",RMSE,"\nBias:",Bias,"\nn:",n)
     ),
     data = stats%>%mutate(y = fig_num$y, ymin = fig_num$ymin), hjust=0, size = 2.6,
     label.size = NA, inherit.aes = FALSE,

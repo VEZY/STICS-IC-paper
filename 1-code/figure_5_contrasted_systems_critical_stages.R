@@ -125,16 +125,22 @@ sim = mapply(function(x,usms_sc){
       masec_n = max(.data$masec_n, na.rm = TRUE),
       QNplante = max(.data$QNplante, na.rm = TRUE),
       hauteur = max(.data$hauteur, na.rm = TRUE),
+      mafruit = max(.data$mafruit, na.rm = TRUE),
+      CNgrain = tail(.data$CNgrain, 1),
       # Same for LAI, we want the maximum LAI:
       lai_n = max(.data$lai_n, na.rm = TRUE),
-      LER = ifelse(.data$mafruit == max(.data$mafruit), max(.data$mafruit) / max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)]),NA)
+      LER = max(.data$mafruit) / max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)])
     )
 
   if(!is.null(x$Qfix)){
-    return(x%>%mutate(NDFA = Qfix / QNplante))
-  }else{
-    x
+    x = x%>%mutate(NDFA = Qfix / QNplante)
   }
+  
+  # Take the first row only
+  x = filter(group_by(x, Plant), .data$Date == min(.data$Date))
+  x$Date = as.POSIXct("2022-08-18")
+  
+  return(x)
 }, sim, link_IC_SC[names(sim)], SIMPLIFY = FALSE)
 names(sim) = unlist(workspace_usms)
 attr(sim, "class") = "cropr_simulation"
@@ -145,7 +151,8 @@ obs = mapply(function(x,y){
   obs_df = get_obs(workspace = x, usm = y, usms_file = file.path(x, "usms.xml"))
   # Remove duplicated columns:
   obs_df[[1]] = obs_df[[1]][,!duplicated(names(obs_df[[1]]))]
-  obs_df
+  # mutate(obs_df, day = replace(day, duplicated(ex), NA))
+  return(obs_df)
 },worskpaces_paths,workspace_usms)
 names(obs) = unlist(workspace_usms)
 
@@ -156,25 +163,18 @@ obs_sc = mapply(function(x,y){
 },worskpaces_paths_sc,workspace_usms_sc)
 names(obs_sc) = unlist(workspace_usms_sc)
 
+
 # Add NDFA to obs:
 obs = mapply(function(x,usms_sc){
   df_sc = bind_rows(sim_sc[usms_sc[["p"]]][[1]], sim_sc[usms_sc[["a"]]][[1]])
   # df_sc = df_sc[,!duplicated(names(df_sc))]
-  x =
-    x%>%
-    group_by(Plant)%>%
-    mutate(
-      LER =
-        max(.data$mafruit, na.rm = TRUE) /
-        max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)],na.rm = TRUE)
-    )
 
   if(!is.null(x$iflos)){
     x =
       x%>%
       group_by(Plant)%>%
       mutate(
-        iflos = .data$iflos %% 365
+        iflos = ifelse(length(na.omit(.data$iflos)) > 0, na.omit(.data$iflos), NA) %% 365
       )
   }
 
@@ -183,7 +183,7 @@ obs = mapply(function(x,usms_sc){
       x%>%
       group_by(Plant)%>%
       mutate(
-        imats = .data$imats %% 365
+        imats = ifelse(length(na.omit(.data$imats)) > 0, na.omit(.data$imats), NA) %% 365
       )
   }
 
@@ -197,10 +197,30 @@ obs = mapply(function(x,usms_sc){
           .data$masec_n == max(.data$masec_n, na.rm = TRUE),
           .data$masec_n,
           NA
-        )
+        ),
+        masec_n = replace(.data$masec_n, is.na(.data$masec_n), na.omit(masec_n))
       )
   }
-
+  
+  if(!is.null(x$mafruit)){
+    x =
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        mafruit = replace(.data$mafruit, is.na(.data$mafruit), na.omit(mafruit)),
+        LER = .data$mafruit / max(df_sc$mafruit[df_sc$Plant == unique(.data$Plant)],na.rm = TRUE)
+      )
+  }
+  
+  if(!is.null(x$CNgrain)){
+    x =
+      x%>%
+      group_by(Plant)%>%
+      mutate(
+        CNgrain = replace(.data$CNgrain, is.na(.data$CNgrain), na.omit(CNgrain))
+      )
+  }
+  
   if(!is.null(x$hauteur)){
     # We only want the maximum value for QNplante (N at harvest):
     x =
@@ -211,7 +231,8 @@ obs = mapply(function(x,usms_sc){
           .data$hauteur == max(.data$hauteur, na.rm = TRUE),
           .data$hauteur,
           NA
-        )
+        ),
+        hauteur = replace(.data$hauteur, is.na(.data$hauteur), unique(na.omit(hauteur))),
       )
   }
 
@@ -221,11 +242,13 @@ obs = mapply(function(x,usms_sc){
       x%>%
       group_by(Plant)%>%
       mutate(
+        dup = duplicated(.data$QNplante),
         QNplante = ifelse(
           .data$QNplante == max(.data$QNplante, na.rm = TRUE),
           .data$QNplante,
           NA
-        )
+        ),
+        QNplante = replace(.data$QNplante, is.na(.data$QNplante), na.omit(QNplante)),
       )
   }
 
@@ -239,45 +262,32 @@ obs = mapply(function(x,usms_sc){
           .data$lai_n == max(.data$lai_n, na.rm = TRUE),
           .data$lai_n,
           NA
-        )
+        ),
+        lai_n = replace(.data$lai_n, is.na(.data$lai_n), na.omit(lai_n)),
       )
   }
 
   if(!is.null(x$Qfix)){
-    return(x%>%mutate(NDFA = Qfix / QNplante))
-  }else{
-    x
+    x = x%>%mutate(NDFA = Qfix / QNplante)
   }
+  
+  # Take the first row only
+  x = filter(group_by(x, Plant), .data$Date == min(.data$Date))
+  x$Date = as.POSIXct("2022-08-18")
+  
+  return(x)
 }, obs, link_IC_SC[names(obs)], SIMPLIFY = FALSE)
 
 # Make the plots:
 plots = plot(sim, obs = obs, type = "scatter", shape_sit = "txt")
-# plots = plot(sim,obs=obs) # dynamic plots just in case
 
 # Statistics --------------------------------------------------------------
-
 stats =
-  summary(sim, obs = obs, stats = c("MAPE", "EF", "RMSE", "nRMSE", "Bias"))%>%
+  summary(sim, obs = obs, stats = c("n_obs", "MAPE", "EF", "RMSE", "nRMSE", "Bias"))%>%
   select(-group, -situation)%>%
   filter(variable != "Qfix")%>%
   mutate(across(is.numeric, ~round(.x, 2)))%>%
   mutate(
-    # Order variables appear in the plot:
-    # variable = factor(
-    #   variable,
-    #   levels= c(
-    #     "iflos",
-    #     "imats",
-    #     "hauteur",
-    #     "lai_n",
-    #     "masec_n",
-    #     "mafruit",
-    #     "CNgrain",
-    #     "QNplante",
-    #     "NDFA",
-    #     "LER"
-    #   )
-    # ),
     variable =
       recode_factor(
         variable,
@@ -288,12 +298,12 @@ stats =
         "masec_n" = "Harvested~Biomass~(t~ha^{-1})",
         "mafruit" = "Grain~(t~ha^{-1})",
         "QNplante" = "N~acq.~(kg~N~ha^{-1})",
-        # "Qfix" = "N~Fix.~(kg~ha^{-1})",
         "CNgrain" = "N~grain~('%')",
         "NDFA" = "NDFA~('%')",
         "LER" = "Partial~LER"
       )
   )%>%
+  rename(n = n_obs)%>%
   arrange(variable)
 stats
 
@@ -321,21 +331,6 @@ df_ic =
       "1Tprecoce2Stardif2012" = "Sunflower-Soybean",
       "Fababean_Wheat_IC_2007" = "Fababean-Wheat"
     ),
-    # Order variables appear in the plot:
-    # variable = factor(
-    #   variable,
-    #   levels= c(
-    #     "iflos",
-    #     "imats",
-    #     "hauteur",
-    #     "lai_n",
-    #     "masec_n",
-    #     "mafruit",
-    #     "CNgrain",
-    #     "QNplante",
-    #     "NDFA",
-    #     "LER"
-    #   )),
     variable = recode_factor(
       variable,
       "iflos" = "Flowering~(Julian~day)",
@@ -345,7 +340,6 @@ df_ic =
       "masec_n" = "Harvested~Biomass~(t~ha^{-1})",
       "mafruit" = "Grain~(t~ha^{-1})",
       "QNplante" = "N~acq.~(kg~N~ha^{-1})",
-      # "Qfix" = "N~Fix.~(kg~ha^{-1})",
       "CNgrain" = "N~grain~('%')",
       "NDFA" = "NDFA~('%')",
       "LER" = "Partial~LER"
@@ -391,8 +385,8 @@ p =
   geom_label(
     x = -Inf,
     aes(
-      y = y - (y - ymin) * 0.31,
-      label = paste0("EF:",EF,"\nnRMSE:",nRMSE,"\nRMSE:",RMSE,"\nBias:",Bias)
+      y = y - (y - ymin) * 0.33,
+      label = paste0("EF:",EF,"\nnRMSE:",nRMSE,"\nRMSE:",RMSE,"\nBias:",Bias,"\nn:",n)
     ),
     data = stats%>%mutate(y = fig_num$y, ymin = fig_num$ymin), hjust=0, size = 2.6,
     label.size = NA, inherit.aes = FALSE,
