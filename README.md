@@ -16,7 +16,7 @@ using Pluto
 Pluto.run("index.jl")
 ```
 
-![](https://raw.githubusercontent.com/VEZY/STICS-IC-paper/master/2-outputs/plots/Fig.0_radiative_transfer.png)
+![](https://raw.githubusercontent.com/VEZY/STICS-IC-paper/master/2-outputs/plots/Fig.1_radiative_transfer.png)
 
 *Figure 1. Diagram of the light interception computation using the radiative transfer option. See scientific article for more information.*
 
