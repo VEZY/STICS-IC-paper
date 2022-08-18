@@ -1,6 +1,6 @@
 # STICS-IC evaluation
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6803363.svg)](https://doi.org/10.5281/zenodo.6803363)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6803362.svg)](https://doi.org/10.5281/zenodo.6803362)
 
 This is the repository for the code and raw data of the paper entitled:
 
