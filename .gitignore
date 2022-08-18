@@ -47,7 +47,6 @@ height_equation/
 .Rproj.user
 .Rdata
 *.sti
-var.mod
 *.tmp
 *.txt
 new_travail.usm
