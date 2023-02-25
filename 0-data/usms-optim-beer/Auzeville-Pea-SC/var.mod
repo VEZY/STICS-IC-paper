@@ -1,5 +1,6 @@
-hauteur
 lai(n)
 masec(n)
 QNplante
-Qfix
+mafruit
+hauteur
+fapar
