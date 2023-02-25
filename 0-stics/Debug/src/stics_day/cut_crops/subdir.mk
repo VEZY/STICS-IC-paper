@@ -18,7 +18,7 @@ OBJS += \
 src/stics_day/cut_crops/%.o: ../src/stics_day/cut_crops/%.f90
 	@echo 'Building file: $<'
 	@echo 'Invoking: GNU Fortran Compiler'
-	gfortran -funderscoring -O0 -g -Wall -c -fmessage-length=0 -o "$@" "$<"
+	gfortran -funderscoring -fallow-argument-mismatch -O0 -g -Wall -c -fmessage-length=0 -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
