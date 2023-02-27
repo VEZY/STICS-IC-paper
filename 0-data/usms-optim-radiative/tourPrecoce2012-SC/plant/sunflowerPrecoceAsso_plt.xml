@@ -131,7 +131,8 @@
                         <param format="real" max="1.0" min="0.3" nom="tustressmin">0.70000</param>
                     </choix>
                     <choix code="2" nom="LAInet=LAIbrut-senes">
-                        <param format="real" max="0.5" min="0.01" nom="dlaimaxbrut">0.00118686108421081</param>
+                        <param format="real" max="0.5" min="0.01" nom="dlaimaxbrut">
+                            0.00112</param>
                         <param format="real" max="1.0" min="0.0" nom="durviesupmax">0.40000</param>
                         <param format="real" max="1.0" min="-2.0" nom="innsen">0.1</param>
                         <param format="real" max="1.5" min="0.5" nom="rapsenturg">0.6</param>
@@ -427,7 +428,7 @@
                 <param format="real" max="0.5" min="0.0030" nom="pgrainmaxi">0.08</param>
                 <param format="real" max="0.0" min="-2.0" nom="adens">-0.8</param>
                 <param format="real" max="0.5" min="0.0050" nom="croirac">0.15</param>
-                <param format="real" max="500.0" min="10.0" nom="durvieF">282.693450366413</param>
+                <param format="real" max="500.0" min="10.0" nom="durvieF">260.0</param>
                 <optionv nom="codebfroid">
                     <param code="2" format="integer" max="70" min="0" nom="jvc">0</param>
                 </optionv>
@@ -440,7 +441,8 @@
                 </optionv>
                 <optionv nom="codeindetermin">
                     <param code="1" format="real" max="10000.0" min="0.0" nom="nbgrmax">13500</param>
-                    <param code="1" format="real" max="2000.0" min="0.0" nom="stdrpmat">619.328741912198</param>
+                    <param code="1" format="real" max="2000.0" min="0.0" nom="stdrpmat">
+                        619.328741912198</param>
                     <param code="2" format="real" max="20.0" min="0.5" nom="afruitpot">.00000</param>
                     <param code="2" format="real" max="1000.0" min="10.0" nom="dureefruit">.00000</param>
                 </optionv>

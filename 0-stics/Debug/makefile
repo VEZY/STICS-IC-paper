@@ -73,7 +73,7 @@ all: Stics
 Stics: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GNU Fortran Linker'
-	gfortran -g $(CFLAGS) -o "Stics" $(OBJS) $(USER_OBJS) $(LIBS)
+	gfortran -fallow-argument-mismatch -g $(CFLAGS) -o "Stics" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
