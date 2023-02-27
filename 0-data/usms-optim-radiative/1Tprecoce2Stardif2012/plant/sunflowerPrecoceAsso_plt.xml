@@ -132,7 +132,7 @@
                     </choix>
                     <choix code="2" nom="LAInet=LAIbrut-senes">
                         <param format="real" max="0.5" min="0.01" nom="dlaimaxbrut">
-                            0.00118686108421081</param>
+                            0.00112</param>
                         <param format="real" max="1.0" min="0.0" nom="durviesupmax">0.40000</param>
                         <param format="real" max="1.0" min="-2.0" nom="innsen">0.1</param>
                         <param format="real" max="1.5" min="0.5" nom="rapsenturg">0.6</param>
@@ -428,7 +428,7 @@
                 <param format="real" max="0.5" min="0.0030" nom="pgrainmaxi">0.08</param>
                 <param format="real" max="0.0" min="-2.0" nom="adens">-0.8</param>
                 <param format="real" max="0.5" min="0.0050" nom="croirac">0.15</param>
-                <param format="real" max="500.0" min="10.0" nom="durvieF">260.0</param>
+                <param format="real" max="500.0" min="10.0" nom="durvieF">250.0</param>
                 <optionv nom="codebfroid">
                     <param code="2" format="integer" max="70" min="0" nom="jvc">0</param>
                 </optionv>
