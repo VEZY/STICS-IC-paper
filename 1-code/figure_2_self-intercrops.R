@@ -202,6 +202,20 @@ df %>%
     max_ic = max(Simulated_ic),
     max_sc = max(Simulated_sc)
   ) %>%
+  mutate(
+    diff = max_ic - max_sc,
+    diff_perc = (max_ic - max_sc) / max_ic
+  ) %>%
   ungroup() %>%
   group_by(variable) %>%
-  summarise(diff = mean(max_ic - max_sc))
+  filter(diff_perc == max(diff_perc))
+
+df %>%
+  group_by(variable, Crop) %>%
+  summarise(
+    max_ic = max(Simulated_ic),
+    max_sc = max(Simulated_sc)
+  ) %>%
+  ungroup() %>%
+  group_by(variable) %>%
+  summarise(diff = mean(max_ic - max_sc), mean((max_ic - max_sc) / max_ic))
