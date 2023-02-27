@@ -49,7 +49,7 @@ mapply(function(x,y){
   SticsOnR::run_javastics(
     javastics = javastics,
     workspace = normalizePath(x, winslash = "/"),
-    stics_exe = "Stics_IC_v24-05-2022.exe",
+    stics_exe = "Stics_IC_v24-05-2022_mac",
     usm = y
   )
 },workspaces,usms)
