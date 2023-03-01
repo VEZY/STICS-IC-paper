@@ -308,7 +308,8 @@ stats <-
         "QNplante" = "N~acq.~(kg~N~ha^{-1})",
         "CNgrain" = "N~grain~('%')",
         "NDFA" = "NDFA~('%')",
-        "LER" = "Partial~LER"
+        "LER" = "Partial~LER",
+        .ordered = TRUE
       )
   ) %>%
   rename(n = n_obs) %>%
@@ -355,8 +356,29 @@ df_ic <-
   ) %>%
   arrange(variable)
 
+# make a dataframe with custom limits for each facet of the plot:
+var_ <- c(
+  "Flowering~(Julian~day)", "Flowering~(Julian~day)",
+  "Maturity~(Julian~day)", "Maturity~(Julian~day)",
+  "Max.~height~(m)", "Max.~height~(m)",
+  "Max.~LAI~(m^{2}~m^{-2})", "Max.~LAI~(m^{2}~m^{-2})",
+  "Harvested~Biomass~(t~ha^{-1})", "Harvested~Biomass~(t~ha^{-1})",
+  "Grain~(t~ha^{-1})", "Grain~(t~ha^{-1})",
+  "N~acq.~(kg~N~ha^{-1})", "N~acq.~(kg~N~ha^{-1})",
+  "N~grain~('%')", "N~grain~('%')",
+  "Partial~LER", "Partial~LER"
+)
+
+df_limits <- data.frame(
+  variable = factor(var_, levels = unique(var_), ordered = TRUE),
+  Observed = c(100, 300, 100, 300, 0, 2, 0, 4, 0, 10, 0, 4.5, 0, 250, 0, 4, 0, 1),
+  # ymax = c(300, 300, 4, 10, 20, 10, 200, 100, 5, 1)
+  Simulated = c(300, 100, 300, 100, 2, 0, 4, 0, 10, 0, 4.5, 0, 250, 0, 4, 0, 1, 0)
+) %>%
+  arrange(variable)
+
 fig_num <-
-  df_ic %>%
+  df_limits %>%
   group_by(variable) %>%
   summarise(
     y = max(Simulated, Observed),
@@ -364,11 +386,8 @@ fig_num <-
   ) %>%
   mutate(plot_index = paste0(order(variable), ".")) %>%
   arrange(variable)
-fig_num
-
 
 # Plotting
-
 presentation <- FALSE # FALSE for the paper (white background), TRUE for the presentation
 
 if (presentation) {
@@ -379,6 +398,7 @@ if (presentation) {
 
 p <-
   ggplot(df_ic, aes(x = Observed, color = Plant, fill = Plant, shape = Association)) +
+  geom_blank(data = df_limits, aes(x = Observed, y = Simulated), inherit.aes = FALSE) +
   geom_point(aes(y = Simulated), size = 1.5, fill = "transparent", stroke = 1.5) +
   geom_point(aes(y = Simulated, fill = Plant), size = 1.5, alpha = 0.5, stroke = 1) +
   geom_point(aes(y = Observed), color = "transparent", fill = "transparent") + # Just to get y=x scales
@@ -400,7 +420,7 @@ p <-
       y = y - (y - ymin) * 0.33,
       label = paste0("EF:", EF, "\nnRMSE:", nRMSE, "\nRMSE:", RMSE, "\nBias:", Bias, "\nn:", n)
     ),
-    data = stats %>% mutate(y = fig_num$y, ymin = fig_num$ymin), hjust = 0, size = 2.6,
+    data = left_join(stats, fig_num, by = "variable"), hjust = 0, size = 2.6,
     label.size = NA, inherit.aes = FALSE,
     parse = FALSE, color = text_color,
     fill = if (presentation) {
@@ -477,7 +497,6 @@ if (!presentation) {
   )
 }
 
-
 df_LER <-
   df_ic %>%
   filter(variable == "Partial~LER") %>%
@@ -495,3 +514,5 @@ df_LER <-
   )
 
 write.csv(df_LER, "2-outputs/stats/stats_LER.csv", row.names = FALSE)
+
+mean(df_LER$nerror)
