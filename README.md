@@ -8,7 +8,7 @@ This is the repository for the code and raw data of the paper entitled:
 
 If you're interested in reproducing the simulations, prefer downloading the [full repository from Zenodo](https://doi.org/10.5281/zenodo.6803363) that provides our version of JavaStics (it is not given here to save space).
 
-This repository contains the Pluto notebook that you can use to better understand how the radiative transfer computation works, which was used to produce Figure 1 from the article (see below). To use it, please head over this link: <https://vezy.github.io/STICS-IC-paper>. Then you can run it on binder (it can be very slow to open the first time), or download it and run it using Julia (you can download Julia [here](https://julialang.org/downloads/)):
+This repository contains the Pluto notebook that you can use to better understand how the radiative transfer computation works, which was used to produce Figure A1 from the article (see below). To use it, please head over this link: <https://vezy.github.io/STICS-IC-paper>. Then you can run it on binder (it can be very slow to open the first time), or download it and run it using Julia (you can download Julia [here](https://julialang.org/downloads/)):
 
 ```julia
 # add Pluto # uncomment this line if you run it for the first time, it will download and install the Pluto package
@@ -55,4 +55,4 @@ Here are some explanations about the different folders you can find in this proj
 └───2-outputs   # Outputs from the code in `1-code`.
 ```
 
-Note: This repository works for Windows. If you are using Linux, you'll have to replace the windows version of STICS by the Linux version everywhere in the code base. Search "Stics_IC_v24-05-2022.exe" everywhere in the code and replace it by "Stics_IC_v24-05-2022_linux". Mac users should build their own executable from the `0-stics` code base.
+Note: This repository works for Windows. If you are using Linux, you'll have to replace the windows version of STICS by the Linux version everywhere in the code base. Search "Stics_IC_v24-05-2022.exe" everywhere in the code and replace it by "Stics_IC_v24-05-2022_linux". Mac users should build their own executable from the `0-stics` code base, and put it in the bin folder of JavaStics. you can find instruction for compilation [here](https://github.com/SticsRPacks/documentation/blob/master/mac_users.md).
