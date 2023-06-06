@@ -290,8 +290,14 @@ obs <- mapply(function(x, usms_sc) {
 plots <- plot(sim, obs = obs, type = "scatter", shape_sit = "txt")
 
 # Statistics --------------------------------------------------------------
+
+filter(plots$all_situations$data, variable == "mafruit" & Sit_Name == "1Tprecoce2Stardif2012")
+
+filter(plots$all_situations$data, variable == "mafruit" & Sit_Name == "IC_PeaBarley_Angers_2003_N0_D50-50")
+
 stats <-
-  summary(sim, obs = obs, stats = c("n_obs", "MAPE", "EF", "RMSE", "nRMSE", "Bias")) %>%
+  summary(sim, obs = obs, stats = c("n_obs", "MAPE", "EF", "RMSE", "nRMSE", "Bias", "RMSEu", "RMSEs", "sd_obs")) %>%
+  mutate(RMSEu_stdobs = RMSEu / sd_obs, RMSEs_stdobs = RMSEs / sd_obs) %>%
   select(-group, -situation) %>%
   filter(variable != "Qfix") %>%
   mutate(across(is.numeric, ~ round(.x, 2))) %>%
@@ -335,8 +341,8 @@ df_ic <-
     Association = recode(
       Sit_Name,
       "IC_PeaBarley_Angers_2003_N0_D50-50" = "Pea-Barley",
-      "IC_Wheat_Pea_2005-2006_N0"  = "Wheat-Pea (alt.)",
-      "IC_Wheat_Pea_2012-2013_N1"  = "Wheat-Pea (mix.)",
+      "IC_Wheat_Pea_2005-2006_N0" = "Wheat-Pea (alt.)",
+      "IC_Wheat_Pea_2012-2013_N1" = "Wheat-Pea (mix.)",
       "1Tprecoce2Stardif2012" = "Sunflower-Soybean",
       "Fababean_Wheat_IC_2007" = "Fababean-Wheat"
     ),

@@ -165,10 +165,12 @@ obs <- lapply(obs, function(x) {
 plots <- plot(sim, obs = obs, type = "scatter", shape_sit = "txt")
 # plots = plot(sim,obs=obs, type = "scatter") # dynamic plots just in case
 
+filter(plots$all_situations$data, variable == "masec_n" & Sit_Name == "1Tprecoce2Stardif2012")
 # Statistics --------------------------------------------------------------
 
 stats <-
-  summary(sim, obs = obs, stats = c("n_obs", "MAPE", "EF", "RMSE", "nRMSE", "Bias")) %>%
+  summary(sim, obs = obs, stats = c("n_obs", "MAPE", "EF", "RMSE", "nRMSE", "Bias", "RMSEu", "RMSEs", "sd_obs")) %>%
+  mutate(RMSEu_stdobs = RMSEu / sd_obs, RMSEs_stdobs = RMSEs / sd_obs) %>%
   select(-group, -situation) %>%
   # filter(variable != "Qfix")%>%
   mutate(across(where(is.numeric), ~ round(.x, 2))) %>%
