@@ -4,6 +4,10 @@
 # two crops have ~same height we compute using Beer's law whatever the parameter.
 # Date: 05/11/2020
 
+# system("java -version")
+# R CMD javareconf JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+# Sys.setenv(JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk1.8.0_202.jdk/Contents/Home")
+
 # Install the packages (to do only once) ----------------------------------
 
 # remotes::install_github("SticsRPacks/SticsRPacks")
@@ -29,11 +33,11 @@ main_dir <- normalizePath("0-data/usms-optim-radiative", winslash = "/")
 
 # Define the variables to simulate ----------------------------------------
 
-sim_variables <- c("lai(n)", "masec(n)", "QNplante", "mafruit", "hauteur", "fapar")
+sim_variables <- c("lai(n)", "masec(n)", "QNplante", "mafruit", "hauteur", "fapar", "irecs")
 
 # Which variables need to be summed for plot scale results (instead of averaged)
 to_sum <- c("lai_n", "masec_n", "abso_n", "mafruit", "QNplante", "fapar")
-# SticsRFiles::get_var_info(keyword = "res")
+# SticsRFiles::get_var_info(keyword = "resmes")
 
 # Run the simulations -----------------------------------------------------
 
@@ -59,8 +63,8 @@ if (presentation) {
 }
 
 res_scat <- mapply(function(x, y) {
-  # x = usms[[3]]
-  # y = names(usms)[[3]]
+  # x = usms[[1]]
+  # y = names(usms)[[1]]
   workspace <- file.path(main_dir, y)
   SticsRFiles::gen_varmod(workspace, sim_variables)
   SticsOnR::run_javastics(
@@ -71,25 +75,74 @@ res_scat <- mapply(function(x, y) {
   # Get the results
   sim <- get_sim(workspace = workspace, usm = x)
 
+  # Add the date of harvest:
+  sim <- lapply(sim, function(u) {
+    # u = sim[["IC_Barley_Barley_Angers_2003_N0"]]
+    plants <- unique(u$Plant)
+    for (i in 1:length(plants)) {
+      jul_rec <- unique(u$irecs[u$Plant == plants[i]])[2]
+      u$date_harvest[u$Plant == plants[i]] <- u$Date[u$Plant == plants[i] & u$irecs == jul_rec][1]
+    }
+    u$date_harvest <- as.POSIXct(u$date_harvest, tz = "UTC")
+    u <- mutate(u, is_harvested = ifelse(Date > date_harvest, TRUE, FALSE))
+    # u <- filter(u, Date < date_harvest)
+    return(u)
+  })
+
   # Get the observations
   obs <- get_obs(workspace = workspace, usm = x)
+
+  sd_vars <- unlist(lapply(sim_variables, function(x) grep(pattern = paste0(SticsRFiles:::var_to_col_names(x), "_sd"), x = colnames(obs[[1]]))))
+
+  if (length(sd_vars) > 1) {
+    sd_df <- obs[[1]][c(1, sd_vars)]
+    sd_df$Plant <- obs[[1]]$Plant
+    colnames(sd_df) <- gsub("_sd", "", colnames(sd_df))
+    sd_list <- list(sd_df)
+    names(sd_list) <- names(obs)[1]
+  } else {
+    sd_list <- NULL
+  }
+
+  dates_harvest <- lapply(sim, function(x) x$date_harvest[1])
+
+  sim_plot <- lapply(sim, function(u) {
+    select(u, -c(date_harvest, irecs, is_harvested))
+  })
+  attr(sim_plot, "class") <- "cropr_simulation"
+
   # Pre-make the plot with {CroPlotR}
-  plots <- plot(sim, obs = obs)
+  plots <- plot(sim_plot, obs = obs, obs_sd = sd_list)
+
   # Compute the sum (or average) of variables for both intercrops to match the sole crop
 
   df_ic <-
-    plots[[grep("(IC_|-IC)", names(plots))]]$data %>%
+    left_join(
+      plots[[grep("(IC_|-IC)", names(plots))]]$data,
+      select(bind_rows(sim[grep("(IC_|-IC)", names(plots))], .id = "Sit_Name"), Sit_Name, Date, Plant, is_harvested),
+      by = join_by(Date, Plant, Sit_Name)
+    ) %>%
     group_by(.data$Date, .data$variable) %>%
     summarise(
       Simulated_sum = sum(.data$Simulated),
-      Simulated_mean = mean(.data$Simulated)
+      Simulated_mean = mean(.data$Simulated),
+      is_harvested = ifelse(any(.data$is_harvested), TRUE, FALSE)
     ) %>%
     mutate(
       Simulated = ifelse(.data$variable %in% to_sum, Simulated_sum, Simulated_mean)
+      # Date_harvest = dates_harvest[[grep("(IC_|-IC)", names(dates_harvest))]],
     ) %>%
     select(-Simulated_sum, -Simulated_mean)
 
-  df_sc <- plots[[grep("(SC_|-SC)", names(plots))]]$data
+  df_sc <-
+    left_join(
+      plots[[grep("(SC_|-SC)", names(plots))]]$data,
+      select(bind_rows(sim[grep("(SC_|-SC)", names(plots))], .id = "Sit_Name"), Sit_Name, Date, is_harvested),
+      by = join_by(Date, Sit_Name)
+    )
+  # mutate(
+  #   Date_harvest = dates_harvest[[grep("(SC_|-SC)", names(dates_harvest))]]
+  # )
 
   df <-
     left_join(
@@ -104,8 +157,12 @@ res_scat <- mapply(function(x, y) {
 
 df <- bind_rows(res_scat, .id = "Crop")
 
+df$Simulated_ic[df$is_harvested_ic] <- NA
+df$Simulated_sc[df$is_harvested_sc] <- NA
+
 # Scatter plot:
-ggplot(df, aes(x = Simulated_sc, y = Simulated_ic, color = Crop)) +
+df %>%
+  ggplot(aes(x = Simulated_sc, y = Simulated_ic, color = Crop)) +
   geom_abline() +
   geom_point() +
   facet_wrap(
@@ -148,7 +205,18 @@ p <-
       "hauteur" = "bold(Height~(m))"
     )
   ) %>%
+  # filter(
+  #   # is_harvested_sc == FALSE | is_harvested_sc == FALSE
+  #   Date <= as.POSIXct("2005-11-30 UTC", tz = "UTC")
+  # ) %>%
   ggplot(aes(x = Date)) +
+  geom_errorbar(
+    aes(y = Observed, ymin = Observed - Obs_SD, ymax = Observed + Obs_SD),
+    show.legend = FALSE, lwd = 0.8,
+    # shape = 21, stroke = 1.5,
+    colour = "#F49690",
+    na.rm = TRUE
+  ) +
   geom_point(
     aes(y = Observed),
     show.legend = FALSE, size = 1.5,
@@ -164,7 +232,7 @@ p <-
     labeller = label_parsed
   ) +
   scale_y_continuous(n.breaks = 5, minor_breaks = NULL) +
-  scale_x_datetime(minor_breaks = NULL) +
+  scale_x_datetime(minor_breaks = NULL, date_breaks = "2 month", date_labels = "%b", guide = guide_axis(angle = 45)) +
   ggtitle(NULL) +
   labs(y = NULL) +
   theme_minimal() +
@@ -177,6 +245,7 @@ p <-
     legend.position = "bottom",
     legend.box = "vertical",
     axis.title.x = element_text(face = "bold", size = 12),
+    # strip.text.x = element_text(angle = 45),
   ) +
   guides(color = guide_legend(nrow = 1, byrow = TRUE))
 
@@ -187,20 +256,24 @@ ggsave(p,
   width = 18, height = 20, units = "cm"
 )
 
+# write.csv(df, "2-outputs/stats/table_figure_2.csv", row.names = FALSE)
+df <- read.csv("2-outputs/stats/table_figure_2.csv")
+
 # Statistics for each variable for all crops:
 df %>%
   group_by(variable) %>%
   summarise(
     RMSE = RMSE(Simulated_ic, Simulated_sc),
     EF = EF(Simulated_ic, Simulated_sc),
-    Bias = Bias(Simulated_ic, Simulated_sc)
+    Bias = Bias(Simulated_ic, Simulated_sc),
+    R2 = R2(Simulated_ic, Simulated_sc),
   )
 
 df %>%
   group_by(variable, Crop) %>%
   summarise(
-    max_ic = max(Simulated_ic),
-    max_sc = max(Simulated_sc)
+    max_ic = max(Simulated_ic, na.rm = TRUE),
+    max_sc = max(Simulated_sc, na.rm = TRUE)
   ) %>%
   mutate(
     diff = max_ic - max_sc,
