@@ -13,7 +13,7 @@ This repository contains the Pluto notebook that you can use to better understan
 ```julia
 # add Pluto # uncomment this line if you run it for the first time, it will download and install the Pluto package
 using Pluto
-Pluto.run("index.jl")
+Pluto.run(notebook="index.jl")
 ```
 
 ![](https://raw.githubusercontent.com/VEZY/STICS-IC-paper/master/2-outputs/plots/Fig.1_radiative_transfer.png)
