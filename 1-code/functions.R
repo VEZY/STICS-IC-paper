@@ -1,4 +1,3 @@
-
 run_simulation <- function(workspaces, variables, javastics, usms = NULL) {
   res <-
     lapply(workspaces, function(i) {
@@ -81,7 +80,6 @@ merge_sim <- function(sim) {
 
 
 optim_height <- function(workspace, usms) {
-
   # Choose the variables we want in output:
   sim_variables <- c("hauteur", "somupvtsem", "masec(n)", "lai(n)")
   # NB, use get_var_info() to get the variables by names or keywords if you don't remember, e.g.: get_var_info('laisen')
@@ -407,4 +405,12 @@ summarize_optimization <- function(workspaces_orig, workspaces_opti, parameters_
   df$is_optimized <- df$original_value != df$optimized_value
 
   return(df)
+}
+
+
+gg_circle <- function(r, xc, yc, color = "black", fill = NA, ...) {
+  x <- xc + r * cos(seq(0, pi, length.out = 100))
+  ymax <- yc + r * sin(seq(0, pi, length.out = 100))
+  ymin <- yc + r * sin(seq(0, -pi, length.out = 100))
+  annotate("ribbon", x = x, ymin = ymin, ymax = ymax, color = color, fill = fill, ...)
 }
