@@ -4,7 +4,7 @@
 
 This is the repository for the code and raw data of the paper entitled:
 
-> Modelling intercropping functioning to support sustainable agriculture
+> [Modelling intercropping functioning to support sustainable agriculture](https://link.springer.com/article/10.1007/s13593-023-00917-5)
 
 If you're interested in reproducing the simulations, prefer downloading the [full repository from Zenodo](https://doi.org/10.5281/zenodo.6803363) that provides our version of JavaStics (it is not given here to save space).
 
